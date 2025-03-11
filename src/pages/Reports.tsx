@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +9,7 @@ import { FileText, BarChart3, Download } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { DateRangePicker } from '@/components/DateRangePicker';
 import OverviewChart from '@/components/OverviewChart';
+import ReportsTabContent from '@/components/dashboard/ReportsTabContent';
 
 // Mock data
 const chartData = [
@@ -51,27 +53,26 @@ export default function Reports() {
                 <SelectItem value="custom">Custom Report</SelectItem>
               </SelectContent>
             </Select>
-
-            <Button className="rounded-full">
-              <FileText className="h-4 w-4 mr-2" />
-              Generate PDF
-            </Button>
           </div>
         </div>
         
-        <Card className="glass-card glass-card-hover">
-          <CardHeader>
-            <CardTitle>Financial Overview</CardTitle>
-            <CardDescription>Detailed financial analysis over time</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <OverviewChart 
-              data={chartData}
-              title="Financial Performance"
-              description="Income vs Expenses"
-            />
-          </CardContent>
-        </Card>
+        <div className="grid grid-cols-1 gap-8">
+          <Card className="glass-card glass-card-hover">
+            <CardHeader>
+              <CardTitle>Financial Overview</CardTitle>
+              <CardDescription>Detailed financial analysis over time</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <OverviewChart 
+                data={chartData}
+                title="Financial Performance"
+                description="Income vs Expenses"
+              />
+            </CardContent>
+          </Card>
+          
+          <ReportsTabContent />
+        </div>
       </main>
     </div>
   );

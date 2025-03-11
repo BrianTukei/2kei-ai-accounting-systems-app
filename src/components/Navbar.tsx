@@ -61,9 +61,9 @@ export default function Navbar() {
             className="flex items-center space-x-2"
           >
             <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-              <span className="text-white font-bold">L</span>
+              <span className="text-white font-bold">2K</span>
             </div>
-            <span className="font-semibold text-xl">Ledgerly</span>
+            <span className="font-semibold text-xl">2KÈI Ledgery</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -132,9 +132,9 @@ export default function Navbar() {
           <div className="flex items-center justify-between p-6 border-b">
             <Link to="/" className="flex items-center space-x-2" onClick={() => setMobileMenuOpen(false)}>
               <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-                <span className="text-white font-bold">L</span>
+                <span className="text-white font-bold">2K</span>
               </div>
-              <span className="font-semibold text-xl">Ledgerly</span>
+              <span className="font-semibold text-xl">2KÈI Ledgery</span>
             </Link>
             <button className="focus:outline-none" onClick={toggleMobileMenu}>
               <X size={24} className="text-slate-800" />

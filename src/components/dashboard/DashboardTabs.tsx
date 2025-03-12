@@ -1,4 +1,5 @@
 
+import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import StatsGrid from './StatsGrid';
 import OverviewChart from '@/components/OverviewChart';
@@ -7,58 +8,93 @@ import QuickActionsCard from './QuickActionsCard';
 import TransactionsTabContent from './TransactionsTabContent';
 import ReportsTabContent from './ReportsTabContent';
 import { Transaction } from '@/components/TransactionCard';
+import AddTransactionModal from '@/components/AddTransactionModal';
 
 interface DashboardTabsProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   chartData: { name: string; income: number; expenses: number }[];
   recentTransactions: Transaction[];
+  onAddTransaction?: (transaction: Transaction) => void;
 }
 
 export default function DashboardTabs({ 
   activeTab, 
   setActiveTab, 
   chartData, 
-  recentTransactions 
+  recentTransactions,
+  onAddTransaction
 }: DashboardTabsProps) {
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [transactionType, setTransactionType] = useState<'income' | 'expense'>('income');
+
+  const handleOpenAddModal = (type: 'income' | 'expense') => {
+    setTransactionType(type);
+    setIsAddModalOpen(true);
+  };
+
+  const handleAddTransaction = (newTransaction: Omit<Transaction, 'id'>) => {
+    if (onAddTransaction) {
+      // Generate a temporary ID (in a real app, this would come from the backend)
+      const tempId = `temp-${Date.now()}`;
+      onAddTransaction({ id: tempId, ...newTransaction });
+    }
+  };
+
   return (
-    <Tabs 
-      defaultValue="overview" 
-      value={activeTab} 
-      onValueChange={setActiveTab}
-      className="space-y-6"
-    >
-      <TabsList className="glass-effect border border-slate-200/50 p-1">
-        <TabsTrigger value="overview">Overview</TabsTrigger>
-        <TabsTrigger value="transactions">Transactions</TabsTrigger>
-        <TabsTrigger value="reports">Reports</TabsTrigger>
-      </TabsList>
-      
-      <TabsContent value="overview" className="space-y-6 animate-scale-in">
-        {/* Stats Cards */}
-        <StatsGrid />
+    <>
+      <Tabs 
+        defaultValue="overview" 
+        value={activeTab} 
+        onValueChange={setActiveTab}
+        className="space-y-6"
+      >
+        <TabsList className="glass-effect border border-slate-200/50 p-1">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="transactions">Transactions</TabsTrigger>
+          <TabsTrigger value="reports">Reports</TabsTrigger>
+        </TabsList>
         
-        {/* Chart Section */}
-        <OverviewChart 
-          data={chartData}
-          title="Income vs Expenses"
-          description="Financial performance over time"
-        />
+        <TabsContent value="overview" className="space-y-6 animate-scale-in">
+          {/* Stats Cards */}
+          <StatsGrid />
+          
+          {/* Chart Section */}
+          <OverviewChart 
+            data={chartData}
+            title="Income vs Expenses"
+            description="Financial performance over time"
+          />
+          
+          {/* Recent Transactions */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <RecentTransactionsCard transactions={recentTransactions} />
+            <QuickActionsCard 
+              onAddIncome={() => handleOpenAddModal('income')}
+              onAddExpense={() => handleOpenAddModal('expense')}
+            />
+          </div>
+        </TabsContent>
         
-        {/* Recent Transactions */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <RecentTransactionsCard transactions={recentTransactions} />
-          <QuickActionsCard />
-        </div>
-      </TabsContent>
+        <TabsContent value="transactions" className="animate-scale-in">
+          <TransactionsTabContent transactions={recentTransactions} />
+        </TabsContent>
+        
+        <TabsContent value="reports" className="animate-scale-in">
+          <ReportsTabContent />
+        </TabsContent>
+      </Tabs>
       
-      <TabsContent value="transactions" className="animate-scale-in">
-        <TransactionsTabContent transactions={recentTransactions} />
-      </TabsContent>
-      
-      <TabsContent value="reports" className="animate-scale-in">
-        <ReportsTabContent />
-      </TabsContent>
-    </Tabs>
+      <AddTransactionModal 
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onAddTransaction={(transaction) => {
+          handleAddTransaction({
+            ...transaction,
+            type: transactionType
+          });
+        }}
+      />
+    </>
   );
 }

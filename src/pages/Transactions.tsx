@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -7,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ArrowDownLeft, ArrowUpRight, Filter, Plus, Search } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import TransactionCard, { Transaction } from '@/components/TransactionCard';
+import AddTransactionModal from '@/components/AddTransactionModal';
 
 // Mock data for transactions
 const allTransactions: Transaction[] = [
@@ -96,6 +96,7 @@ export default function Transactions() {
   const [transactions, setTransactions] = useState<Transaction[]>(allTransactions);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value.toLowerCase();
@@ -140,6 +141,20 @@ export default function Transactions() {
     }
   };
 
+  const handleAddTransaction = (newTransaction: Omit<Transaction, 'id'>) => {
+    const id = (transactions.length + 1).toString();
+    
+    const transactionWithId: Transaction = {
+      id,
+      ...newTransaction
+    };
+    
+    const updatedTransactions = [transactionWithId, ...transactions];
+    setTransactions(updatedTransactions);
+    
+    allTransactions.unshift(transactionWithId);
+  };
+
   return (
     <div className="min-h-screen bg-slate-50">
       <Navbar />
@@ -155,7 +170,10 @@ export default function Transactions() {
             </p>
           </div>
           
-          <Button className="mt-4 md:mt-0 rounded-full animate-fade-in">
+          <Button 
+            className="mt-4 md:mt-0 rounded-full animate-fade-in"
+            onClick={() => setIsAddModalOpen(true)}
+          >
             <Plus className="h-4 w-4 mr-2" />
             New Transaction
           </Button>
@@ -202,7 +220,7 @@ export default function Transactions() {
                 Income
               </CardTitle>
               <div className="text-2xl font-bold text-green-600">
-                +${allTransactions
+                +${transactions
                   .filter(t => t.type === 'income')
                   .reduce((sum, t) => sum + t.amount, 0)
                   .toFixed(2)}
@@ -217,7 +235,7 @@ export default function Transactions() {
                 Expenses
               </CardTitle>
               <div className="text-2xl font-bold text-red-600">
-                -${allTransactions
+                -${transactions
                   .filter(t => t.type === 'expense')
                   .reduce((sum, t) => sum + t.amount, 0)
                   .toFixed(2)}
@@ -251,6 +269,12 @@ export default function Transactions() {
           </CardContent>
         </Card>
       </main>
+      
+      <AddTransactionModal 
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onAddTransaction={handleAddTransaction}
+      />
     </div>
   );
 }

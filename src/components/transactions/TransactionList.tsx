@@ -4,9 +4,10 @@ import TransactionCard, { Transaction } from '@/components/TransactionCard';
 
 interface TransactionListProps {
   transactions: Transaction[];
+  onEditTransaction?: (transaction: Transaction) => void;
 }
 
-export default function TransactionList({ transactions }: TransactionListProps) {
+export default function TransactionList({ transactions, onEditTransaction }: TransactionListProps) {
   return (
     <Card className="glass-card glass-card-hover animate-scale-in">
       <CardHeader>
@@ -21,7 +22,8 @@ export default function TransactionList({ transactions }: TransactionListProps) 
             {transactions.map((transaction) => (
               <TransactionCard 
                 key={transaction.id} 
-                transaction={transaction} 
+                transaction={transaction}
+                onEdit={onEditTransaction}
               />
             ))}
           </div>

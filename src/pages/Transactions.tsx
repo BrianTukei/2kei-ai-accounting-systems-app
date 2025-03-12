@@ -8,70 +8,43 @@ import AddTransactionModal from '@/components/AddTransactionModal';
 import TransactionFilters from '@/components/transactions/TransactionFilters';
 import TransactionSummary from '@/components/transactions/TransactionSummary';
 import TransactionList from '@/components/transactions/TransactionList';
-import { allTransactions } from '@/data/mockTransactions';
+import { useTransactions } from '@/hooks/useTransactions';
 
 export default function Transactions() {
-  const [transactions, setTransactions] = useState<Transaction[]>(allTransactions);
+  const { transactions, addTransaction, editTransaction } = useTransactions();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [transactionToEdit, setTransactionToEdit] = useState<Transaction | undefined>();
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value.toLowerCase();
     setSearchQuery(query);
-    
-    if (!query) {
-      handleFilter(filterType);
-      return;
-    }
-    
-    const filtered = allTransactions.filter(
-      transaction =>
-        transaction.category.toLowerCase().includes(query) ||
-        transaction.description.toLowerCase().includes(query)
-    );
-    
-    setTransactions(filtered);
   };
 
   const handleFilter = (value: string) => {
     setFilterType(value);
-    
-    if (value === 'all') {
-      setTransactions(
-        searchQuery
-          ? allTransactions.filter(
-              t =>
-                t.category.toLowerCase().includes(searchQuery) ||
-                t.description.toLowerCase().includes(searchQuery)
-            )
-          : allTransactions
-      );
-    } else {
-      const filtered = allTransactions.filter(
-        t =>
-          t.type === value &&
-          (!searchQuery ||
-            t.category.toLowerCase().includes(searchQuery) ||
-            t.description.toLowerCase().includes(searchQuery))
-      );
-      setTransactions(filtered);
-    }
   };
 
-  const handleAddTransaction = (newTransaction: Omit<Transaction, 'id'>) => {
-    const id = (transactions.length + 1).toString();
-    
-    const transactionWithId: Transaction = {
-      id,
-      ...newTransaction
-    };
-    
-    const updatedTransactions = [transactionWithId, ...transactions];
-    setTransactions(updatedTransactions);
-    
-    allTransactions.unshift(transactionWithId);
+  const handleEditTransaction = (transaction: Transaction) => {
+    setTransactionToEdit(transaction);
+    setIsAddModalOpen(true);
   };
+
+  const handleCloseModal = () => {
+    setIsAddModalOpen(false);
+    setTransactionToEdit(undefined);
+  };
+
+  const filteredTransactions = transactions.filter(transaction => {
+    const matchesSearch = !searchQuery || 
+      transaction.category.toLowerCase().includes(searchQuery) ||
+      transaction.description.toLowerCase().includes(searchQuery);
+    
+    const matchesFilter = filterType === 'all' || transaction.type === filterType;
+    
+    return matchesSearch && matchesFilter;
+  });
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -104,15 +77,20 @@ export default function Transactions() {
           onFilterChange={handleFilter}
         />
         
-        <TransactionSummary transactions={transactions} />
+        <TransactionSummary transactions={filteredTransactions} />
         
-        <TransactionList transactions={transactions} />
+        <TransactionList 
+          transactions={filteredTransactions}
+          onEditTransaction={handleEditTransaction}
+        />
       </main>
       
       <AddTransactionModal 
         isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        onAddTransaction={handleAddTransaction}
+        onClose={handleCloseModal}
+        onAddTransaction={addTransaction}
+        onEditTransaction={editTransaction}
+        transactionToEdit={transactionToEdit}
       />
     </div>
   );

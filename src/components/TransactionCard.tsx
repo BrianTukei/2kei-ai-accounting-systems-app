@@ -1,7 +1,8 @@
 
 import { cn } from '@/lib/utils';
-import { ArrowUpRight, ArrowDownLeft } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, Pencil } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 export interface Transaction {
   id: string;
@@ -15,11 +16,15 @@ export interface Transaction {
 interface TransactionCardProps {
   transaction: Transaction;
   className?: string;
+  onEdit?: (transaction: Transaction) => void;
 }
 
-export default function TransactionCard({ transaction, className }: TransactionCardProps) {
+export default function TransactionCard({ 
+  transaction, 
+  className,
+  onEdit 
+}: TransactionCardProps) {
   const { type, amount, category, description, date } = transaction;
-  
   const isIncome = type === 'income';
   
   return (
@@ -49,14 +54,27 @@ export default function TransactionCard({ transaction, className }: TransactionC
             </div>
           </div>
           
-          <div className="text-right">
-            <p className={cn(
-              "font-semibold",
-              isIncome ? "text-green-600" : "text-red-600"
-            )}>
-              {isIncome ? '+' : '-'}${Math.abs(amount).toFixed(2)}
-            </p>
-            <p className="text-xs text-muted-foreground">{date}</p>
+          <div className="flex items-center space-x-4">
+            <div className="text-right">
+              <p className={cn(
+                "font-semibold",
+                isIncome ? "text-green-600" : "text-red-600"
+              )}>
+                {isIncome ? '+' : '-'}${Math.abs(amount).toFixed(2)}
+              </p>
+              <p className="text-xs text-muted-foreground">{date}</p>
+            </div>
+            
+            {onEdit && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onEdit(transaction)}
+                className="ml-2"
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </div>
       </CardContent>

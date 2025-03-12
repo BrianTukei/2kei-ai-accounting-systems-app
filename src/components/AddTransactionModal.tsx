@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,13 +11,30 @@ interface AddTransactionModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAddTransaction: (transaction: Omit<Transaction, 'id'>) => void;
+  onEditTransaction?: (transaction: Transaction) => void;
+  transactionToEdit?: Transaction;
 }
 
-export default function AddTransactionModal({ isOpen, onClose, onAddTransaction }: AddTransactionModalProps) {
+export default function AddTransactionModal({ 
+  isOpen, 
+  onClose, 
+  onAddTransaction,
+  onEditTransaction,
+  transactionToEdit 
+}: AddTransactionModalProps) {
   const [amount, setAmount] = useState<string>('');
   const [type, setType] = useState<'income' | 'expense'>('income');
   const [category, setCategory] = useState<string>('');
   const [description, setDescription] = useState<string>('');
+  
+  useEffect(() => {
+    if (transactionToEdit) {
+      setAmount(transactionToEdit.amount.toString());
+      setType(transactionToEdit.type);
+      setCategory(transactionToEdit.category);
+      setDescription(transactionToEdit.description);
+    }
+  }, [transactionToEdit]);
   
   // Predefined categories based on transaction type
   const incomeCategories = [
@@ -52,24 +68,28 @@ export default function AddTransactionModal({ isOpen, onClose, onAddTransaction 
       return;
     }
     
-    // Create new transaction
-    const newTransaction: Omit<Transaction, 'id'> = {
-      amount: parseFloat(amount),
-      type,
-      category,
-      description,
-      date: 'Today' // Set the date to 'Today' for new transactions
-    };
+    if (transactionToEdit && onEditTransaction) {
+      onEditTransaction({
+        ...transactionToEdit,
+        amount: parseFloat(amount),
+        type,
+        category,
+        description
+      });
+      toast.success('Transaction updated successfully');
+    } else {
+      onAddTransaction({
+        amount: parseFloat(amount),
+        type,
+        category,
+        description,
+        date: 'Today'
+      });
+      toast.success(`${type === 'income' ? 'Income' : 'Expense'} added successfully`);
+    }
     
-    // Add transaction
-    onAddTransaction(newTransaction);
-    
-    // Reset form and close modal
     resetForm();
     onClose();
-    
-    // Show success message
-    toast.success(`${type === 'income' ? 'Income' : 'Expense'} added successfully`);
   };
   
   const resetForm = () => {
@@ -88,9 +108,14 @@ export default function AddTransactionModal({ isOpen, onClose, onAddTransaction 
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-[425px] glass-card">
         <DialogHeader>
-          <DialogTitle>Add New Transaction</DialogTitle>
+          <DialogTitle>
+            {transactionToEdit ? 'Edit Transaction' : 'Add New Transaction'}
+          </DialogTitle>
           <DialogDescription>
-            Enter the details of your transaction to add it to your records.
+            {transactionToEdit 
+              ? 'Edit the details of your transaction.'
+              : 'Enter the details of your transaction to add it to your records.'
+            }
           </DialogDescription>
         </DialogHeader>
         
@@ -155,7 +180,7 @@ export default function AddTransactionModal({ isOpen, onClose, onAddTransaction 
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit">Add Transaction</Button>
+            <Button type="submit">{transactionToEdit ? 'Update Transaction' : 'Add Transaction'}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

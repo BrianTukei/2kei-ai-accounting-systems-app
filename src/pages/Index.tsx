@@ -195,9 +195,11 @@ export default function Index() {
               <Link to="#" className="text-slate-600 hover:text-primary text-sm">
                 Privacy
               </Link>
-              <Link to="#" className="text-slate-600 hover:text-primary text-sm">
-                Contact
-              </Link>
+              <div className="text-slate-600 text-sm flex flex-col items-end">
+                <span className="font-semibold">Contact</span>
+                <span>Phone: +256 7536342</span>
+                <span>Email: tukeibrian5@gmail.com</span>
+              </div>
             </div>
           </div>
         </div>

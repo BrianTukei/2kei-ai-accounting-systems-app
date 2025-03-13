@@ -20,9 +20,6 @@ export default function Index() {
       <FeaturesSection ref={featuresRef} />
       <CTASection />
       <Footer />
-      
-      {/* Navbar Spacer */}
-      <div className="h-16" />
     </div>
   );
 }

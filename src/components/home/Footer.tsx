@@ -1,5 +1,6 @@
 
 import { Link } from 'react-router-dom';
+import { FileText, Lock } from 'lucide-react';
 
 const Footer = () => {
   return (
@@ -19,10 +20,12 @@ const Footer = () => {
           </div>
           
           <div className="flex space-x-8">
-            <Link to="#" className="text-slate-600 hover:text-primary text-sm">
+            <Link to="/terms" className="text-slate-600 hover:text-primary text-sm flex items-center gap-1">
+              <FileText size={14} />
               Terms
             </Link>
-            <Link to="#" className="text-slate-600 hover:text-primary text-sm">
+            <Link to="/privacy" className="text-slate-600 hover:text-primary text-sm flex items-center gap-1">
+              <Lock size={14} />
               Privacy
             </Link>
             <div className="text-slate-600 text-sm flex flex-col items-end">

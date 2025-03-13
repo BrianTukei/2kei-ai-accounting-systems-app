@@ -1,6 +1,6 @@
 
 import { cn } from '@/lib/utils';
-import { ArrowUpRight, ArrowDownLeft, Pencil } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, Pencil, Trash2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
@@ -17,14 +17,16 @@ interface TransactionCardProps {
   transaction: Transaction;
   className?: string;
   onEdit?: (transaction: Transaction) => void;
+  onDelete?: (id: string) => void;
 }
 
 export default function TransactionCard({ 
   transaction, 
   className,
-  onEdit 
+  onEdit,
+  onDelete
 }: TransactionCardProps) {
-  const { type, amount, category, description, date } = transaction;
+  const { id, type, amount, category, description, date } = transaction;
   const isIncome = type === 'income';
   
   return (
@@ -54,7 +56,7 @@ export default function TransactionCard({
             </div>
           </div>
           
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
             <div className="text-right">
               <p className={cn(
                 "font-semibold",
@@ -65,16 +67,29 @@ export default function TransactionCard({
               <p className="text-xs text-muted-foreground">{date}</p>
             </div>
             
-            {onEdit && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => onEdit(transaction)}
-                className="ml-2"
-              >
-                <Pencil className="h-4 w-4" />
-              </Button>
-            )}
+            <div className="flex">
+              {onEdit && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => onEdit(transaction)}
+                  className="h-8 w-8"
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              )}
+              
+              {onDelete && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => onDelete(id)}
+                  className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </CardContent>

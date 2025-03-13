@@ -6,21 +6,12 @@ import { FileText, Download } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { toast } from '@/hooks/use-toast';
-
-// Sample data for the reports
-const reportData = [
-  { category: 'Sales', amount: 24500, month: 'January' },
-  { category: 'Rent', amount: -2000, month: 'January' },
-  { category: 'Utilities', amount: -450, month: 'January' },
-  { category: 'Salary', amount: -4800, month: 'January' },
-  { category: 'Sales', amount: 28700, month: 'February' },
-  { category: 'Rent', amount: -2000, month: 'February' },
-  { category: 'Utilities', amount: -480, month: 'February' },
-  { category: 'Salary', amount: -4800, month: 'February' },
-];
+import { Transaction } from '@/components/TransactionCard';
+import { useTransactions } from '@/hooks/useTransactions';
 
 export default function ReportsTabContent() {
   const [isGenerating, setIsGenerating] = useState(false);
+  const { transactions } = useTransactions();
 
   const generatePDF = () => {
     setIsGenerating(true);
@@ -41,10 +32,11 @@ export default function ReportsTabContent() {
     doc.text('ACME Finance', 14, 45);
     
     // Add report data as a table
-    const tableColumn = ["Category", "Month", "Amount ($)"];
-    const tableRows = reportData.map(item => [
+    const tableColumn = ["Category", "Description", "Type", "Amount ($)"];
+    const tableRows = transactions.map(item => [
       item.category,
-      item.month,
+      item.description,
+      item.type === 'income' ? 'Income' : 'Expense',
       item.amount.toLocaleString('en-US', {
         style: 'currency',
         currency: 'USD',
@@ -53,15 +45,15 @@ export default function ReportsTabContent() {
     ]);
     
     // Calculate total income and expenses
-    const totalIncome = reportData
-      .filter(item => item.amount > 0)
+    const totalIncome = transactions
+      .filter(item => item.type === 'income')
       .reduce((sum, item) => sum + item.amount, 0);
       
-    const totalExpenses = reportData
-      .filter(item => item.amount < 0)
+    const totalExpenses = transactions
+      .filter(item => item.type === 'expense')
       .reduce((sum, item) => sum + item.amount, 0);
       
-    const netProfit = totalIncome + totalExpenses;
+    const netProfit = totalIncome - totalExpenses;
     
     // Add the table
     autoTable(doc, {
@@ -133,6 +125,34 @@ export default function ReportsTabContent() {
     });
   };
 
+  // Group transactions by month for the annual summary
+  const getTransactionsByMonth = () => {
+    const monthlyData: Record<string, Transaction[]> = {};
+    
+    transactions.forEach(transaction => {
+      // For simplicity, we're using the date field which may contain "Today", "Yesterday", etc.
+      // In a real app, you'd have actual dates and group by month
+      const month = transaction.date;
+      if (!monthlyData[month]) {
+        monthlyData[month] = [];
+      }
+      monthlyData[month].push(transaction);
+    });
+    
+    return monthlyData;
+  };
+
+  const monthlyData = getTransactionsByMonth();
+  const displayData = Object.entries(monthlyData)
+    .slice(0, 5)
+    .flatMap(([month, txns]) => {
+      return txns.slice(0, 2).map(t => ({
+        category: t.category,
+        month: month,
+        amount: t.type === 'income' ? t.amount : -t.amount
+      }));
+    });
+
   return (
     <Card className="glass-card glass-card-hover">
       <CardHeader>
@@ -181,20 +201,20 @@ export default function ReportsTabContent() {
           </div>
           
           <div className="p-6 border rounded-lg bg-white">
-            <h3 className="text-lg font-medium mb-2">Annual Financial Summary</h3>
+            <h3 className="text-lg font-medium mb-2">Transaction Summary</h3>
             <p className="text-sm text-slate-500 mb-4">
-              Complete overview of your yearly financial performance
+              Overview of your recent financial activity
             </p>
             <table className="w-full text-sm">
               <thead className="bg-slate-50">
                 <tr>
                   <th className="p-2 text-left">Category</th>
-                  <th className="p-2 text-left">Month</th>
+                  <th className="p-2 text-left">Date</th>
                   <th className="p-2 text-right">Amount</th>
                 </tr>
               </thead>
               <tbody>
-                {reportData.slice(0, 5).map((item, index) => (
+                {displayData.map((item, index) => (
                   <tr key={index} className="border-t">
                     <td className="p-2">{item.category}</td>
                     <td className="p-2">{item.month}</td>

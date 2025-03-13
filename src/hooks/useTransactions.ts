@@ -1,13 +1,34 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Transaction } from '@/components/TransactionCard';
 import { allTransactions } from '@/data/mockTransactions';
 
+const LOCAL_STORAGE_KEY = 'finance-app-transactions';
+
 export const useTransactions = () => {
-  const [transactions, setTransactions] = useState<Transaction[]>(allTransactions);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+
+  // Load transactions from localStorage on initial render
+  useEffect(() => {
+    const storedTransactions = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (storedTransactions) {
+      setTransactions(JSON.parse(storedTransactions));
+    } else {
+      // Only use mock data if nothing is in localStorage
+      setTransactions(allTransactions);
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(allTransactions));
+    }
+  }, []);
+
+  // Save transactions to localStorage whenever they change
+  useEffect(() => {
+    if (transactions.length > 0) {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(transactions));
+    }
+  }, [transactions]);
 
   const addTransaction = (newTransaction: Omit<Transaction, 'id'>) => {
-    const id = (transactions.length + 1).toString();
+    const id = (Date.now()).toString(); // Use timestamp for unique IDs
     const transactionWithId: Transaction = {
       id,
       ...newTransaction
@@ -22,9 +43,14 @@ export const useTransactions = () => {
     ));
   };
 
+  const deleteTransaction = (id: string) => {
+    setTransactions(transactions.filter(transaction => transaction.id !== id));
+  };
+
   return {
     transactions,
     addTransaction,
-    editTransaction
+    editTransaction,
+    deleteTransaction
   };
 };

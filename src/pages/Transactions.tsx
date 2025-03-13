@@ -9,9 +9,10 @@ import TransactionFilters from '@/components/transactions/TransactionFilters';
 import TransactionSummary from '@/components/transactions/TransactionSummary';
 import TransactionList from '@/components/transactions/TransactionList';
 import { useTransactions } from '@/hooks/useTransactions';
+import { toast } from 'sonner';
 
 export default function Transactions() {
-  const { transactions, addTransaction, editTransaction } = useTransactions();
+  const { transactions, addTransaction, editTransaction, deleteTransaction } = useTransactions();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -29,6 +30,11 @@ export default function Transactions() {
   const handleEditTransaction = (transaction: Transaction) => {
     setTransactionToEdit(transaction);
     setIsAddModalOpen(true);
+  };
+
+  const handleDeleteTransaction = (id: string) => {
+    deleteTransaction(id);
+    toast.success('Transaction deleted successfully');
   };
 
   const handleCloseModal = () => {
@@ -82,6 +88,7 @@ export default function Transactions() {
         <TransactionList 
           transactions={filteredTransactions}
           onEditTransaction={handleEditTransaction}
+          onDeleteTransaction={handleDeleteTransaction}
         />
       </main>
       

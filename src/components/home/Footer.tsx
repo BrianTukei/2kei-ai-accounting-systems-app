@@ -14,7 +14,7 @@ const Footer = () => {
               <span className="font-semibold text-lg">Ledgerly</span>
             </Link>
             <p className="text-sm text-slate-500 mt-2">
-              © {new Date().getFullYear()} Ledgerly. All rights reserved.
+              © {new Date().getFullYear()} 2KÉI Ledgery. All rights reserved.
             </p>
           </div>
           
@@ -27,7 +27,7 @@ const Footer = () => {
             </Link>
             <div className="text-slate-600 text-sm flex flex-col items-end">
               <span className="font-semibold">Contact</span>
-              <span>Phone: +256 7536342</span>
+              <span>Phone: +256753634290</span>
               <span>Email: tukeibrian5@gmail.com</span>
             </div>
           </div>

@@ -4,63 +4,51 @@ import Navbar from '@/components/Navbar';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import DashboardTabs from '@/components/dashboard/DashboardTabs';
 import { Transaction } from '@/components/TransactionCard';
-
-// Mock data
-const chartData = [
-  { name: 'Jan', income: 4000, expenses: 2400 },
-  { name: 'Feb', income: 3000, expenses: 1398 },
-  { name: 'Mar', income: 5000, expenses: 3800 },
-  { name: 'Apr', income: 2780, expenses: 3908 },
-  { name: 'May', income: 5890, expenses: 4800 },
-  { name: 'Jun', income: 3390, expenses: 2800 },
-  { name: 'Jul', income: 4490, expenses: 3300 },
-];
-
-const recentTransactions: Transaction[] = [
-  {
-    id: '1',
-    amount: 2500,
-    type: 'income',
-    category: 'Sales Revenue',
-    description: 'Monthly product sales',
-    date: 'Today'
-  },
-  {
-    id: '2',
-    amount: 1200,
-    type: 'expense',
-    category: 'Office Rent',
-    description: 'Monthly office space rent',
-    date: 'Yesterday'
-  },
-  {
-    id: '3',
-    amount: 750,
-    type: 'expense',
-    category: 'Utilities',
-    description: 'Electricity and internet',
-    date: '3 days ago'
-  },
-  {
-    id: '4',
-    amount: 3200,
-    type: 'income',
-    category: 'Client Payment',
-    description: 'Project completion payment',
-    date: '5 days ago'
-  },
-  {
-    id: '5',
-    amount: 420,
-    type: 'expense',
-    category: 'Office Supplies',
-    description: 'Stationery and equipment',
-    date: '1 week ago'
-  },
-];
+import { useTransactions } from '@/hooks/useTransactions';
+import { toast } from 'sonner';
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('overview');
+  const { transactions, addTransaction } = useTransactions();
+
+  // Most recent transactions first
+  const recentTransactions = [...transactions].sort((a, b) => {
+    // This is simplified - in a real app we'd have proper date objects
+    return b.id.localeCompare(a.id);
+  }).slice(0, 5);
+
+  // Calculate chart data based on transactions
+  const getChartData = () => {
+    // Group transactions by month
+    const monthlyData = transactions.reduce((acc, transaction) => {
+      // In a real app, we'd use actual dates, but for this example, we'll group by categories
+      const month = transaction.date || 'Unknown';
+      
+      if (!acc[month]) {
+        acc[month] = { income: 0, expenses: 0 };
+      }
+      
+      if (transaction.type === 'income') {
+        acc[month].income += transaction.amount;
+      } else {
+        acc[month].expenses += transaction.amount;
+      }
+      
+      return acc;
+    }, {} as Record<string, { income: number, expenses: number }>);
+    
+    // Convert to array format for chart
+    return Object.entries(monthlyData).map(([month, data]) => ({
+      name: month,
+      income: data.income,
+      expenses: data.expenses
+    }));
+  };
+
+  const handleAddTransaction = (transaction: Omit<Transaction, 'id'>) => {
+    addTransaction(transaction);
+    toast.success(`New ${transaction.type} added successfully`);
+  };
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -75,8 +63,9 @@ export default function Dashboard() {
         <DashboardTabs 
           activeTab={activeTab}
           setActiveTab={setActiveTab}
-          chartData={chartData}
+          chartData={getChartData()}
           recentTransactions={recentTransactions}
+          onAddTransaction={handleAddTransaction}
         />
       </main>
     </div>

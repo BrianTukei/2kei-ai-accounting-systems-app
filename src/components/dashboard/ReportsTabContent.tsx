@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { FileText, Download } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { Transaction } from '@/components/TransactionCard';
 import { useTransactions } from '@/hooks/useTransactions';
 
@@ -13,6 +13,183 @@ export default function ReportsTabContent() {
   const [isGenerating, setIsGenerating] = useState(false);
   const { transactions } = useTransactions();
 
+  // Generate income-only PDF report
+  const generateIncomePDF = () => {
+    setIsGenerating(true);
+    
+    // Create a new PDF document
+    const doc = new jsPDF();
+    
+    // Add a title
+    doc.setFontSize(20);
+    doc.text('Monthly Income Report', 14, 22);
+    
+    // Add a subtitle with current date
+    doc.setFontSize(12);
+    doc.text(`Generated on ${new Date().toLocaleDateString()}`, 14, 30);
+    
+    // Add a company logo or name
+    doc.setFontSize(16);
+    doc.text('2KÉI Ledgery Accounting', 14, 45);
+    
+    // Filter only income transactions
+    const incomeTransactions = transactions.filter(t => t.type === 'income');
+    
+    // Add report data as a table
+    const tableColumn = ["Category", "Description", "Date", "Amount ($)"];
+    const tableRows = incomeTransactions.map(item => [
+      item.category,
+      item.description,
+      item.date,
+      item.amount.toLocaleString('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 2
+      })
+    ]);
+    
+    // Calculate total income
+    const totalIncome = incomeTransactions.reduce((sum, item) => sum + item.amount, 0);
+    
+    // Add the table
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 55,
+      theme: 'grid',
+      styles: { fontSize: 10, cellPadding: 3 },
+      headStyles: { fillColor: [46, 204, 113], textColor: 255 },
+      alternateRowStyles: { fillColor: [240, 244, 249] }
+    });
+    
+    // Add summary section
+    const finalY = (doc as any).lastAutoTable.finalY || 150;
+    doc.setFontSize(12);
+    doc.text(`Income Summary`, 14, finalY + 15);
+    
+    // Add summary data
+    doc.setFontSize(10);
+    doc.setTextColor(46, 204, 113);
+    doc.text(`Total Income: ${totalIncome.toLocaleString('en-US', {
+      style: 'currency',
+      currency: 'USD' 
+    })}`, 14, finalY + 25);
+    
+    doc.setTextColor(0, 0, 0); // Reset text color
+    
+    // Add footer
+    const pageCount = doc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.text(
+        '2KÉI Ledgery Accounting - Confidential financial information',
+        14,
+        doc.internal.pageSize.height - 10
+      );
+      doc.text(
+        `Page ${i} of ${pageCount}`,
+        doc.internal.pageSize.width - 25,
+        doc.internal.pageSize.height - 10
+      );
+    }
+    
+    // Save the PDF
+    doc.save('income_report.pdf');
+    
+    setIsGenerating(false);
+    toast.success("Income Report Generated");
+  };
+
+  // Generate expense-only PDF report
+  const generateExpensePDF = () => {
+    setIsGenerating(true);
+    
+    // Create a new PDF document
+    const doc = new jsPDF();
+    
+    // Add a title
+    doc.setFontSize(20);
+    doc.text('Expense Analysis Report', 14, 22);
+    
+    // Add a subtitle with current date
+    doc.setFontSize(12);
+    doc.text(`Generated on ${new Date().toLocaleDateString()}`, 14, 30);
+    
+    // Add a company logo or name
+    doc.setFontSize(16);
+    doc.text('2KÉI Ledgery Accounting', 14, 45);
+    
+    // Filter only expense transactions
+    const expenseTransactions = transactions.filter(t => t.type === 'expense');
+    
+    // Add report data as a table
+    const tableColumn = ["Category", "Description", "Date", "Amount ($)"];
+    const tableRows = expenseTransactions.map(item => [
+      item.category,
+      item.description,
+      item.date,
+      item.amount.toLocaleString('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 2
+      })
+    ]);
+    
+    // Calculate total expenses
+    const totalExpenses = expenseTransactions.reduce((sum, item) => sum + item.amount, 0);
+    
+    // Add the table
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 55,
+      theme: 'grid',
+      styles: { fontSize: 10, cellPadding: 3 },
+      headStyles: { fillColor: [231, 76, 60], textColor: 255 },
+      alternateRowStyles: { fillColor: [240, 244, 249] }
+    });
+    
+    // Add summary section
+    const finalY = (doc as any).lastAutoTable.finalY || 150;
+    doc.setFontSize(12);
+    doc.text(`Expense Summary`, 14, finalY + 15);
+    
+    // Add summary data
+    doc.setFontSize(10);
+    doc.setTextColor(231, 76, 60);
+    doc.text(`Total Expenses: ${totalExpenses.toLocaleString('en-US', {
+      style: 'currency',
+      currency: 'USD' 
+    })}`, 14, finalY + 25);
+    
+    doc.setTextColor(0, 0, 0); // Reset text color
+    
+    // Add footer
+    const pageCount = doc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.text(
+        '2KÉI Ledgery Accounting - Confidential financial information',
+        14,
+        doc.internal.pageSize.height - 10
+      );
+      doc.text(
+        `Page ${i} of ${pageCount}`,
+        doc.internal.pageSize.width - 25,
+        doc.internal.pageSize.height - 10
+      );
+    }
+    
+    // Save the PDF
+    doc.save('expense_report.pdf');
+    
+    setIsGenerating(false);
+    toast.success("Expense Report Generated");
+  };
+
+  // Original generate full PDF report (modified to include both income and expenses)
   const generatePDF = () => {
     setIsGenerating(true);
     
@@ -21,7 +198,7 @@ export default function ReportsTabContent() {
     
     // Add a title
     doc.setFontSize(20);
-    doc.text('Financial Report', 14, 22);
+    doc.text('Complete Financial Report', 14, 22);
     
     // Add a subtitle with current date
     doc.setFontSize(12);
@@ -29,7 +206,7 @@ export default function ReportsTabContent() {
     
     // Add a company logo or name
     doc.setFontSize(16);
-    doc.text('ACME Finance', 14, 45);
+    doc.text('2KÉI Ledgery Accounting', 14, 45);
     
     // Add report data as a table
     const tableColumn = ["Category", "Description", "Type", "Amount ($)"];
@@ -104,7 +281,7 @@ export default function ReportsTabContent() {
       doc.setPage(i);
       doc.setFontSize(8);
       doc.text(
-        'This report is generated automatically and contains confidential financial information.',
+        '2KÉI Ledgery Accounting - Confidential financial information',
         14,
         doc.internal.pageSize.height - 10
       );
@@ -119,10 +296,7 @@ export default function ReportsTabContent() {
     doc.save('financial_report.pdf');
     
     setIsGenerating(false);
-    toast({
-      title: "Report Generated",
-      description: "Your financial report has been downloaded",
-    });
+    toast.success("Complete Financial Report Generated");
   };
 
   // Group transactions by month for the annual summary
@@ -168,16 +342,16 @@ export default function ReportsTabContent() {
                 View and export detailed income statements by month
               </p>
               <Button 
-                onClick={generatePDF} 
+                onClick={generateIncomePDF} 
                 disabled={isGenerating}
-                className="w-full"
+                className="w-full bg-green-500 hover:bg-green-600"
               >
                 {isGenerating ? (
                   "Generating..."
                 ) : (
                   <>
                     <FileText className="h-4 w-4 mr-2" />
-                    Generate PDF
+                    Generate Income PDF
                   </>
                 )}
               </Button>
@@ -189,13 +363,12 @@ export default function ReportsTabContent() {
                 Detailed breakdown of your expense categories
               </p>
               <Button 
-                onClick={generatePDF} 
+                onClick={generateExpensePDF} 
                 disabled={isGenerating} 
-                variant="outline"
-                className="w-full"
+                className="w-full bg-red-500 hover:bg-red-600 text-white"
               >
                 <Download className="h-4 w-4 mr-2" />
-                Download Report
+                Download Expense Report
               </Button>
             </div>
           </div>

@@ -7,6 +7,7 @@ import RecentTransactionsCard from './RecentTransactionsCard';
 import QuickActionsCard from './QuickActionsCard';
 import TransactionsTabContent from './TransactionsTabContent';
 import ReportsTabContent from './ReportsTabContent';
+import ReceiptScanner from '@/components/ReceiptScanner';
 import { Transaction } from '@/components/TransactionCard';
 import AddTransactionModal from '@/components/AddTransactionModal';
 
@@ -66,13 +67,14 @@ export default function DashboardTabs({
             description="Financial performance over time"
           />
           
-          {/* Recent Transactions */}
+          {/* Recent Transactions and Quick Actions */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <RecentTransactionsCard transactions={recentTransactions} />
             <QuickActionsCard 
               onAddIncome={() => handleOpenAddModal('income')}
               onAddExpense={() => handleOpenAddModal('expense')}
             />
+            <ReceiptScanner />
           </div>
         </TabsContent>
         

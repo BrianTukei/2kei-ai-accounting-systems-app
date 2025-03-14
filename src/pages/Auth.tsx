@@ -7,12 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { EyeIcon, EyeOffIcon, ArrowLeft } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 
 export default function Auth() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { toast } = useToast();
   
   const [actionType, setActionType] = useState<string>('signin');
   const [showPassword, setShowPassword] = useState(false);
@@ -31,7 +30,13 @@ export default function Auth() {
     if (action === 'signup') {
       setActionType('signup');
     }
-  }, [location.search]);
+
+    // Check if user is already logged in
+    const user = localStorage.getItem('user');
+    if (user) {
+      navigate('/dashboard');
+    }
+  }, [location.search, navigate]);
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -46,16 +51,32 @@ export default function Auth() {
     e.preventDefault();
     setIsLoading(true);
     
+    // Simple validation
+    if (!formData.email || !formData.password) {
+      toast.error("Please fill in all required fields");
+      setIsLoading(false);
+      return;
+    }
+
+    if (actionType === 'signup' && !formData.name) {
+      toast.error("Please enter your name");
+      setIsLoading(false);
+      return;
+    }
+    
     // Simulate API call with delay
     setTimeout(() => {
       setIsLoading(false);
       
-      toast({
-        title: actionType === 'signin' ? 'Welcome back!' : 'Account created successfully!',
-        description: actionType === 'signin' 
-          ? 'You have successfully signed in.' 
-          : 'Your account has been created. You can now sign in.',
-      });
+      // Store user info in localStorage (in a real app, this would be a secure token)
+      const userData = {
+        name: formData.name || 'User', // Default name if signing in
+        email: formData.email,
+        // Don't store password in localStorage in a real app
+      };
+      localStorage.setItem('user', JSON.stringify(userData));
+      
+      toast.success(actionType === 'signin' ? 'Welcome back!' : 'Account created successfully!');
       
       // Navigate to dashboard
       navigate('/dashboard');
@@ -76,7 +97,7 @@ export default function Auth() {
           <CardHeader className="space-y-1 text-center">
             <div className="flex justify-center">
               <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-                <span className="text-white font-bold">L</span>
+                <span className="text-white font-bold">2K</span>
               </div>
             </div>
             <CardTitle className="text-2xl mt-4">
@@ -216,11 +237,11 @@ export default function Auth() {
           
           <div className="px-8 py-4 text-center text-sm text-slate-500">
             By continuing, you agree to our{' '}
-            <a href="#" className="underline text-primary">
+            <a href="/terms" className="underline text-primary">
               Terms of Service
             </a>{' '}
             and{' '}
-            <a href="#" className="underline text-primary">
+            <a href="/privacy" className="underline text-primary">
               Privacy Policy
             </a>
             .

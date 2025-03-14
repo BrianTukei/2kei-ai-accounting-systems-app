@@ -1,5 +1,20 @@
-import { createRoot } from 'react-dom/client'
+
+import React from 'react'
+import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
 
-createRoot(document.getElementById("root")!).render(<App />);
+// Update the document title
+document.title = '2KÉI Ledgery Accounting'
+
+// Create a meta description
+const metaDescription = document.createElement('meta')
+metaDescription.name = 'description'
+metaDescription.content = '2KÉI Ledgery Accounting - Smart financial management for your business'
+document.head.appendChild(metaDescription)
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+)

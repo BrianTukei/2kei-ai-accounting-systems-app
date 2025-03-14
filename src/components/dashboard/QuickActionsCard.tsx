@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowUpRight, ArrowDownLeft, BarChart3, FileText } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, BarChart3 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface QuickActionsCardProps {
@@ -47,49 +47,8 @@ export default function QuickActionsCard({ onAddIncome, onAddExpense }: QuickAct
           onClick={handleGenerateReport}
         >
           <BarChart3 className="h-5 w-5 mr-2" />
-          Generate Report
+          Reports & Statements
         </Button>
-        
-        <div className="border-t pt-4 mt-2">
-          <p className="text-sm text-slate-500 mb-2">Financial Statements</p>
-          <div className="space-y-2">
-            <Button
-              variant="outline"
-              className="w-full justify-start"
-              onClick={() => navigate('/income-statement')}
-            >
-              <FileText className="h-4 w-4 mr-2" />
-              Income Statement
-            </Button>
-            
-            <Button
-              variant="outline"
-              className="w-full justify-start"
-              onClick={() => navigate('/cash-flow')}
-            >
-              <FileText className="h-4 w-4 mr-2" />
-              Cash Flow
-            </Button>
-            
-            <Button
-              variant="outline"
-              className="w-full justify-start"
-              onClick={() => navigate('/balance-sheet')}
-            >
-              <FileText className="h-4 w-4 mr-2" />
-              Balance Sheet
-            </Button>
-            
-            <Button
-              variant="outline"
-              className="w-full justify-start"
-              onClick={() => navigate('/trial-balance')}
-            >
-              <FileText className="h-4 w-4 mr-2" />
-              Trial Balance
-            </Button>
-          </div>
-        </div>
       </CardContent>
     </Card>
   );

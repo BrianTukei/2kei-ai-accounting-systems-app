@@ -72,7 +72,7 @@ export default function ReceiptScanner() {
     // Add transaction from scanned receipt
     const newTransaction = {
       amount: receiptData.total,
-      type: 'expense',
+      type: 'expense' as const, // Explicitly type as 'expense' to match the Transaction type
       category: 'Office Supplies',
       description: `Receipt from ${receiptData.vendor}`,
       date: receiptData.date,

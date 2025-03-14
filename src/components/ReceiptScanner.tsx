@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Scanner, Image as ImageIcon, FileCheck } from 'lucide-react';
+import { ScanBarcode, Image as ImageIcon, FileCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTransactions } from '@/hooks/useTransactions';
 
@@ -93,7 +93,7 @@ export default function ReceiptScanner() {
               className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center cursor-pointer hover:bg-slate-50 transition-colors"
               onClick={handleScanClick}
             >
-              <Scanner className="h-10 w-10 mx-auto mb-4 text-slate-400" />
+              <ScanBarcode className="h-10 w-10 mx-auto mb-4 text-slate-400" />
               <p className="text-slate-500">Click to scan a receipt</p>
               <p className="text-xs text-slate-400 mt-2">
                 Supports .jpg, .png, and .pdf files

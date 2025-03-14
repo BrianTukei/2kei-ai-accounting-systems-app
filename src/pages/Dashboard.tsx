@@ -7,7 +7,6 @@ import { Transaction } from '@/components/TransactionCard';
 import { useTransactions } from '@/hooks/useTransactions';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import UserMenu from '@/components/UserMenu';
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('overview');

@@ -10,21 +10,13 @@ import {
   Settings, 
   User, 
   Menu, 
-  X,
-  FileText,
-  ReceiptIcon,
-  ArrowUpDown,
-  Scale
+  X 
 } from 'lucide-react';
 
 const navItems = [
   { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
   { name: 'Transactions', path: '/transactions', icon: CreditCard },
   { name: 'Reports', path: '/reports', icon: BarChart },
-  { name: 'Income Statement', path: '/income-statement', icon: FileText },
-  { name: 'Balance Sheet', path: '/balance-sheet', icon: Scale },
-  { name: 'Cash Flow', path: '/cash-flow', icon: ArrowUpDown },
-  { name: 'Trial Balance', path: '/trial-balance', icon: ReceiptIcon },
   { name: 'Settings', path: '/settings', icon: Settings },
 ];
 

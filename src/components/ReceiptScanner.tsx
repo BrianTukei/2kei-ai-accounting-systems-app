@@ -3,7 +3,7 @@ import { useState, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Receipt, Image as ImageIcon, FileCheck, Crop, Scissors } from 'lucide-react';
+import { Receipt, Image as ImageIcon, FileCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTransactions } from '@/hooks/useTransactions';
 
@@ -11,8 +11,6 @@ export default function ReceiptScanner() {
   const [isScanning, setIsScanning] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [receiptData, setReceiptData] = useState<any>(null);
-  const [autoCropEnabled, setAutoCropEnabled] = useState(true);
-  const [isProcessingImage, setIsProcessingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { addTransaction } = useTransactions();
 
@@ -29,24 +27,8 @@ export default function ReceiptScanner() {
     // Show preview
     const url = URL.createObjectURL(file);
     setPreviewUrl(url);
-    
-    if (autoCropEnabled) {
-      setIsProcessingImage(true);
-      toast.info("Auto-cropping receipt...");
-      
-      // Simulate auto-cropping delay
-      setTimeout(() => {
-        setIsProcessingImage(false);
-        setIsScanning(true);
-        processReceipt();
-      }, 1500);
-    } else {
-      setIsScanning(true);
-      processReceipt();
-    }
-  };
-  
-  const processReceipt = () => {
+    setIsScanning(true);
+
     // Simulate OCR scanning (would use real OCR API in production)
     setTimeout(() => {
       // Mock receipt data extraction
@@ -70,16 +52,13 @@ export default function ReceiptScanner() {
     if (!receiptData) return;
     
     // Add transaction from scanned receipt
-    const newTransaction = {
+    addTransaction({
       amount: receiptData.total,
-      type: 'expense' as const, // Explicitly type as 'expense' to match the Transaction type
+      type: 'expense',
       category: 'Office Supplies',
       description: `Receipt from ${receiptData.vendor}`,
-      date: receiptData.date,
-      receipt: previewUrl, // Store the receipt image URL
-    };
-    
-    addTransaction(newTransaction);
+      date: receiptData.date
+    });
     
     // Clear receipt data
     setReceiptData(null);
@@ -91,11 +70,6 @@ export default function ReceiptScanner() {
     toast.success("Transaction added from receipt");
   };
 
-  const toggleAutoCrop = () => {
-    setAutoCropEnabled(!autoCropEnabled);
-    toast.info(autoCropEnabled ? "Auto-cropping disabled" : "Auto-cropping enabled");
-  };
-
   return (
     <Card className="glass-card glass-card-hover">
       <CardHeader>
@@ -104,21 +78,6 @@ export default function ReceiptScanner() {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <div className="text-sm text-slate-500">
-              Auto-crop receipts:
-            </div>
-            <Button 
-              variant={autoCropEnabled ? "default" : "outline"} 
-              size="sm"
-              onClick={toggleAutoCrop}
-              className="gap-1"
-            >
-              <Crop className="h-4 w-4" />
-              {autoCropEnabled ? "Enabled" : "Disabled"}
-            </Button>
-          </div>
-          
           <Input
             type="file"
             ref={fileInputRef}
@@ -149,12 +108,7 @@ export default function ReceiptScanner() {
                 />
               </div>
               
-              {isProcessingImage ? (
-                <div className="flex flex-col items-center py-4">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
-                  <p className="text-sm text-slate-500">Auto-cropping receipt...</p>
-                </div>
-              ) : isScanning ? (
+              {isScanning ? (
                 <div className="flex flex-col items-center py-4">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
                   <p className="text-sm text-slate-500">Scanning receipt...</p>

@@ -64,8 +64,8 @@ export default function ReportsTabContent() {
   return (
     <Card className="glass-card glass-card-hover">
       <CardHeader>
-        <CardTitle>Standard Reports</CardTitle>
-        <CardDescription>Generate and analyze your transaction data</CardDescription>
+        <CardTitle>Financial Reports</CardTitle>
+        <CardDescription>Generate and analyze your financial data</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
@@ -77,7 +77,7 @@ export default function ReportsTabContent() {
               buttonIcon={<FileText className="h-4 w-4 mr-2" />}
               onClick={handleIncomeReport}
               isLoading={isGenerating}
-              className="bg-green-50 text-green-700 hover:bg-green-100"
+              className="bg-green-500 hover:bg-green-600"
             />
             
             <ReportCard
@@ -87,7 +87,7 @@ export default function ReportsTabContent() {
               buttonIcon={<Download className="h-4 w-4 mr-2" />}
               onClick={handleExpenseReport}
               isLoading={isGenerating}
-              className="bg-red-50 text-red-700 hover:bg-red-100"
+              className="bg-red-500 hover:bg-red-600 text-white"
             />
           </div>
           

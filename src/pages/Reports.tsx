@@ -72,6 +72,44 @@ export default function Reports() {
           </Card>
           
           <ReportsTabContent />
+          
+          <Card className="glass-card glass-card-hover">
+            <CardHeader>
+              <CardTitle>Financial Statements</CardTitle>
+              <CardDescription>Access detailed financial statements</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Button variant="outline" className="h-auto py-4 flex flex-col items-center" asChild>
+                  <Link to="/income-statement">
+                    <FileText className="h-6 w-6 mb-2" />
+                    <span className="font-medium">Income Statement</span>
+                  </Link>
+                </Button>
+                
+                <Button variant="outline" className="h-auto py-4 flex flex-col items-center" asChild>
+                  <Link to="/balance-sheet">
+                    <Scale className="h-6 w-6 mb-2" />
+                    <span className="font-medium">Balance Sheet</span>
+                  </Link>
+                </Button>
+                
+                <Button variant="outline" className="h-auto py-4 flex flex-col items-center" asChild>
+                  <Link to="/cash-flow">
+                    <ArrowUpDown className="h-6 w-6 mb-2" />
+                    <span className="font-medium">Cash Flow</span>
+                  </Link>
+                </Button>
+                
+                <Button variant="outline" className="h-auto py-4 flex flex-col items-center" asChild>
+                  <Link to="/trial-balance">
+                    <ReceiptIcon className="h-6 w-6 mb-2" />
+                    <span className="font-medium">Trial Balance</span>
+                  </Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </main>
     </div>

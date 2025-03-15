@@ -42,6 +42,26 @@ export default function DashboardTabs({
     }
   };
 
+  const handleScanComplete = (data: {
+    amount: number;
+    date: string;
+    description: string;
+    category: string;
+  }) => {
+    if (onAddTransaction) {
+      // Convert scan data to a transaction
+      const tempId = `temp-${Date.now()}`;
+      onAddTransaction({
+        id: tempId,
+        amount: data.amount,
+        type: 'expense', // Assume receipts are for expenses
+        date: data.date,
+        description: data.description,
+        category: data.category
+      });
+    }
+  };
+
   return (
     <>
       <Tabs 
@@ -74,7 +94,7 @@ export default function DashboardTabs({
               onAddIncome={() => handleOpenAddModal('income')}
               onAddExpense={() => handleOpenAddModal('expense')}
             />
-            <ReceiptScanner />
+            <ReceiptScanner onScanComplete={handleScanComplete} />
           </div>
         </TabsContent>
         

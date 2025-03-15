@@ -34,17 +34,21 @@ export const useTransactions = () => {
       ...newTransaction
     };
     
-    setTransactions([transactionWithId, ...transactions]);
+    setTransactions(prevTransactions => [transactionWithId, ...prevTransactions]);
   };
 
   const editTransaction = (updatedTransaction: Transaction) => {
-    setTransactions(transactions.map(transaction => 
-      transaction.id === updatedTransaction.id ? updatedTransaction : transaction
-    ));
+    setTransactions(prevTransactions => 
+      prevTransactions.map(transaction => 
+        transaction.id === updatedTransaction.id ? updatedTransaction : transaction
+      )
+    );
   };
 
   const deleteTransaction = (id: string) => {
-    setTransactions(transactions.filter(transaction => transaction.id !== id));
+    setTransactions(prevTransactions => 
+      prevTransactions.filter(transaction => transaction.id !== id)
+    );
   };
 
   return {

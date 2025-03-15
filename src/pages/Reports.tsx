@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,20 +10,45 @@ import Navbar from '@/components/Navbar';
 import { DateRangePicker } from '@/components/DateRangePicker';
 import OverviewChart from '@/components/OverviewChart';
 import ReportsTabContent from '@/components/dashboard/ReportsTabContent';
-
-// Mock data
-const chartData = [
-  { name: 'Jan', income: 4000, expenses: 2400 },
-  { name: 'Feb', income: 3000, expenses: 1398 },
-  { name: 'Mar', income: 5000, expenses: 3800 },
-  { name: 'Apr', income: 2780, expenses: 3908 },
-  { name: 'May', income: 5890, expenses: 4800 },
-  { name: 'Jun', income: 3390, expenses: 2800 },
-  { name: 'Jul', income: 4490, expenses: 3300 },
-];
+import { useTransactions } from '@/hooks/useTransactions';
 
 export default function Reports() {
   const [reportType, setReportType] = useState('financial');
+  const { transactions } = useTransactions();
+  const [chartData, setChartData] = useState([]);
+
+  // Process transactions into chart data in real-time
+  useEffect(() => {
+    const processTransactionsData = () => {
+      // Group transactions by month
+      const transactionsByMonth = transactions.reduce((acc, transaction) => {
+        const monthName = transaction.date || 'Unknown';
+        
+        if (!acc[monthName]) {
+          acc[monthName] = { income: 0, expenses: 0 };
+        }
+        
+        if (transaction.type === 'income') {
+          acc[monthName].income += transaction.amount;
+        } else {
+          acc[monthName].expenses += transaction.amount;
+        }
+        
+        return acc;
+      }, {});
+      
+      // Convert to the format needed for the chart
+      const formattedData = Object.entries(transactionsByMonth).map(([name, data]) => ({
+        name,
+        income: data.income,
+        expenses: data.expenses
+      }));
+      
+      setChartData(formattedData);
+    };
+    
+    processTransactionsData();
+  }, [transactions]);
 
   return (
     <div className="min-h-screen bg-slate-50">

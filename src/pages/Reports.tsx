@@ -15,7 +15,7 @@ import { useTransactions } from '@/hooks/useTransactions';
 export default function Reports() {
   const [reportType, setReportType] = useState('financial');
   const { transactions } = useTransactions();
-  const [chartData, setChartData] = useState([]);
+  const [chartData, setChartData] = useState<Array<{name: string, income: number, expenses: number}>>([]);
 
   // Process transactions into chart data in real-time
   useEffect(() => {
@@ -35,7 +35,7 @@ export default function Reports() {
         }
         
         return acc;
-      }, {});
+      }, {} as Record<string, { income: number, expenses: number }>);
       
       // Convert to the format needed for the chart
       const formattedData = Object.entries(transactionsByMonth).map(([name, data]) => ({

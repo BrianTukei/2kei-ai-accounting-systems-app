@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FileText, BarChart3, Download } from 'lucide-react';
+import { FileText, BarChart3, Download, ArrowUpDown as ArrowsUpDown, Receipt, BarChart } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { DateRangePicker } from '@/components/DateRangePicker';
 import OverviewChart from '@/components/OverviewChart';

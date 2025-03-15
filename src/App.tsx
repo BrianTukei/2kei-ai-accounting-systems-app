@@ -18,6 +18,7 @@ import IncomeStatement from "./pages/statements/IncomeStatement";
 import CashFlow from "./pages/statements/CashFlow";
 import BalanceSheet from "./pages/statements/BalanceSheet";
 import TrialBalance from "./pages/statements/TrialBalance";
+import CashBook from "./pages/statements/CashBook";
 
 const queryClient = new QueryClient();
 
@@ -45,6 +46,7 @@ const App = () => (
             <Route path="/cash-flow" element={<CashFlow />} />
             <Route path="/balance-sheet" element={<BalanceSheet />} />
             <Route path="/trial-balance" element={<TrialBalance />} />
+            <Route path="/cash-book" element={<CashBook />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

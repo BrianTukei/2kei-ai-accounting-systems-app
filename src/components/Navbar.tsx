@@ -3,26 +3,34 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import UserMenu from '@/components/UserMenu';
 import { 
   LayoutDashboard, 
   CreditCard, 
   BarChart, 
   Settings, 
-  User, 
   Menu, 
-  X 
+  X, 
+  FileText,
+  Book
 } from 'lucide-react';
 
 const navItems = [
   { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
   { name: 'Transactions', path: '/transactions', icon: CreditCard },
   { name: 'Reports', path: '/reports', icon: BarChart },
+  { name: 'Income Statement', path: '/income-statement', icon: FileText },
+  { name: 'Cash Flow', path: '/cash-flow', icon: FileText },
+  { name: 'Balance Sheet', path: '/balance-sheet', icon: FileText },
+  { name: 'Trial Balance', path: '/trial-balance', icon: FileText },
+  { name: 'Cash Book', path: '/cash-book', icon: Book },
   { name: 'Settings', path: '/settings', icon: Settings },
 ];
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [user, setUser] = useState<{ name: string; email: string } | null>(null);
   const location = useLocation();
 
   useEffect(() => {
@@ -36,6 +44,13 @@ export default function Navbar() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, [scrolled]);
+
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      setUser(JSON.parse(userData));
+    }
+  }, []);
 
   const toggleMobileMenu = () => setMobileMenuOpen(!mobileMenuOpen);
   
@@ -92,15 +107,20 @@ export default function Navbar() {
 
           {/* Right Side - Auth Button or User Menu */}
           <div className="hidden md:flex items-center space-x-4">
-            <Button asChild variant="outline" className="rounded-full px-4">
-              <Link to="/auth">
-                <User size={18} className="mr-2" />
-                Sign In
-              </Link>
-            </Button>
-            <Button asChild className="rounded-full px-4">
-              <Link to="/auth?action=signup">Get Started</Link>
-            </Button>
+            {!user ? (
+              <>
+                <Button asChild variant="outline" className="rounded-full px-4">
+                  <Link to="/auth">
+                    <span>Login</span>
+                  </Link>
+                </Button>
+                <Button asChild className="rounded-full px-4">
+                  <Link to="/auth?action=signup">Get Started</Link>
+                </Button>
+              </>
+            ) : (
+              <UserMenu />
+            )}
           </div>
 
           {/* Mobile Menu Trigger */}
@@ -169,12 +189,27 @@ export default function Navbar() {
           
           <div className="p-6 border-t">
             <div className="grid grid-cols-2 gap-4">
-              <Button asChild variant="outline" className="w-full">
-                <Link to="/auth" onClick={() => setMobileMenuOpen(false)}>Sign In</Link>
-              </Button>
-              <Button asChild className="w-full">
-                <Link to="/auth?action=signup" onClick={() => setMobileMenuOpen(false)}>Get Started</Link>
-              </Button>
+              {!user ? (
+                <>
+                  <Button asChild variant="outline" className="w-full">
+                    <Link to="/auth" onClick={() => setMobileMenuOpen(false)}>Login</Link>
+                  </Button>
+                  <Button asChild className="w-full">
+                    <Link to="/auth?action=signup" onClick={() => setMobileMenuOpen(false)}>Get Started</Link>
+                  </Button>
+                </>
+              ) : (
+                <Button 
+                  className="w-full" 
+                  variant="destructive"
+                  onClick={() => {
+                    localStorage.removeItem('user');
+                    window.location.href = '/';
+                  }}
+                >
+                  Log Out
+                </Button>
+              )}
             </div>
           </div>
         </nav>

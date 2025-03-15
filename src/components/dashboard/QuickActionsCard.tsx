@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowUpRight, ArrowDownLeft, BarChart3, FileText } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, BarChart3, FileText, Book } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface QuickActionsCardProps {
@@ -11,10 +11,6 @@ interface QuickActionsCardProps {
 
 export default function QuickActionsCard({ onAddIncome, onAddExpense }: QuickActionsCardProps) {
   const navigate = useNavigate();
-  
-  const handleGenerateReport = () => {
-    navigate('/reports');
-  };
   
   return (
     <Card className="glass-card glass-card-hover">
@@ -44,10 +40,10 @@ export default function QuickActionsCard({ onAddIncome, onAddExpense }: QuickAct
         <Button
           variant="outline"
           className="w-full justify-start p-3 bg-blue-50 text-blue-600 border-blue-100 hover:bg-opacity-80"
-          onClick={handleGenerateReport}
+          onClick={() => navigate('/reports')}
         >
           <BarChart3 className="h-5 w-5 mr-2" />
-          Generate Report
+          Reports
         </Button>
         
         <div className="border-t pt-4 mt-2">
@@ -87,6 +83,15 @@ export default function QuickActionsCard({ onAddIncome, onAddExpense }: QuickAct
             >
               <FileText className="h-4 w-4 mr-2" />
               Trial Balance
+            </Button>
+
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={() => navigate('/cash-book')}
+            >
+              <Book className="h-4 w-4 mr-2" />
+              Cash Book
             </Button>
           </div>
         </div>

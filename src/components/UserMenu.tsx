@@ -27,7 +27,7 @@ export default function UserMenu() {
   if (!user) {
     return (
       <Button variant="outline" onClick={() => navigate('/auth')}>
-        Sign In
+        Login
       </Button>
     );
   }

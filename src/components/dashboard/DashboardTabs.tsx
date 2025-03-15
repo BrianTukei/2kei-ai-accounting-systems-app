@@ -1,6 +1,8 @@
 
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { ArrowUpRight, ArrowDownLeft } from 'lucide-react';
 import StatsGrid from './StatsGrid';
 import OverviewChart from '@/components/OverviewChart';
 import RecentTransactionsCard from './RecentTransactionsCard';
@@ -87,13 +89,29 @@ export default function DashboardTabs({
             description="Financial performance over time"
           />
           
-          {/* Recent Transactions and Quick Actions */}
+          {/* Quick Actions Buttons */}
+          <div className="flex gap-4 mb-4">
+            <Button
+              className="flex-1 gap-2 bg-green-500 hover:bg-green-600"
+              onClick={() => handleOpenAddModal('income')}
+            >
+              <ArrowUpRight className="h-5 w-5" />
+              Add Income
+            </Button>
+            
+            <Button
+              className="flex-1 gap-2 bg-red-500 hover:bg-red-600"
+              onClick={() => handleOpenAddModal('expense')}
+            >
+              <ArrowDownLeft className="h-5 w-5" />
+              Add Expense
+            </Button>
+          </div>
+          
+          {/* Recent Transactions and Financial Statements */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <RecentTransactionsCard transactions={recentTransactions} />
-            <QuickActionsCard 
-              onAddIncome={() => handleOpenAddModal('income')}
-              onAddExpense={() => handleOpenAddModal('expense')}
-            />
+            <QuickActionsCard />
             <ReceiptScanner onScanComplete={handleScanComplete} />
           </div>
         </TabsContent>

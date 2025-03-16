@@ -67,12 +67,16 @@ export default function AdminDashboard() {
     }
   };
 
-  // Format data for the chart
+  // Format data for the chart - fixed to match OverviewChart's expected format
   const getChartData = () => {
-    // Group signups by month
+    // Group signups by month and map to the format expected by OverviewChart
     const signupsByMonth = mockSignupData.reduce((acc, { date, count }) => {
-      return [...acc, { name: date, signups: count, target: Math.floor(count * 1.2) }];
-    }, [] as { name: string; signups: number; target: number }[]);
+      return [...acc, { 
+        name: date, 
+        income: count, // Use 'income' instead of 'signups'
+        expenses: Math.floor(count * 0.3) // Use 'expenses' instead of 'target'
+      }];
+    }, [] as { name: string; income: number; expenses: number }[]);
     
     return signupsByMonth;
   };

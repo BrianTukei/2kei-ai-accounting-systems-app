@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Helmet, HelmetProvider } from "react-helmet-async";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
@@ -19,8 +19,25 @@ import CashFlow from "./pages/statements/CashFlow";
 import BalanceSheet from "./pages/statements/BalanceSheet";
 import TrialBalance from "./pages/statements/TrialBalance";
 import CashBook from "./pages/statements/CashBook";
+import AdminDashboard from "./pages/AdminDashboard";
 
 const queryClient = new QueryClient();
+
+// Protected route component
+const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
+  const user = localStorage.getItem('user');
+  
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+  
+  const userData = JSON.parse(user);
+  if (userData.email !== 'tukeibrian5@gmail.com') {
+    return <Navigate to="/dashboard" replace />;
+  }
+  
+  return children;
+};
 
 const App = () => (
   <HelmetProvider>
@@ -47,6 +64,14 @@ const App = () => (
             <Route path="/balance-sheet" element={<BalanceSheet />} />
             <Route path="/trial-balance" element={<TrialBalance />} />
             <Route path="/cash-book" element={<CashBook />} />
+            <Route 
+              path="/admin" 
+              element={
+                <ProtectedRoute>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              } 
+            />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

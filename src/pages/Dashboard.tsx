@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import DashboardTabs from '@/components/dashboard/DashboardTabs';
+import AdminAccessCard from '@/components/dashboard/AdminAccessCard'; // Add this import
 import { Transaction } from '@/components/TransactionCard';
 import { useTransactions } from '@/hooks/useTransactions';
 import { toast } from 'sonner';
@@ -70,6 +71,11 @@ export default function Dashboard() {
           title="Dashboard" 
           subtitle="Welcome back! Here's your financial overview."
         />
+        
+        {/* Admin Access Card - only visible to admin */}
+        <div className="mb-6">
+          <AdminAccessCard />
+        </div>
         
         <DashboardTabs 
           activeTab={activeTab}

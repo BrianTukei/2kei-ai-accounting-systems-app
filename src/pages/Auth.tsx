@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,18 +8,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { EyeIcon, EyeOffIcon, ArrowLeft, LogIn } from 'lucide-react';
 import { toast } from 'sonner';
 
-// Simple function to generate unique IDs for our mockup
 const generateId = () => {
   return Date.now().toString(36) + Math.random().toString(36).substring(2);
 };
 
-// Function to send email notification (this would be replaced with a real email service)
 const sendSignupNotification = async (userData: { name: string; email: string }) => {
-  // In a real app, this would be an API call to your backend email service
   console.log(`Email notification would be sent to tukeibrian5@gmail.com for new signup: ${userData.email}`);
-  
-  // For demo purposes, we'll just log this
-  // In a production environment, you would use a service like SendGrid, Nodemailer, etc.
   return true;
 };
 
@@ -39,14 +32,12 @@ export default function Auth() {
   });
   
   useEffect(() => {
-    // Check if action is specified in URL params
     const params = new URLSearchParams(location.search);
     const action = params.get('action');
     if (action === 'signup') {
       setActionType('signup');
     }
 
-    // Check if user is already logged in
     const user = localStorage.getItem('user');
     if (user) {
       navigate('/dashboard');
@@ -62,13 +53,33 @@ export default function Auth() {
     setShowPassword(!showPassword);
   };
   
+  const trackLogin = (userData: { email: string }) => {
+    try {
+      const storedLogins = localStorage.getItem('loginHistory');
+      const logins = storedLogins ? JSON.parse(storedLogins) : [];
+      
+      logins.push({
+        email: userData.email,
+        timestamp: new Date().toISOString()
+      });
+      
+      if (logins.length > 100) {
+        logins.splice(0, logins.length - 100);
+      }
+      
+      localStorage.setItem('loginHistory', JSON.stringify(logins));
+      
+      console.log(`User login tracked: ${userData.email}`);
+    } catch (error) {
+      console.error('Error tracking login:', error);
+    }
+  };
+  
   const trackSignup = (userData: { name: string; email: string }) => {
     try {
-      // Store the signup in localStorage (in a real app, this would go to a database)
       const storedSignups = localStorage.getItem('userSignups');
       const signups = storedSignups ? JSON.parse(storedSignups) : [];
       
-      // Add the new signup with a unique ID and timestamp
       signups.push({
         id: generateId(),
         name: userData.name,
@@ -76,10 +87,8 @@ export default function Auth() {
         date: new Date().toISOString()
       });
       
-      // Save back to localStorage
       localStorage.setItem('userSignups', JSON.stringify(signups));
       
-      // Send email notification
       sendSignupNotification(userData);
       
       console.log(`User signup tracked: ${userData.email}`);
@@ -92,7 +101,6 @@ export default function Auth() {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simple validation
     if (!formData.email || !formData.password) {
       toast.error("Please fill in all required fields");
       setIsLoading(false);
@@ -105,27 +113,23 @@ export default function Auth() {
       return;
     }
     
-    // Simulate API call with delay
     setTimeout(() => {
       setIsLoading(false);
       
-      // Store user info in localStorage (in a real app, this would be a secure token)
       const userData = {
-        name: formData.name || 'User', // Default name if signing in
+        name: formData.name || 'User',
         email: formData.email,
-        // Don't store password in localStorage in a real app
       };
       localStorage.setItem('user', JSON.stringify(userData));
       
-      // Track the signup if this is a new user
       if (actionType === 'signup') {
         trackSignup(userData);
         toast.success('Account created successfully!');
       } else {
+        trackLogin(userData);
         toast.success('Welcome back!');
       }
       
-      // Navigate to dashboard
       navigate('/dashboard');
     }, 1500);
   };
@@ -133,11 +137,9 @@ export default function Auth() {
   const handleGoogleSignIn = () => {
     setIsLoading(true);
     
-    // Simulate Google auth API call with delay
     setTimeout(() => {
       setIsLoading(false);
       
-      // Create mock Google user data
       const googleUserData = {
         name: 'Google User',
         email: 'user@gmail.com',
@@ -145,8 +147,12 @@ export default function Auth() {
       
       localStorage.setItem('user', JSON.stringify(googleUserData));
       
-      // Track this as a signup
-      trackSignup(googleUserData);
+      const isNewUser = Math.random() > 0.5;
+      if (isNewUser) {
+        trackSignup(googleUserData);
+      } else {
+        trackLogin(googleUserData);
+      }
       
       toast.success('Signed in with Google successfully!');
       navigate('/dashboard');

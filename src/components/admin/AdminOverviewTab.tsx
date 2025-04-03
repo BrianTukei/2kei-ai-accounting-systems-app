@@ -1,16 +1,95 @@
 
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import OverviewChart from '@/components/OverviewChart';
 import { useChartData } from '@/hooks/useChartData';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { format } from 'date-fns';
 
 export default function AdminOverviewTab() {
   // Use the custom hook to get formatted chart data
-  const { chartData } = useChartData();
+  const { chartData, userSignups, userLogins } = useChartData();
+  
+  // Get the 5 most recent signups
+  const recentSignups = userSignups ? [...userSignups]
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 5) : [];
+    
+  // Get the 5 most recent logins
+  const recentLogins = userLogins ? [...userLogins]
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    .slice(0, 5) : [];
   
   return (
-    <OverviewChart 
-      data={chartData}
-      title="User Signup Trends"
-      description="Monthly user registration activity"
-    />
+    <div className="space-y-6">
+      <OverviewChart 
+        data={chartData}
+        title="User Signup Trends"
+        description="Monthly user registration activity"
+      />
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Recent Signups */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Signups</CardTitle>
+            <CardDescription>Latest users who registered to the platform</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {recentSignups.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Date</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {recentSignups.map((signup) => (
+                    <TableRow key={signup.id}>
+                      <TableCell>{signup.name}</TableCell>
+                      <TableCell>{signup.email}</TableCell>
+                      <TableCell>{format(new Date(signup.date), 'MMM dd, yyyy HH:mm')}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">No recent signups found</p>
+            )}
+          </CardContent>
+        </Card>
+        
+        {/* Recent Logins */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Logins</CardTitle>
+            <CardDescription>Latest user login activity</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {recentLogins.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>User</TableHead>
+                    <TableHead>Time</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {recentLogins.map((login, index) => (
+                    <TableRow key={index}>
+                      <TableCell>{login.email}</TableCell>
+                      <TableCell>{format(new Date(login.timestamp), 'MMM dd, yyyy HH:mm')}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">No recent login activity</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 }

@@ -11,6 +11,25 @@ export function useChartData() {
     { date: 'Jun', count: 18 },
   ];
 
+  // Get real login/signup data from localStorage
+  const getUserActivityData = () => {
+    const storedSignups = localStorage.getItem('userSignups');
+    const loginHistory = localStorage.getItem('loginHistory');
+    
+    let signups = [];
+    let logins = [];
+    
+    if (storedSignups) {
+      signups = JSON.parse(storedSignups);
+    }
+    
+    if (loginHistory) {
+      logins = JSON.parse(loginHistory);
+    }
+    
+    return { signups, logins };
+  };
+
   // Format data for the chart
   const getChartData = () => {
     // Group signups by month and map to the format expected by OverviewChart
@@ -25,8 +44,12 @@ export function useChartData() {
     return signupsByMonth;
   };
 
+  const { signups, logins } = getUserActivityData();
+
   return {
     chartData: getChartData(),
-    rawData: mockSignupData
+    rawData: mockSignupData,
+    userSignups: signups,
+    userLogins: logins
   };
 }

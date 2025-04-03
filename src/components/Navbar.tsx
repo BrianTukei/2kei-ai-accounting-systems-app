@@ -1,91 +1,96 @@
-
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { cn } from '@/lib/utils';
-import { Menu } from 'lucide-react';
-import NavigationItems from './navigation/NavigationItems';
-import UserActions from './navigation/UserActions';
-import MobileMenu from './navigation/MobileMenu';
+import { useAuth } from '@/contexts/AuthContext';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Settings, User, LogOut, TrendingUp } from "lucide-react";
+
+const NavigationItems = () => (
+  <div className="flex items-center">
+    <Link to="/dashboard" className="hidden md:block text-sm font-medium text-gray-700 px-3 py-2 hover:text-primary transition-colors">
+      Dashboard
+    </Link>
+    <Link to="/transactions" className="hidden md:block text-sm font-medium text-gray-700 px-3 py-2 hover:text-primary transition-colors">
+      Transactions
+    </Link>
+    <Link to="/recurring-transactions" className="hidden md:block text-sm font-medium text-gray-700 px-3 py-2 hover:text-primary transition-colors">
+      Recurring
+    </Link>
+    <Link to="/forecast" className="hidden md:block text-sm font-medium text-gray-700 px-3 py-2 hover:text-primary transition-colors">
+      Forecast
+    </Link>
+    <Link to="/reports" className="hidden md:block text-sm font-medium text-gray-700 px-3 py-2 hover:text-primary transition-colors">
+      Reports
+    </Link>
+  </div>
+);
 
 export default function Navbar() {
-  const [scrolled, setScrolled] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [user, setUser] = useState<{ name: string; email: string } | null>(null);
+  const { user, logout } = useAuth();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      const isScrolled = window.scrollY > 10;
-      if (isScrolled !== scrolled) {
-        setScrolled(isScrolled);
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [scrolled]);
-
-  useEffect(() => {
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      setUser(JSON.parse(userData));
-    }
-  }, []);
-
-  const toggleMobileMenu = () => setMobileMenuOpen(!mobileMenuOpen);
-  const closeMobileMenu = () => setMobileMenuOpen(false);
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
 
   return (
-    <>
-      <header
-        className={cn(
-          'fixed top-0 w-full z-50 transition-all duration-400',
-          scrolled 
-            ? 'bg-white/80 backdrop-blur-lg border-b border-slate-200/50 shadow-subtle py-2' 
-            : 'bg-transparent py-4'
-        )}
-      >
-        <div className="container mx-auto px-4 flex items-center justify-between">
-          {/* Logo */}
-          <Link 
-            to="/" 
-            className="flex items-center space-x-2"
-          >
-            <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-              <span className="text-white font-bold">2K</span>
-            </div>
-            <span className="font-semibold text-xl">2KÈI Ledgery</span>
+    <nav className="bg-white shadow">
+      <div className="container mx-auto px-4">
+        <div className="flex items-center justify-between h-16">
+          <Link to="/dashboard" className="text-xl font-semibold text-primary">
+            Finance App
           </Link>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-6">
-            <NavigationItems />
-          </nav>
+          <NavigationItems />
 
-          {/* Right Side - Auth Button or User Menu */}
-          <div className="hidden md:block">
-            <UserActions user={user} />
+          <div className="flex items-center space-x-4">
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="rounded-full h-10 w-10">
+                    <Avatar>
+                      <AvatarImage src="https://github.com/shadcn.png" alt="Avatar" />
+                      <AvatarFallback>CN</AvatarFallback>
+                    </Avatar>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56 mr-2">
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to="/settings" className="flex items-center">
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>Settings</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/admin" className="flex items-center">
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Profile</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={logout} className="cursor-pointer">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Log out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Link to="/auth" className="text-sm font-medium text-gray-700 px-4 py-2 rounded-md hover:bg-gray-100 transition-colors">
+                Sign In
+              </Link>
+            )}
           </div>
-
-          {/* Mobile Menu Trigger */}
-          <button
-            className="md:hidden focus:outline-none"
-            onClick={toggleMobileMenu}
-            aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
-          >
-            <Menu size={24} className="text-slate-800" />
-          </button>
         </div>
-      </header>
-
-      {/* Mobile Menu */}
-      <MobileMenu 
-        isOpen={mobileMenuOpen} 
-        onClose={closeMobileMenu} 
-        user={user} 
-      />
-      
-      {/* Navbar Spacer */}
-      <div className="h-16" />
-    </>
+      </div>
+    </nav>
   );
 }

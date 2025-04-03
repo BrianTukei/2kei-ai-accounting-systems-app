@@ -8,6 +8,7 @@ import { Helmet, HelmetProvider } from "react-helmet-async";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Transactions from "./pages/Transactions";
+import RecurringTransactions from "./pages/RecurringTransactions";
 import Reports from "./pages/Reports";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -54,6 +55,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/transactions" element={<Transactions />} />
+            <Route path="/recurring-transactions" element={<RecurringTransactions />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/terms" element={<Terms />} />

@@ -1,10 +1,13 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, Repeat } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import AddTransactionModal from '@/components/AddTransactionModal';
+import RecurringTransactionModal from '@/components/RecurringTransactionModal';
 import { Transaction } from '@/components/TransactionCard';
 import { useTransactions } from '@/hooks/useTransactions';
+import { useRecurringTransactions } from '@/hooks/useRecurringTransactions';
 import { toast } from 'sonner';
 
 interface DashboardHeaderProps {
@@ -14,11 +17,18 @@ interface DashboardHeaderProps {
 
 export default function DashboardHeader({ title, subtitle }: DashboardHeaderProps) {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isRecurringModalOpen, setIsRecurringModalOpen] = useState(false);
   const { addTransaction } = useTransactions();
+  const { addRecurringTransaction } = useRecurringTransactions();
 
   const handleAddTransaction = (transaction: Omit<Transaction, 'id'>) => {
     addTransaction(transaction);
     toast.success(`New ${transaction.type} added successfully`);
+  };
+
+  const handleAddRecurringTransaction = (transaction: any) => {
+    addRecurringTransaction(transaction);
+    toast.success(`New recurring ${transaction.type} added successfully`);
   };
 
   return (
@@ -32,7 +42,15 @@ export default function DashboardHeader({ title, subtitle }: DashboardHeaderProp
         </p>
       </div>
       
-      <div className="mt-4 md:mt-0 flex space-x-2 animate-fade-in">
+      <div className="mt-4 md:mt-0 flex flex-col sm:flex-row gap-2 animate-fade-in">
+        <Button 
+          variant="outline"
+          className="rounded-full"
+          onClick={() => setIsRecurringModalOpen(true)}
+        >
+          <Repeat className="h-4 w-4 mr-2" />
+          Add Recurring
+        </Button>
         <Button 
           className="rounded-full"
           onClick={() => setIsAddModalOpen(true)}
@@ -46,6 +64,12 @@ export default function DashboardHeader({ title, subtitle }: DashboardHeaderProp
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onAddTransaction={handleAddTransaction}
+      />
+
+      <RecurringTransactionModal
+        isOpen={isRecurringModalOpen}
+        onClose={() => setIsRecurringModalOpen(false)}
+        onAddRecurringTransaction={handleAddRecurringTransaction}
       />
     </div>
   );

@@ -1,8 +1,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, Repeat } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Plus } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { Transaction } from '@/components/TransactionCard';
 import AddTransactionModal from '@/components/AddTransactionModal';
@@ -69,16 +68,6 @@ export default function Transactions() {
           </div>
           
           <div className="mt-4 md:mt-0 flex flex-col sm:flex-row gap-2 animate-fade-in">
-            <Button 
-              variant="outline"
-              className="rounded-full flex items-center"
-              asChild
-            >
-              <Link to="/recurring-transactions">
-                <Repeat className="h-4 w-4 mr-2" />
-                Recurring Transactions
-              </Link>
-            </Button>
             <Button 
               className="rounded-full"
               onClick={() => setIsAddModalOpen(true)}

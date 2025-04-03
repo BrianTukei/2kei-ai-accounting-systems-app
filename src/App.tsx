@@ -1,9 +1,9 @@
+
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Index from './pages/Index';
 import Dashboard from './pages/Dashboard';
 import Transactions from './pages/Transactions';
-import RecurringTransactions from './pages/RecurringTransactions';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import Auth from './pages/Auth';
@@ -25,7 +25,6 @@ function App() {
         <Route path="/" element={<Index />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/transactions" element={<Transactions />} />
-        <Route path="/recurring-transactions" element={<RecurringTransactions />} />
         <Route path="/forecast" element={<Forecast />} />
         <Route path="/reports" element={<Reports />} />
         <Route path="/settings" element={<Settings />} />

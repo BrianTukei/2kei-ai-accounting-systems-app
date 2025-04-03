@@ -2,13 +2,11 @@
 import { useState, useEffect } from 'react';
 import { Transaction } from '@/components/TransactionCard';
 import { allTransactions } from '@/data/mockTransactions';
-import { useRecurringTransactions } from './useRecurringTransactions';
 
 const LOCAL_STORAGE_KEY = 'finance-app-transactions';
 
 export const useTransactions = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const { processDueTransactions } = useRecurringTransactions();
 
   // Load transactions from localStorage on initial render
   useEffect(() => {
@@ -21,30 +19,6 @@ export const useTransactions = () => {
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(allTransactions));
     }
   }, []);
-
-  // Process any due recurring transactions
-  useEffect(() => {
-    const processRecurringTransactions = () => {
-      const generatedTransactions = processDueTransactions();
-      
-      if (generatedTransactions.length > 0) {
-        const transactionsWithIds = generatedTransactions.map(t => ({
-          ...t,
-          id: Date.now().toString() + Math.random().toString(36).substr(2, 9)
-        }));
-        
-        setTransactions(prev => [...transactionsWithIds, ...prev]);
-      }
-    };
-    
-    // Process immediately when component mounts
-    processRecurringTransactions();
-    
-    // And set up a daily check
-    const intervalId = setInterval(processRecurringTransactions, 86400000); // 24 hours
-    
-    return () => clearInterval(intervalId);
-  }, [processDueTransactions]);
 
   // Save transactions to localStorage whenever they change
   useEffect(() => {

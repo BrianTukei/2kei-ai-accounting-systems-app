@@ -1,5 +1,6 @@
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, Receipt, Repeat, TrendingUp } from "lucide-react";
+import { FileText, Receipt, TrendingUp } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function QuickActionsCard() {
@@ -9,12 +10,6 @@ export default function QuickActionsCard() {
       title: "Add Transaction",
       description: "Record a new income or expense",
       link: "/transactions"
-    },
-    {
-      icon: <Repeat className="h-5 w-5" />,
-      title: "Recurring Transactions",
-      description: "Manage automatic transactions",
-      link: "/recurring-transactions"
     },
     {
       icon: <TrendingUp className="h-5 w-5" />,

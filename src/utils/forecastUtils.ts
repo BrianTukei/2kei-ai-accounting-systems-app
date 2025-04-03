@@ -1,6 +1,5 @@
 
 import { Transaction } from '@/components/TransactionCard';
-import { RecurringTransaction } from '@/types/RecurringTransaction';
 import { addMonths, format, parseISO, startOfMonth, endOfMonth, isBefore, isAfter } from 'date-fns';
 
 export interface ForecastPoint {
@@ -18,10 +17,10 @@ export interface ForecastData {
   growthRate: number;
 }
 
-// Calculate forecast based on transaction history and recurring transactions
+// Calculate forecast based on transaction history
 export const generateForecastData = (
   transactions: Transaction[],
-  recurringTransactions: RecurringTransaction[],
+  recurringTransactions: any[] = [], // Keep for backward compatibility but don't use
   months = 6
 ): ForecastData => {
   const now = new Date();
@@ -69,12 +68,10 @@ export const generateForecastData = (
   
   for (let i = 1; i <= months; i++) {
     const forecastDate = addMonths(now, i);
-    const monthRecurringIncome = getMonthlyRecurringAmount(recurringTransactions, 'income', forecastDate);
-    const monthRecurringExpenses = getMonthlyRecurringAmount(recurringTransactions, 'expense', forecastDate);
     
     // Apply trend from historical data
-    const projectedIncome = lastIncome * (1 + threeMonthsAvg.incomeGrowthRate) + monthRecurringIncome;
-    const projectedExpenses = lastExpenses * (1 + threeMonthsAvg.expenseGrowthRate) + monthRecurringExpenses;
+    const projectedIncome = lastIncome * (1 + threeMonthsAvg.incomeGrowthRate);
+    const projectedExpenses = lastExpenses * (1 + threeMonthsAvg.expenseGrowthRate);
     
     const monthData: ForecastPoint = {
       date: format(forecastDate, 'MMM yyyy'),
@@ -157,52 +154,4 @@ const calculatePreviousMonthsAverage = (transactions: Transaction[], monthsBack:
     incomeGrowthRate: avgIncomeGrowthRate,
     expenseGrowthRate: avgExpenseGrowthRate
   };
-};
-
-// Calculate recurring transaction amounts for a specific month
-const getMonthlyRecurringAmount = (
-  recurringTransactions: RecurringTransaction[],
-  type: 'income' | 'expense',
-  targetMonth: Date
-): number => {
-  const monthStart = startOfMonth(targetMonth);
-  const monthEnd = endOfMonth(targetMonth);
-  
-  return recurringTransactions
-    .filter(rt => rt.type === type && rt.active)
-    .reduce((total, rt) => {
-      const nextDate = parseISO(rt.nextDate);
-      
-      // Count transactions that would occur in the target month
-      let amount = 0;
-      
-      switch (rt.frequency) {
-        case 'daily':
-          // Approximate daily occurrences in a month
-          amount = rt.amount * 30;
-          break;
-        case 'weekly':
-          // Approximate weekly occurrences in a month
-          amount = rt.amount * 4.33;
-          break;
-        case 'monthly':
-          // Once per month
-          amount = rt.amount;
-          break;
-        case 'quarterly':
-          // Check if this quarter falls in this month
-          if (nextDate.getMonth() % 3 === targetMonth.getMonth() % 3) {
-            amount = rt.amount / 3; // Distribute quarterly amount across 3 months
-          }
-          break;
-        case 'yearly':
-          // Check if annual payment occurs in this month
-          if (nextDate.getMonth() === targetMonth.getMonth()) {
-            amount = rt.amount / 12; // Distribute annual amount across 12 months
-          }
-          break;
-      }
-      
-      return total + amount;
-    }, 0);
 };

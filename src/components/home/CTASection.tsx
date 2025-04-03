@@ -12,7 +12,7 @@ const CTASection = () => {
             Ready to simplify your accounting?
           </h2>
           <p className="text-lg text-slate-600 mb-8 animate-on-scroll opacity-0">
-            Join thousands of businesses that use Ledgerly to manage their finances effortlessly.
+            Join thousands of businesses that use 2KÈI Ledgery Accounting to manage their finances effortlessly.
           </p>
           <Button asChild size="lg" className="rounded-full px-8 py-6 text-base animate-on-scroll opacity-0">
             <Link to="/auth?action=signup">

@@ -1,12 +1,16 @@
-import { useState, useEffect } from 'react';
+
+import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { EyeIcon, EyeOffIcon, ArrowLeft, LogIn } from 'lucide-react';
+import { EyeIcon, EyeOffIcon, ArrowLeft, LogIn, Upload } from 'lucide-react';
 import { toast } from 'sonner';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { useForm } from 'react-hook-form';
 
 const generateId = () => {
   return Date.now().toString(36) + Math.random().toString(36).substring(2);
@@ -24,6 +28,9 @@ export default function Auth() {
   const [actionType, setActionType] = useState<string>('signin');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showProfileUpload, setShowProfileUpload] = useState(false);
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -96,6 +103,41 @@ export default function Auth() {
       console.error('Error tracking signup:', error);
     }
   };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      
+      reader.onload = (event) => {
+        if (event.target && typeof event.target.result === 'string') {
+          setProfileImage(event.target.result);
+        }
+      };
+      
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleProfileUploadSubmit = () => {
+    if (profileImage) {
+      // Save the user data with the profile image
+      const userData = JSON.parse(localStorage.getItem('user') || '{}');
+      userData.profileImage = profileImage;
+      localStorage.setItem('user', JSON.stringify(userData));
+      
+      toast.success('Profile picture uploaded successfully!');
+      setShowProfileUpload(false);
+      navigate('/dashboard');
+    } else {
+      toast.error('Please select an image to upload');
+    }
+  };
+
+  const handleSkipUpload = () => {
+    setShowProfileUpload(false);
+    navigate('/dashboard');
+  };
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,12 +167,13 @@ export default function Auth() {
       if (actionType === 'signup') {
         trackSignup(userData);
         toast.success('Account created successfully!');
+        setShowProfileUpload(true);
       } else {
         trackLogin(userData);
         toast.success('Welcome back!');
+        navigate('/dashboard');
       }
       
-      navigate('/dashboard');
     }, 1500);
   };
 
@@ -150,12 +193,13 @@ export default function Auth() {
       const isNewUser = Math.random() > 0.5;
       if (isNewUser) {
         trackSignup(googleUserData);
+        setShowProfileUpload(true);
       } else {
         trackLogin(googleUserData);
+        navigate('/dashboard');
       }
       
       toast.success('Signed in with Google successfully!');
-      navigate('/dashboard');
     }, 1500);
   };
   
@@ -177,7 +221,7 @@ export default function Auth() {
               </div>
             </div>
             <CardTitle className="text-2xl mt-4">
-              {actionType === 'signin' ? 'Welcome back' : 'Create an account'}
+              2KÈI Ledgery Accounting
             </CardTitle>
             <CardDescription>
               {actionType === 'signin' 
@@ -385,6 +429,71 @@ export default function Auth() {
           </div>
         </Card>
       </div>
+
+      {/* Profile Picture Upload Dialog */}
+      <Dialog open={showProfileUpload} onOpenChange={setShowProfileUpload}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Upload Profile Picture</DialogTitle>
+            <DialogDescription>
+              Personalize your account with a profile picture
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="flex flex-col items-center justify-center gap-4">
+              {profileImage ? (
+                <div className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-primary">
+                  <img 
+                    src={profileImage} 
+                    alt="Profile Preview" 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              ) : (
+                <div className="w-24 h-24 rounded-full bg-slate-100 flex items-center justify-center border-2 border-dashed border-slate-300">
+                  <Upload className="h-8 w-8 text-slate-400" />
+                </div>
+              )}
+              
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => fileInputRef.current?.click()}
+                className="flex gap-2"
+              >
+                <Upload className="h-4 w-4" />
+                Select Image
+              </Button>
+              
+              <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                accept="image/*"
+                onChange={handleFileChange}
+              />
+            </div>
+          </div>
+          
+          <DialogFooter className="flex flex-col sm:flex-row sm:justify-between gap-2">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={handleSkipUpload}
+            >
+              Skip for now
+            </Button>
+            <Button 
+              type="button" 
+              onClick={handleProfileUploadSubmit}
+              disabled={!profileImage}
+            >
+              Save & Continue
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

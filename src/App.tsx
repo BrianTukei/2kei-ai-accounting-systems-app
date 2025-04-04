@@ -32,11 +32,11 @@ function App() {
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
-        <Route path="/statements/income" element={<IncomeStatement />} />
-        <Route path="/statements/balance" element={<BalanceSheet />} />
-        <Route path="/statements/cash-flow" element={<CashFlow />} />
-        <Route path="/statements/trial-balance" element={<TrialBalance />} />
-        <Route path="/statements/cash-book" element={<CashBook />} />
+        <Route path="/income-statement" element={<IncomeStatement />} />
+        <Route path="/balance-sheet" element={<BalanceSheet />} />
+        <Route path="/cash-flow" element={<CashFlow />} />
+        <Route path="/trial-balance" element={<TrialBalance />} />
+        <Route path="/cash-book" element={<CashBook />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>

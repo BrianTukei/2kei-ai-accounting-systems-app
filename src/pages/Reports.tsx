@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FileText, BarChart3, Download, ArrowUpDown as ArrowsUpDown, Receipt, BarChart } from 'lucide-react';
+import { FileText, BarChart3, Download, ArrowUpDown as ArrowsUpDown, Receipt, BarChart, Users } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { DateRangePicker } from '@/components/DateRangePicker';
 import OverviewChart from '@/components/OverviewChart';
@@ -95,6 +95,59 @@ export default function Reports() {
               />
             </CardContent>
           </Card>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <Card className="hover:shadow-md transition-shadow">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-md">Payroll Reports</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-slate-500 mb-4">
+                  Manage employee compensation and generate payroll statements
+                </p>
+                <Link to="/payroll">
+                  <Button className="w-full bg-purple-500 hover:bg-purple-600">
+                    <Users className="h-4 w-4 mr-2" />
+                    Manage Payroll
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+            
+            <Card className="hover:shadow-md transition-shadow">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-md">Financial Statements</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-slate-500 mb-4">
+                  Generate detailed financial statements and reports
+                </p>
+                <Link to="/income-statement">
+                  <Button className="w-full">
+                    <FileText className="h-4 w-4 mr-2" />
+                    Income Statement
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+            
+            <Card className="hover:shadow-md transition-shadow">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-md">Transaction Reports</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-slate-500 mb-4">
+                  View and analyze transaction history and patterns
+                </p>
+                <Link to="/transactions">
+                  <Button className="w-full" variant="outline">
+                    <ArrowsUpDown className="h-4 w-4 mr-2" />
+                    View Transactions
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          </div>
           
           <ReportsTabContent />
         </div>

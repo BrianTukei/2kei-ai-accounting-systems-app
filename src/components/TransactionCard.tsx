@@ -11,6 +11,13 @@ export interface Transaction {
   category: string;
   description: string;
   date: string;
+  metadata?: {
+    vendor?: string;
+    items?: Array<{ name: string; price: number; quantity?: number }>;
+    taxAmount?: number;
+    subtotal?: number;
+    [key: string]: any;
+  };
 }
 
 interface TransactionCardProps {

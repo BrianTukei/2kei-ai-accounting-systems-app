@@ -30,6 +30,7 @@ export default function DashboardTabs({
 }: DashboardTabsProps) {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [transactionType, setTransactionType] = useState<'income' | 'expense'>('income');
+  const [receiptData, setReceiptData] = useState<any | null>(null);
 
   const handleOpenAddModal = (type: 'income' | 'expense') => {
     setTransactionType(type);
@@ -49,17 +50,33 @@ export default function DashboardTabs({
     date: string;
     description: string;
     category: string;
+    vendor?: string;
+    items?: Array<{ name: string; price: number; quantity?: number }>;
+    taxAmount?: number;
+    subtotal?: number;
   }) => {
+    setReceiptData(data);
+    
     if (onAddTransaction) {
       // Convert scan data to a transaction
       const tempId = `temp-${Date.now()}`;
+      const description = data.vendor 
+        ? `${data.vendor}: ${data.description}` 
+        : data.description;
+        
       onAddTransaction({
         id: tempId,
         amount: data.amount,
         type: 'expense', // Assume receipts are for expenses
         date: data.date,
-        description: data.description,
-        category: data.category
+        description: description,
+        category: data.category,
+        metadata: {
+          vendor: data.vendor,
+          items: data.items,
+          taxAmount: data.taxAmount,
+          subtotal: data.subtotal
+        }
       });
     }
   };
@@ -112,7 +129,14 @@ export default function DashboardTabs({
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <RecentTransactionsCard transactions={recentTransactions} />
             <QuickActionsCard />
-            <ReceiptScanner onScanComplete={handleScanComplete} />
+            <div className="grid gap-4">
+              <ReceiptScanner onScanComplete={handleScanComplete} />
+              {receiptData && (
+                <div className="text-xs text-slate-600 p-2 bg-slate-50 rounded border">
+                  Last scan: {receiptData.vendor || 'Unknown vendor'} - ${receiptData.amount.toFixed(2)}
+                </div>
+              )}
+            </div>
           </div>
         </TabsContent>
         

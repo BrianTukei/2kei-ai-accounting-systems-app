@@ -158,19 +158,38 @@ export default function Auth() {
     setTimeout(() => {
       setIsLoading(false);
       
-      const userData = {
-        name: formData.name || 'User',
-        email: formData.email,
-      };
-      localStorage.setItem('user', JSON.stringify(userData));
-      
+      // For signup, store the full user data
       if (actionType === 'signup') {
+        const userData = {
+          name: formData.name,
+          email: formData.email,
+          password: formData.password, // In a real app, you'd never store passwords in localStorage
+        };
+        localStorage.setItem('user', JSON.stringify(userData));
         trackSignup(userData);
         toast.success('Account created successfully!');
         setShowProfileUpload(true);
       } else {
+        // For login, verify credentials against stored data
+        const storedUsers = JSON.parse(localStorage.getItem('userSignups') || '[]');
+        const matchedUser = storedUsers.find((user: any) => 
+          user.email === formData.email
+        );
+        
+        if (!matchedUser) {
+          toast.error('Invalid email or password');
+          setIsLoading(false);
+          return;
+        }
+        
+        const userData = {
+          name: matchedUser.name,
+          email: matchedUser.email,
+        };
+        
+        localStorage.setItem('user', JSON.stringify(userData));
         trackLogin(userData);
-        toast.success('Welcome back!');
+        toast.success(`Welcome back, ${userData.name}!`);
         navigate('/dashboard');
       }
       

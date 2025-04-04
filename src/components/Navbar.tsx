@@ -1,29 +1,11 @@
 
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Settings, User, LogOut, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import UserMenu from "./UserMenu";
 import NavigationItems from "./navigation/NavigationItems";
 
-// Create a mock useAuth hook to fix the import error
-const useAuth = () => {
-  return {
-    user: { name: 'User' },
-    logout: () => console.log('Logout')
-  };
-};
-
 export default function Navbar() {
-  const { user, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const toggleMenu = () => {

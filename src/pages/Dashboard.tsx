@@ -1,28 +1,18 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import DashboardTabs from '@/components/dashboard/DashboardTabs';
-import AdminAccessCard from '@/components/dashboard/AdminAccessCard'; // Add this import
+import AdminAccessCard from '@/components/dashboard/AdminAccessCard';
 import { Transaction } from '@/components/TransactionCard';
 import { useTransactions } from '@/hooks/useTransactions';
-import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
+import { isAuthenticated, isAdmin } from '@/utils/authUtils';
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const { transactions, addTransaction } = useTransactions();
-  const navigate = useNavigate();
-
-  // Check if user is logged in (this would use your auth system in a real app)
-  useEffect(() => {
-    // For demo purposes, we're just checking localStorage
-    const user = localStorage.getItem('user');
-    if (!user) {
-      toast.error("Please sign in to access your dashboard");
-      navigate('/auth');
-    }
-  }, [navigate]);
+  const isUserAuthenticated = isAuthenticated();
+  const isUserAdmin = isAdmin();
 
   // Most recent transactions first
   const recentTransactions = [...transactions].sort((a, b) => {
@@ -59,7 +49,6 @@ export default function Dashboard() {
 
   const handleAddTransaction = (transaction: Omit<Transaction, 'id'>) => {
     addTransaction(transaction);
-    toast.success(`New ${transaction.type} added successfully`);
   };
 
   return (
@@ -69,13 +58,17 @@ export default function Dashboard() {
       <main className="container mx-auto px-4 py-8">
         <DashboardHeader 
           title="Dashboard" 
-          subtitle="Welcome back! Here's your financial overview."
+          subtitle={isUserAuthenticated 
+            ? "Welcome back! Here's your financial overview."
+            : "Sign in to unlock all features and manage your accounts."}
         />
         
         {/* Admin Access Card - only visible to admin */}
-        <div className="mb-6">
-          <AdminAccessCard />
-        </div>
+        {isUserAuthenticated && isUserAdmin && (
+          <div className="mb-6">
+            <AdminAccessCard />
+          </div>
+        )}
         
         <DashboardTabs 
           activeTab={activeTab}

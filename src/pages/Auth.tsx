@@ -15,7 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import SignInForm from '@/components/auth/SignInForm';
 import SignUpForm from '@/components/auth/SignUpForm';
 import ProfileUpload from '@/components/auth/ProfileUpload';
-import { handleGoogleAuth } from '@/utils/authUtils';
+import { handleGoogleAuth, isAuthenticated, isAdmin } from '@/utils/authUtils';
 
 export default function Auth() {
   const location = useLocation();
@@ -38,9 +38,12 @@ export default function Auth() {
       setActionType('signup');
     }
 
-    const user = localStorage.getItem('user');
-    if (user) {
-      navigate('/dashboard');
+    // If already authenticated, only redirect to dashboard if not admin
+    if (isAuthenticated()) {
+      // Always allow admin to access auth page (in case they need to create a new account)
+      if (!isAdmin()) {
+        navigate('/dashboard');
+      }
     }
   }, [location.search, navigate]);
   

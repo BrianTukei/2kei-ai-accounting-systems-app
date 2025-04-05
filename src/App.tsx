@@ -18,27 +18,33 @@ import CashBook from './pages/statements/CashBook';
 import NotFound from './pages/NotFound';
 import Forecast from './pages/Forecast';
 import Payroll from './pages/Payroll';
+import AuthGuard from './components/auth/AuthGuard';
 
 function App() {
   return (
     <Router>
       <Routes>
+        {/* Public routes */}
         <Route path="/" element={<Index />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/transactions" element={<Transactions />} />
-        <Route path="/forecast" element={<Forecast />} />
-        <Route path="/reports" element={<Reports />} />
-        <Route path="/settings" element={<Settings />} />
         <Route path="/auth" element={<Auth />} />
-        <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
-        <Route path="/income-statement" element={<IncomeStatement />} />
-        <Route path="/balance-sheet" element={<BalanceSheet />} />
-        <Route path="/cash-flow" element={<CashFlow />} />
-        <Route path="/trial-balance" element={<TrialBalance />} />
-        <Route path="/cash-book" element={<CashBook />} />
-        <Route path="/payroll" element={<Payroll />} />
+
+        {/* Protected routes - require authentication */}
+        <Route path="/transactions" element={<AuthGuard><Transactions /></AuthGuard>} />
+        <Route path="/forecast" element={<AuthGuard><Forecast /></AuthGuard>} />
+        <Route path="/reports" element={<AuthGuard><Reports /></AuthGuard>} />
+        <Route path="/settings" element={<AuthGuard><Settings /></AuthGuard>} />
+        <Route path="/admin" element={<AuthGuard><AdminDashboard /></AuthGuard>} />
+        <Route path="/income-statement" element={<AuthGuard><IncomeStatement /></AuthGuard>} />
+        <Route path="/balance-sheet" element={<AuthGuard><BalanceSheet /></AuthGuard>} />
+        <Route path="/cash-flow" element={<AuthGuard><CashFlow /></AuthGuard>} />
+        <Route path="/trial-balance" element={<AuthGuard><TrialBalance /></AuthGuard>} />
+        <Route path="/cash-book" element={<AuthGuard><CashBook /></AuthGuard>} />
+        <Route path="/payroll" element={<AuthGuard><Payroll /></AuthGuard>} />
+        
+        {/* Catch-all route */}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>

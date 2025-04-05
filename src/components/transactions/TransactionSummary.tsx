@@ -1,33 +1,20 @@
 
-import { useState } from 'react';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowDownLeft, ArrowUpRight, Edit2, Check } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight } from 'lucide-react';
 import { Transaction } from '@/components/TransactionCard';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 
 interface TransactionSummaryProps {
   transactions: Transaction[];
 }
 
 export default function TransactionSummary({ transactions }: TransactionSummaryProps) {
-  // Initialize with empty values instead of calculated ones
-  const [totalIncome, setTotalIncome] = useState(0);
-  const [totalExpenses, setTotalExpenses] = useState(0);
-  const [isEditingIncome, setIsEditingIncome] = useState(false);
-  const [isEditingExpenses, setIsEditingExpenses] = useState(false);
-  const [incomeValue, setIncomeValue] = useState(totalIncome.toString());
-  const [expensesValue, setExpensesValue] = useState(totalExpenses.toString());
-
-  const handleSaveIncome = () => {
-    setTotalIncome(parseFloat(incomeValue) || 0);
-    setIsEditingIncome(false);
-  };
-
-  const handleSaveExpenses = () => {
-    setTotalExpenses(parseFloat(expensesValue) || 0);
-    setIsEditingExpenses(false);
-  };
+  const totalIncome = transactions
+    .filter(t => t.type === 'income')
+    .reduce((sum, t) => sum + t.amount, 0);
+    
+  const totalExpenses = transactions
+    .filter(t => t.type === 'expense')
+    .reduce((sum, t) => sum + t.amount, 0);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 animate-scale-in">
@@ -37,29 +24,9 @@ export default function TransactionSummary({ transactions }: TransactionSummaryP
             <ArrowUpRight className="h-5 w-5 mr-2 text-green-600" />
             Income
           </CardTitle>
-          {isEditingIncome ? (
-            <div className="flex items-center">
-              <Input
-                type="number"
-                value={incomeValue}
-                onChange={(e) => setIncomeValue(e.target.value)}
-                className="w-32 mr-2 h-8"
-                placeholder="Enter income"
-              />
-              <Button size="icon" variant="ghost" onClick={handleSaveIncome}>
-                <Check className="h-4 w-4" />
-              </Button>
-            </div>
-          ) : (
-            <div className="flex items-center">
-              <div className="text-2xl font-bold text-green-600 mr-2">
-                +${totalIncome.toFixed(2)}
-              </div>
-              <Button size="icon" variant="ghost" onClick={() => setIsEditingIncome(true)}>
-                <Edit2 className="h-3 w-3" />
-              </Button>
-            </div>
-          )}
+          <div className="text-2xl font-bold text-green-600">
+            +${totalIncome.toFixed(2)}
+          </div>
         </CardHeader>
       </Card>
       
@@ -69,29 +36,9 @@ export default function TransactionSummary({ transactions }: TransactionSummaryP
             <ArrowDownLeft className="h-5 w-5 mr-2 text-red-600" />
             Expenses
           </CardTitle>
-          {isEditingExpenses ? (
-            <div className="flex items-center">
-              <Input
-                type="number"
-                value={expensesValue}
-                onChange={(e) => setExpensesValue(e.target.value)}
-                className="w-32 mr-2 h-8"
-                placeholder="Enter expenses"
-              />
-              <Button size="icon" variant="ghost" onClick={handleSaveExpenses}>
-                <Check className="h-4 w-4" />
-              </Button>
-            </div>
-          ) : (
-            <div className="flex items-center">
-              <div className="text-2xl font-bold text-red-600 mr-2">
-                -${totalExpenses.toFixed(2)}
-              </div>
-              <Button size="icon" variant="ghost" onClick={() => setIsEditingExpenses(true)}>
-                <Edit2 className="h-3 w-3" />
-              </Button>
-            </div>
-          )}
+          <div className="text-2xl font-bold text-red-600">
+            -${totalExpenses.toFixed(2)}
+          </div>
         </CardHeader>
       </Card>
     </div>

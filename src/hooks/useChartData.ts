@@ -1,46 +1,55 @@
 
 // Custom hook to prepare chart data for the overview chart
 export function useChartData() {
-  // Empty template data
-  const emptyChartData = [
-    { name: 'Month 1', income: 0, expenses: 0 },
-    { name: 'Month 2', income: 0, expenses: 0 },
-    { name: 'Month 3', income: 0, expenses: 0 },
+  // Mock data for development
+  const mockSignupData = [
+    { date: 'Jan', count: 5 },
+    { date: 'Feb', count: 12 },
+    { date: 'Mar', count: 8 },
+    { date: 'Apr', count: 15 },
+    { date: 'May', count: 22 },
+    { date: 'Jun', count: 18 },
   ];
 
-  // Get any saved chart data from localStorage
-  const getSavedChartData = () => {
-    const savedData = localStorage.getItem('userChartData');
-    return savedData ? JSON.parse(savedData) : null;
+  // Get real login/signup data from localStorage
+  const getUserActivityData = () => {
+    const storedSignups = localStorage.getItem('userSignups');
+    const loginHistory = localStorage.getItem('loginHistory');
+    
+    let signups = [];
+    let logins = [];
+    
+    if (storedSignups) {
+      signups = JSON.parse(storedSignups);
+    }
+    
+    if (loginHistory) {
+      logins = JSON.parse(loginHistory);
+    }
+    
+    return { signups, logins };
   };
 
   // Format data for the chart
   const getChartData = () => {
-    const savedData = getSavedChartData();
-    return savedData || emptyChartData;
+    // Group signups by month and map to the format expected by OverviewChart
+    const signupsByMonth = mockSignupData.reduce((acc, { date, count }) => {
+      return [...acc, { 
+        name: date, 
+        income: count, // Use 'income' instead of 'signups'
+        expenses: Math.floor(count * 0.3) // Use 'expenses' instead of 'target'
+      }];
+    }, [] as { name: string; income: number; expenses: number }[]);
+    
+    return signupsByMonth;
   };
 
-  const saveChartData = (data: any[]) => {
-    localStorage.setItem('userChartData', JSON.stringify(data));
-  };
-
-  // Get user signups from localStorage
-  const getUserSignups = () => {
-    const signups = localStorage.getItem('userSignups');
-    return signups ? JSON.parse(signups) : [];
-  };
-
-  // Get user logins from localStorage
-  const getUserLogins = () => {
-    const logins = localStorage.getItem('userLogins');
-    return logins ? JSON.parse(logins) : [];
-  };
+  const { signups, logins } = getUserActivityData();
 
   return {
     chartData: getChartData(),
-    saveChartData,
-    emptyTemplate: emptyChartData,
-    userSignups: getUserSignups(),
-    userLogins: getUserLogins(),
+    rawData: mockSignupData,
+    userSignups: signups,
+    userLogins: logins
   };
 }

@@ -1,37 +1,9 @@
-
 /**
  * Generates a unique ID string
  * @returns A unique string ID
  */
 export const generateId = () => {
   return Date.now().toString(36) + Math.random().toString(36).substring(2);
-};
-
-/**
- * Checks if user is authenticated
- * @returns Boolean indicating authentication status
- */
-export const isAuthenticated = () => {
-  const user = localStorage.getItem('user');
-  return !!user;
-};
-
-/**
- * Checks if user is admin
- * @returns Boolean indicating admin status
- */
-export const isAdmin = () => {
-  try {
-    const user = localStorage.getItem('user');
-    if (!user) return false;
-    
-    const userData = JSON.parse(user);
-    // Admin is identified by this specific email
-    return userData.email === 'tukeibrian5@gmail.com';
-  } catch (error) {
-    console.error('Error checking admin status:', error);
-    return false;
-  }
 };
 
 /**

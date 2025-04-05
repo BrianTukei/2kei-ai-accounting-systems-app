@@ -7,6 +7,7 @@ import AdminAccessCard from '@/components/dashboard/AdminAccessCard';
 import { Transaction } from '@/components/TransactionCard';
 import { useTransactions } from '@/hooks/useTransactions';
 import { isAuthenticated, isAdmin } from '@/utils/authUtils';
+import { toast } from 'sonner';
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -19,36 +20,18 @@ export default function Dashboard() {
     return b.id.localeCompare(a.id);
   }).slice(0, 5);
 
-  // Calculate chart data based on transactions
+  // Empty chart data template
   const getChartData = () => {
-    // Group transactions by month or date category
-    const monthlyData = transactions.reduce((acc, transaction) => {
-      // In a real app with actual dates, you'd extract the month
-      const month = transaction.date || 'Unknown';
-      
-      if (!acc[month]) {
-        acc[month] = { income: 0, expenses: 0 };
-      }
-      
-      if (transaction.type === 'income') {
-        acc[month].income += transaction.amount;
-      } else {
-        acc[month].expenses += transaction.amount;
-      }
-      
-      return acc;
-    }, {} as Record<string, { income: number, expenses: number }>);
-    
-    // Convert to array format for chart
-    return Object.entries(monthlyData).map(([month, data]) => ({
-      name: month,
-      income: data.income,
-      expenses: data.expenses
-    }));
+    return [
+      { name: 'Jan', income: 0, expenses: 0 },
+      { name: 'Feb', income: 0, expenses: 0 },
+      { name: 'Mar', income: 0, expenses: 0 }
+    ];
   };
 
   const handleAddTransaction = (transaction: Omit<Transaction, 'id'>) => {
     addTransaction(transaction);
+    toast.success("Transaction added successfully");
   };
 
   return (
@@ -59,8 +42,8 @@ export default function Dashboard() {
         <DashboardHeader 
           title="Dashboard" 
           subtitle={isUserAuthenticated 
-            ? "Welcome back! Here's your financial overview."
-            : "Sign in to unlock all features and manage your accounts."}
+            ? "Enter your financial data below to get started"
+            : "Sign in to save your data and access all features"}
         />
         
         {/* Admin Access Card - only visible to admin */}

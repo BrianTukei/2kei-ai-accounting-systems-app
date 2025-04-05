@@ -2,15 +2,17 @@
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LucideIcon } from 'lucide-react';
+import { ReactNode } from 'react';
 
 interface StatCardProps {
   title: string;
-  value: string;
+  value?: string;
   description?: string;
   icon?: LucideIcon;
   trend?: number;
   className?: string;
   iconClassName?: string;
+  customContent?: ReactNode;
 }
 
 export default function StatCard({ 
@@ -20,7 +22,8 @@ export default function StatCard({
   icon: Icon, 
   trend, 
   className,
-  iconClassName
+  iconClassName,
+  customContent
 }: StatCardProps) {
   const isPositive = trend && trend > 0;
   const isNegative = trend && trend < 0;
@@ -39,21 +42,27 @@ export default function StatCard({
         )}
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
-        {(description || trend) && (
-          <p className="text-xs text-muted-foreground mt-1 flex items-center">
-            {trend && (
-              <span className={cn(
-                "mr-1 text-xs",
-                isPositive && "text-green-500",
-                isNegative && "text-red-500"
-              )}>
-                {isPositive && '+'}
-                {trend}%
-              </span>
+        {customContent ? (
+          customContent
+        ) : (
+          <>
+            <div className="text-2xl font-bold">{value}</div>
+            {(description || trend) && (
+              <p className="text-xs text-muted-foreground mt-1 flex items-center">
+                {trend && (
+                  <span className={cn(
+                    "mr-1 text-xs",
+                    isPositive && "text-green-500",
+                    isNegative && "text-red-500"
+                  )}>
+                    {isPositive && '+'}
+                    {trend}%
+                  </span>
+                )}
+                {description}
+              </p>
             )}
-            {description}
-          </p>
+          </>
         )}
       </CardContent>
     </Card>

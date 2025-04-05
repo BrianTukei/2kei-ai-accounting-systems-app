@@ -6,12 +6,14 @@ import DashboardTabs from '@/components/dashboard/DashboardTabs';
 import AdminAccessCard from '@/components/dashboard/AdminAccessCard';
 import { Transaction } from '@/components/TransactionCard';
 import { useTransactions } from '@/hooks/useTransactions';
+import { useChartData } from '@/hooks/useChartData';
 import { isAuthenticated, isAdmin } from '@/utils/authUtils';
 import { toast } from 'sonner';
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const { transactions, addTransaction } = useTransactions();
+  const { chartData } = useChartData();
   const isUserAuthenticated = isAuthenticated();
   const isUserAdmin = isAdmin();
 
@@ -19,15 +21,6 @@ export default function Dashboard() {
   const recentTransactions = [...transactions].sort((a, b) => {
     return b.id.localeCompare(a.id);
   }).slice(0, 5);
-
-  // Empty chart data template
-  const getChartData = () => {
-    return [
-      { name: 'Jan', income: 0, expenses: 0 },
-      { name: 'Feb', income: 0, expenses: 0 },
-      { name: 'Mar', income: 0, expenses: 0 }
-    ];
-  };
 
   const handleAddTransaction = (transaction: Omit<Transaction, 'id'>) => {
     addTransaction(transaction);
@@ -56,7 +49,7 @@ export default function Dashboard() {
         <DashboardTabs 
           activeTab={activeTab}
           setActiveTab={setActiveTab}
-          chartData={getChartData()}
+          chartData={chartData}
           recentTransactions={recentTransactions}
           onAddTransaction={handleAddTransaction}
         />

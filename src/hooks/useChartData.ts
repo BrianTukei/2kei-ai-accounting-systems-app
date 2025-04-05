@@ -27,9 +27,23 @@ export function useChartData() {
     localStorage.setItem('userChartData', JSON.stringify(data));
   };
 
+  // Get user signups from localStorage
+  const getUserSignups = () => {
+    const signups = localStorage.getItem('userSignups');
+    return signups ? JSON.parse(signups) : [];
+  };
+
+  // Get user logins from localStorage
+  const getUserLogins = () => {
+    const logins = localStorage.getItem('userLogins');
+    return logins ? JSON.parse(logins) : [];
+  };
+
   return {
     chartData: getChartData(),
     saveChartData,
-    emptyTemplate: emptyChartData
+    emptyTemplate: emptyChartData,
+    userSignups: getUserSignups(),
+    userLogins: getUserLogins(),
   };
 }

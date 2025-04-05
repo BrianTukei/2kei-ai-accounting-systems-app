@@ -5,12 +5,12 @@ import { DollarSign, ArrowUpRight, ArrowDownLeft, CreditCard } from 'lucide-reac
 import { Input } from '@/components/ui/input';
 
 export default function StatsGrid() {
-  const [totalBalance, setTotalBalance] = useState('0.00');
-  const [income, setIncome] = useState('0.00');
-  const [expenses, setExpenses] = useState('0.00');
-  const [pending, setPending] = useState('0.00');
-  const [incomeTrend, setIncomeTrend] = useState('0');
-  const [expensesTrend, setExpensesTrend] = useState('0');
+  const [totalBalance, setTotalBalance] = useState('');
+  const [income, setIncome] = useState('');
+  const [expenses, setExpenses] = useState('');
+  const [pending, setPending] = useState('');
+  const [incomeTrend, setIncomeTrend] = useState('');
+  const [expensesTrend, setExpensesTrend] = useState('');
 
   // Function to handle value changes and ensure proper formatting
   const handleValueChange = (value: string, setter: (value: string) => void) => {

@@ -11,16 +11,9 @@ interface TransactionSummaryProps {
 }
 
 export default function TransactionSummary({ transactions }: TransactionSummaryProps) {
-  const initialIncome = transactions
-    .filter(t => t.type === 'income')
-    .reduce((sum, t) => sum + t.amount, 0);
-    
-  const initialExpenses = transactions
-    .filter(t => t.type === 'expense')
-    .reduce((sum, t) => sum + t.amount, 0);
-
-  const [totalIncome, setTotalIncome] = useState(initialIncome || 0);
-  const [totalExpenses, setTotalExpenses] = useState(initialExpenses || 0);
+  // Initialize with empty values instead of calculated ones
+  const [totalIncome, setTotalIncome] = useState(0);
+  const [totalExpenses, setTotalExpenses] = useState(0);
   const [isEditingIncome, setIsEditingIncome] = useState(false);
   const [isEditingExpenses, setIsEditingExpenses] = useState(false);
   const [incomeValue, setIncomeValue] = useState(totalIncome.toString());
@@ -51,6 +44,7 @@ export default function TransactionSummary({ transactions }: TransactionSummaryP
                 value={incomeValue}
                 onChange={(e) => setIncomeValue(e.target.value)}
                 className="w-32 mr-2 h-8"
+                placeholder="Enter income"
               />
               <Button size="icon" variant="ghost" onClick={handleSaveIncome}>
                 <Check className="h-4 w-4" />
@@ -82,6 +76,7 @@ export default function TransactionSummary({ transactions }: TransactionSummaryP
                 value={expensesValue}
                 onChange={(e) => setExpensesValue(e.target.value)}
                 className="w-32 mr-2 h-8"
+                placeholder="Enter expenses"
               />
               <Button size="icon" variant="ghost" onClick={handleSaveExpenses}>
                 <Check className="h-4 w-4" />

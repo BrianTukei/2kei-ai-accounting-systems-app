@@ -15,6 +15,7 @@ export const useTransactions = () => {
       setTransactions(JSON.parse(storedTransactions));
     } else {
       // Only use mock data if nothing is in localStorage
+      // Since we've emptied allTransactions, this will start with an empty array
       setTransactions(allTransactions);
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(allTransactions));
     }
@@ -22,9 +23,7 @@ export const useTransactions = () => {
 
   // Save transactions to localStorage whenever they change
   useEffect(() => {
-    if (transactions.length > 0) {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(transactions));
-    }
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(transactions));
   }, [transactions]);
 
   const addTransaction = (newTransaction: Omit<Transaction, 'id'>) => {

@@ -3,12 +3,9 @@
 export function useChartData() {
   // Empty template data
   const emptyChartData = [
-    { name: 'Jan', income: 0, expenses: 0 },
-    { name: 'Feb', income: 0, expenses: 0 },
-    { name: 'Mar', income: 0, expenses: 0 },
-    { name: 'Apr', income: 0, expenses: 0 },
-    { name: 'May', income: 0, expenses: 0 },
-    { name: 'Jun', income: 0, expenses: 0 },
+    { name: 'Month 1', income: 0, expenses: 0 },
+    { name: 'Month 2', income: 0, expenses: 0 },
+    { name: 'Month 3', income: 0, expenses: 0 },
   ];
 
   // Get any saved chart data from localStorage

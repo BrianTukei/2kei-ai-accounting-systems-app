@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -161,11 +160,39 @@ export default function Auth() {
       // For signup, store the full user data
       if (actionType === 'signup') {
         const userData = {
+          id: generateId(),
           name: formData.name,
           email: formData.email,
           password: formData.password, // In a real app, you'd never store passwords in localStorage
+          createdAt: new Date().toISOString()
         };
-        localStorage.setItem('user', JSON.stringify(userData));
+        
+        // Store in user signups for login verification
+        const storedSignups = JSON.parse(localStorage.getItem('userSignups') || '[]');
+        const existingUser = storedSignups.find((user: any) => user.email === formData.email);
+        
+        if (existingUser) {
+          toast.error('An account with this email already exists');
+          return;
+        }
+        
+        // Add to userSignups collection
+        storedSignups.push({
+          id: userData.id,
+          name: userData.name,
+          email: userData.email,
+          date: userData.createdAt,
+          password: userData.password // Only for demo purposes
+        });
+        localStorage.setItem('userSignups', JSON.stringify(storedSignups));
+        
+        // Set as current user
+        localStorage.setItem('user', JSON.stringify({
+          id: userData.id,
+          name: userData.name,
+          email: userData.email,
+        }));
+        
         trackSignup(userData);
         toast.success('Account created successfully!');
         setShowProfileUpload(true);
@@ -173,7 +200,7 @@ export default function Auth() {
         // For login, verify credentials against stored data
         const storedUsers = JSON.parse(localStorage.getItem('userSignups') || '[]');
         const matchedUser = storedUsers.find((user: any) => 
-          user.email === formData.email
+          user.email === formData.email && user.password === formData.password
         );
         
         if (!matchedUser) {
@@ -183,8 +210,10 @@ export default function Auth() {
         }
         
         const userData = {
+          id: matchedUser.id,
           name: matchedUser.name,
           email: matchedUser.email,
+          profileImage: matchedUser.profileImage
         };
         
         localStorage.setItem('user', JSON.stringify(userData));
@@ -203,22 +232,47 @@ export default function Auth() {
       setIsLoading(false);
       
       const googleUserData = {
+        id: generateId(),
         name: 'Google User',
         email: 'user@gmail.com',
       };
       
-      localStorage.setItem('user', JSON.stringify(googleUserData));
+      // Check if this Google user already exists
+      const storedUsers = JSON.parse(localStorage.getItem('userSignups') || '[]');
+      let existingUser = storedUsers.find((user: any) => user.email === googleUserData.email);
       
-      const isNewUser = Math.random() > 0.5;
+      const isNewUser = !existingUser;
+      
+      // If new user, add to userSignups
       if (isNewUser) {
+        const newGoogleUser = {
+          id: googleUserData.id,
+          name: googleUserData.name,
+          email: googleUserData.email,
+          date: new Date().toISOString(),
+          loginType: 'google'
+        };
+        
+        storedUsers.push(newGoogleUser);
+        localStorage.setItem('userSignups', JSON.stringify(storedUsers));
+        localStorage.setItem('user', JSON.stringify(googleUserData));
         trackSignup(googleUserData);
         setShowProfileUpload(true);
       } else {
+        // Existing user
+        localStorage.setItem('user', JSON.stringify({
+          id: existingUser.id,
+          name: existingUser.name,
+          email: existingUser.email,
+          profileImage: existingUser.profileImage
+        }));
         trackLogin(googleUserData);
         navigate('/dashboard');
       }
       
-      toast.success('Signed in with Google successfully!');
+      toast.success(isNewUser 
+        ? 'Google account connected successfully!' 
+        : 'Signed in with Google successfully!');
     }, 1500);
   };
   

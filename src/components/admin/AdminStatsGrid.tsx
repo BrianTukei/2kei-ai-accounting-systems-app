@@ -1,13 +1,14 @@
 
 import StatCard from '@/components/StatCard';
-import { Users, UserPlus, Mail, Shield } from 'lucide-react';
+import { Users, UserPlus, Mail, Shield, Activity } from 'lucide-react';
 
 interface AdminStatsGridProps {
   totalUsers: number;
   newToday: number;
+  activeUsers?: number; // Added activeUsers as an optional prop
 }
 
-export default function AdminStatsGrid({ totalUsers, newToday }: AdminStatsGridProps) {
+export default function AdminStatsGrid({ totalUsers, newToday, activeUsers = 0 }: AdminStatsGridProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
       <StatCard 
@@ -23,10 +24,10 @@ export default function AdminStatsGrid({ totalUsers, newToday }: AdminStatsGridP
         iconClassName="bg-green-100 text-green-500"
       />
       <StatCard 
-        title="Email Notifications" 
-        value="Enabled" 
-        icon={Mail}
-        iconClassName="bg-yellow-100 text-yellow-500"
+        title="Active Users" 
+        value={activeUsers.toString()}
+        icon={Activity}
+        iconClassName="bg-amber-100 text-amber-500"
       />
       <StatCard 
         title="Security Status" 

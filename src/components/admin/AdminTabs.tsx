@@ -12,11 +12,17 @@ type UserSignup = {
   date: string;
 };
 
+type UserLogin = {
+  email: string;
+  timestamp: string;
+};
+
 interface AdminTabsProps {
   signups: UserSignup[];
+  logins?: UserLogin[]; // Added logins as an optional prop
 }
 
-export default function AdminTabs({ signups }: AdminTabsProps) {
+export default function AdminTabs({ signups, logins = [] }: AdminTabsProps) {
   const [activeTab, setActiveTab] = useState('overview');
   
   return (

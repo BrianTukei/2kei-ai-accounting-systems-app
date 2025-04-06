@@ -1,17 +1,37 @@
 
 import { useState } from 'react';
 import Navbar from '@/components/Navbar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PayrollData, Employee } from '@/types/PayrollData';
+import { toast } from 'sonner';
+import EmployeeForm from '@/components/payroll/EmployeeForm';
 import PayrollForm from '@/components/payroll/PayrollForm';
 import PayrollTable from '@/components/payroll/PayrollTable';
-import { PayrollData } from '@/types/PayrollData';
-import { toast } from 'sonner';
+import EmployeeTable from '@/components/payroll/EmployeeTable';
 
 export default function Payroll() {
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [payrollData, setPayrollData] = useState<PayrollData[]>([]);
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+
+  const handleAddEmployee = (employee: Employee) => {
+    setEmployees(prev => [employee, ...prev]);
+    toast.success('Employee added successfully');
+  };
+
+  const handleSelectEmployee = (employee: Employee) => {
+    setSelectedEmployee(employee);
+    toast.info(`${employee.firstName} ${employee.lastName} selected for payroll creation`);
+  };
 
   const handleAddPayrollEntry = (entry: PayrollData) => {
     setPayrollData(prev => [entry, ...prev]);
     toast.success('Payroll entry added successfully');
+  };
+
+  const handleDeleteEmployee = (id: string) => {
+    setEmployees(prev => prev.filter(employee => employee.id !== id));
+    toast.success('Employee deleted');
   };
 
   const handleDeletePayrollEntry = (id: string) => {
@@ -30,15 +50,39 @@ export default function Payroll() {
               Payroll Management
             </h1>
             <p className="text-slate-500 animate-fade-in">
-              Manage employee compensation and generate payroll reports.
+              Comprehensive employee compensation and payroll processing system
             </p>
           </div>
         </div>
         
-        <div className="grid grid-cols-1 gap-8">
-          <PayrollForm onAddPayroll={handleAddPayrollEntry} />
-          <PayrollTable payrollData={payrollData} onDeleteEntry={handleDeletePayrollEntry} />
-        </div>
+        <Tabs defaultValue="employees" className="space-y-4">
+          <TabsList className="grid w-full md:w-auto grid-cols-3">
+            <TabsTrigger value="employees">Employees</TabsTrigger>
+            <TabsTrigger value="create">Create Payroll</TabsTrigger>
+            <TabsTrigger value="records">Payroll Records</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="employees" className="space-y-4">
+            <EmployeeForm onAddEmployee={handleAddEmployee} />
+            <EmployeeTable 
+              employees={employees} 
+              onDeleteEmployee={handleDeleteEmployee}
+              onSelectEmployee={handleSelectEmployee}
+            />
+          </TabsContent>
+          
+          <TabsContent value="create" className="space-y-4">
+            <PayrollForm 
+              onAddPayroll={handleAddPayrollEntry} 
+              employees={employees}
+              selectedEmployee={selectedEmployee}
+            />
+          </TabsContent>
+          
+          <TabsContent value="records" className="space-y-4">
+            <PayrollTable payrollData={payrollData} onDeleteEntry={handleDeletePayrollEntry} />
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );

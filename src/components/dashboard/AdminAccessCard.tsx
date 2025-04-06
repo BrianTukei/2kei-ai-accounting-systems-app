@@ -15,7 +15,7 @@ export default function AdminAccessCard() {
     const user = localStorage.getItem('user');
     if (user) {
       const userData = JSON.parse(user);
-      if (userData.email === 'tukeibrian5@gmail.com') {
+      if (userData.email === 'tukeibrian5@gmail.co') {
         setIsAdmin(true);
         fetchTotalSignups();
       }
@@ -24,7 +24,6 @@ export default function AdminAccessCard() {
   
   const fetchTotalSignups = () => {
     try {
-      // In a real app, this would be an API call
       const storedSignups = localStorage.getItem('userSignups');
       if (storedSignups) {
         const signups = JSON.parse(storedSignups);

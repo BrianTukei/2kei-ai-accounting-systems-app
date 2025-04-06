@@ -157,6 +157,20 @@ export default function Auth() {
     setTimeout(() => {
       setIsLoading(false);
       
+      // Check if this is the admin login
+      if (formData.email === 'tukeibrian5@gmail.co' && formData.password === 'Tukei@1000$') {
+        const adminData = {
+          name: 'Tukei Brian',
+          email: 'tukeibrian5@gmail.co',
+          isAdmin: true
+        };
+        localStorage.setItem('user', JSON.stringify(adminData));
+        trackLogin(adminData);
+        toast.success('Welcome back, Admin!');
+        navigate('/admin');
+        return;
+      }
+      
       // For signup, store the full user data
       if (actionType === 'signup') {
         const userData = {
@@ -376,7 +390,7 @@ export default function Auth() {
                         id="password"
                         name="password"
                         type={showPassword ? 'text' : 'password'}
-                        placeholder="••••••••"
+                        placeholder="•���••••••"
                         value={formData.password}
                         onChange={handleChange}
                         required

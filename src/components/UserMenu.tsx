@@ -3,12 +3,12 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LogOut, Settings, User } from 'lucide-react';
+import { LogOut, Settings, User, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 export default function UserMenu() {
-  const [user, setUser] = useState<{ name: string; email: string; profileImage?: string } | null>(null);
+  const [user, setUser] = useState<{ name: string; email: string; profileImage?: string; isAdmin?: boolean } | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -46,7 +46,7 @@ export default function UserMenu() {
             {user.profileImage ? (
               <AvatarImage src={user.profileImage} alt={user.name} />
             ) : (
-              <AvatarFallback className="bg-primary text-primary-foreground">
+              <AvatarFallback className={user.email === 'tukeibrian5@gmail.co' ? "bg-red-500 text-white" : "bg-primary text-primary-foreground"}>
                 {initials}
               </AvatarFallback>
             )}
@@ -57,11 +57,20 @@ export default function UserMenu() {
         <div className="p-2 border-b">
           <p className="font-medium">{user.name}</p>
           <p className="text-xs text-slate-500">{user.email}</p>
+          {user.email === 'tukeibrian5@gmail.co' && (
+            <p className="text-xs mt-1 font-semibold text-red-500">Administrator</p>
+          )}
         </div>
         <DropdownMenuItem onClick={() => navigate('/profile')}>
           <User className="mr-2 h-4 w-4" />
           <span>Profile</span>
         </DropdownMenuItem>
+        {user.email === 'tukeibrian5@gmail.co' && (
+          <DropdownMenuItem onClick={() => navigate('/admin')}>
+            <Shield className="mr-2 h-4 w-4" />
+            <span>Admin Dashboard</span>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem onClick={() => navigate('/settings')}>
           <Settings className="mr-2 h-4 w-4" />
           <span>Settings</span>

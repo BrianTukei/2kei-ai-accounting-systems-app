@@ -24,9 +24,8 @@ export default function AdminAccessCheck({ children }: AdminAccessCheckProps) {
     }
 
     const userData = JSON.parse(user);
-    // In a real app, you would check if the user has admin privileges
-    // For now, we'll just check if the email is the admin email
-    if (userData.email === 'tukeibrian5@gmail.com') {
+    // Check for specific admin credentials
+    if (userData.email === 'tukeibrian5@gmail.co') {
       setIsAdmin(true);
     } else {
       toast.error("You don't have permission to access this page");
@@ -45,7 +44,7 @@ export default function AdminAccessCheck({ children }: AdminAccessCheckProps) {
         <Card className="w-96">
           <CardHeader>
             <CardTitle>Access Restricted</CardTitle>
-            <CardDescription>You don't have permission to view this page.</CardDescription>
+            <CardDescription>Only Tukei Brian (tukeibrian5@gmail.co) can access this page.</CardDescription>
           </CardHeader>
           <CardContent>
             <Button className="w-full" onClick={() => navigate('/dashboard')}>

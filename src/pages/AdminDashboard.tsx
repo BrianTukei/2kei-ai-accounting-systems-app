@@ -18,14 +18,23 @@ type UserLogin = {
   timestamp: string;
 };
 
+type SecurityAlert = {
+  action: string;
+  email: string;
+  name: string;
+  timestamp: string;
+};
+
 export default function AdminDashboard() {
   const [signups, setSignups] = useState<UserSignup[]>([]);
   const [logins, setLogins] = useState<UserLogin[]>([]);
   const [activeUsers, setActiveUsers] = useState<number>(0);
+  const [securityAlerts, setSecurityAlerts] = useState<SecurityAlert[]>([]);
 
   useEffect(() => {
     fetchSignups();
     fetchLogins();
+    fetchSecurityAlerts();
   }, []);
 
   const fetchSignups = async () => {
@@ -62,6 +71,17 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error('Error fetching logins:', error);
       toast.error("Failed to load login history");
+    }
+  };
+
+  const fetchSecurityAlerts = () => {
+    try {
+      const alerts = localStorage.getItem('securityAlerts');
+      if (alerts) {
+        setSecurityAlerts(JSON.parse(alerts));
+      }
+    } catch (error) {
+      console.error('Error fetching security alerts:', error);
     }
   };
 

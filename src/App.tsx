@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Index from './pages/Index';
 import Dashboard from './pages/Dashboard';
@@ -18,8 +18,14 @@ import CashBook from './pages/statements/CashBook';
 import NotFound from './pages/NotFound';
 import Forecast from './pages/Forecast';
 import Payroll from './pages/Payroll';
+import { loadSampleData } from './utils/sampleData';
 
 function App() {
+  // Load sample data when the app starts
+  useEffect(() => {
+    loadSampleData();
+  }, []);
+
   return (
     <Router>
       <Routes>

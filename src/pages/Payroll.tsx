@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PayrollData, Employee } from '@/types/PayrollData';
@@ -13,6 +13,29 @@ export default function Payroll() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [payrollData, setPayrollData] = useState<PayrollData[]>([]);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+
+  // Load data from localStorage on component mount
+  useEffect(() => {
+    const storedEmployees = localStorage.getItem('employees');
+    const storedPayroll = localStorage.getItem('payroll');
+    
+    if (storedEmployees) {
+      setEmployees(JSON.parse(storedEmployees));
+    }
+    
+    if (storedPayroll) {
+      setPayrollData(JSON.parse(storedPayroll));
+    }
+  }, []);
+
+  // Save data to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('employees', JSON.stringify(employees));
+  }, [employees]);
+
+  useEffect(() => {
+    localStorage.setItem('payroll', JSON.stringify(payrollData));
+  }, [payrollData]);
 
   const handleAddEmployee = (employee: Employee) => {
     setEmployees(prev => [employee, ...prev]);

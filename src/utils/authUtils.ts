@@ -53,3 +53,29 @@ export const trackSignup = (userData: { name: string; email: string }) => {
     console.error('Error tracking signup:', error);
   }
 };
+
+// Admin access control functions
+export const isAdminUser = (email: string) => {
+  // This function checks if the user is an admin
+  return email === 'tukeibrian5@gmail.com';
+};
+
+export const trackUnauthorizedAdminAccess = (email: string) => {
+  try {
+    const storedAttempts = localStorage.getItem('unauthorizedAdminAttempts');
+    const attempts = storedAttempts ? JSON.parse(storedAttempts) : [];
+    
+    attempts.push({
+      email,
+      timestamp: new Date().toISOString(),
+      ipAddress: 'Not available in client-side code' // In a real app, this would come from the server
+    });
+    
+    localStorage.setItem('unauthorizedAdminAttempts', JSON.stringify(attempts));
+    
+    console.warn(`Unauthorized admin access attempt by: ${email}`);
+  } catch (error) {
+    console.error('Error tracking unauthorized access:', error);
+  }
+};
+

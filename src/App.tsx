@@ -17,7 +17,6 @@ import TrialBalance from './pages/statements/TrialBalance';
 import CashBook from './pages/statements/CashBook';
 import NotFound from './pages/NotFound';
 import Forecast from './pages/Forecast';
-import Payroll from './pages/Payroll';
 import { loadSampleData } from './utils/sampleData';
 
 function App() {
@@ -44,7 +43,6 @@ function App() {
         <Route path="/cash-flow" element={<CashFlow />} />
         <Route path="/trial-balance" element={<TrialBalance />} />
         <Route path="/cash-book" element={<CashBook />} />
-        <Route path="/payroll" element={<Payroll />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>

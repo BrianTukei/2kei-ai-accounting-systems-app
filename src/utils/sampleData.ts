@@ -1,4 +1,3 @@
-
 import { Transaction } from '@/components/TransactionCard';
 import { allTransactions } from '@/data/mockTransactions';
 import { Employee, PayrollData } from '@/types/PayrollData';
@@ -260,6 +259,7 @@ export const samplePayrollData: PayrollData[] = [
         transport: 150000,
         meal: 100000
       },
+      bonuses: {},
       overtime: {
         hours: 5,
         rate: 1.5,

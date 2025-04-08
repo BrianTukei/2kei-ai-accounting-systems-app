@@ -2,11 +2,13 @@
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Scan } from 'lucide-react';
+import { Scan, GalleryHorizontal } from 'lucide-react';
 import { toast } from 'sonner';
 import { useReceiptScanner } from '@/hooks/useReceiptScanner';
 import ReceiptImageUpload from './ReceiptImageUpload';
 import ReceiptResults from './ReceiptResults';
+import ReceiptGallery from './ReceiptGallery';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface ReceiptScannerProps {
   onScanComplete: (data: {
@@ -23,6 +25,7 @@ interface ReceiptScannerProps {
 
 export default function ReceiptScanner({ onScanComplete }: ReceiptScannerProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>('scan');
   
   const {
     isScanning,
@@ -49,34 +52,51 @@ export default function ReceiptScanner({ onScanComplete }: ReceiptScannerProps) 
           Scan Receipt
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md md:max-w-lg">
+      <DialogContent className="sm:max-w-md md:max-w-lg lg:max-w-2xl">
         <DialogHeader>
           <DialogTitle>AI Receipt Scanner</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 py-4">
-          {!scanResults ? (
-            <ReceiptImageUpload
-              onScan={simulateScanning}
-              isScanning={isScanning}
-              file={file}
-              previewUrl={previewUrl}
-              onFileChange={handleFileChange}
-              onClearFile={clearFile}
-            />
-          ) : (
-            <ReceiptResults
-              scanResults={scanResults}
-              confidence={confidence}
-              onRescan={() => setScanResults(null)}
-              onAccept={acceptResults}
-            />
-          )}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-4">
+            <TabsTrigger value="scan">
+              <Scan className="h-4 w-4 mr-2" />
+              Scan Receipt
+            </TabsTrigger>
+            <TabsTrigger value="gallery">
+              <GalleryHorizontal className="h-4 w-4 mr-2" />
+              Receipt Gallery
+            </TabsTrigger>
+          </TabsList>
           
-          <p className="text-xs text-slate-500 text-center">
-            Our AI will extract transaction details automatically from your receipt.
-            {isScanning && " Processing image, please wait..."}
-          </p>
-        </div>
+          <TabsContent value="scan" className="space-y-4 py-2">
+            {!scanResults ? (
+              <ReceiptImageUpload
+                onScan={simulateScanning}
+                isScanning={isScanning}
+                file={file}
+                previewUrl={previewUrl}
+                onFileChange={handleFileChange}
+                onClearFile={clearFile}
+              />
+            ) : (
+              <ReceiptResults
+                scanResults={scanResults}
+                confidence={confidence}
+                onRescan={() => setScanResults(null)}
+                onAccept={acceptResults}
+              />
+            )}
+            
+            <p className="text-xs text-slate-500 text-center">
+              Our AI will extract transaction details automatically from your receipt.
+              {isScanning && " Processing image, please wait..."}
+            </p>
+          </TabsContent>
+          
+          <TabsContent value="gallery" className="py-2">
+            <ReceiptGallery />
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );

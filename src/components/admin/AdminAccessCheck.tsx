@@ -27,7 +27,7 @@ export default function AdminAccessCheck({ children }: AdminAccessCheckProps) {
 
     const userData = JSON.parse(user);
     // Check for specific admin credentials
-    if (userData.email === 'tukeibrian5@gmail.co') {
+    if (userData.email === 'tukeibrian5@gmail.com') {
       setIsAdmin(true);
       // Record admin login activity
       try {

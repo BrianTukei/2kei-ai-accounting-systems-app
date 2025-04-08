@@ -15,7 +15,7 @@ export default function AdminAccessCard() {
     const user = localStorage.getItem('user');
     if (user) {
       const userData = JSON.parse(user);
-      if (userData.email === 'tukeibrian5@gmail.co') {
+      if (userData.email === 'tukeibrian5@gmail.com') {
         setIsAdmin(true);
         fetchTotalSignups();
       }

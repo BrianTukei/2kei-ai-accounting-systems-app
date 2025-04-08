@@ -6,6 +6,8 @@ import AdminHeader from '@/components/admin/AdminHeader';
 import AdminStatsGrid from '@/components/admin/AdminStatsGrid';
 import AdminTabs from '@/components/admin/AdminTabs';
 import { getUserComplaints } from '@/utils/adminUtils';
+import { Transaction } from '@/components/TransactionCard';
+import { useTransactions } from '@/hooks/useTransactions';
 
 type UserSignup = {
   id: string;
@@ -33,6 +35,7 @@ export default function AdminDashboard() {
   const [securityAlerts, setSecurityAlerts] = useState<SecurityAlert[]>([]);
   const [totalComplaints, setTotalComplaints] = useState<number>(0);
   const [newComplaints, setNewComplaints] = useState<number>(0);
+  const { transactions } = useTransactions();
 
   useEffect(() => {
     fetchSignups();
@@ -125,6 +128,7 @@ export default function AdminDashboard() {
           <AdminTabs 
             signups={signups} 
             logins={logins}
+            transactions={transactions}
           />
         </div>
       </div>

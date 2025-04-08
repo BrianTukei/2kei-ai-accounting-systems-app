@@ -1,23 +1,51 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import OverviewChart from '@/components/OverviewChart';
-import { useChartData } from '@/hooks/useChartData';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format } from 'date-fns';
 
-export default function AdminOverviewTab() {
-  // Use the custom hook to get formatted chart data
-  const { chartData, userSignups, userLogins } = useChartData();
+type UserSignup = {
+  id: string;
+  name: string;
+  email: string;
+  date: string;
+};
+
+type UserLogin = {
+  email: string;
+  timestamp: string;
+};
+
+interface AdminOverviewTabProps {
+  signups: UserSignup[];
+  logins: UserLogin[];
+}
+
+export default function AdminOverviewTab({ signups, logins }: AdminOverviewTabProps) {
+  // Format data for charts based on signups
+  const chartData = signups.reduce((acc: any[], signup) => {
+    const date = new Date(signup.date);
+    const month = date.toLocaleString('default', { month: 'short' });
+    
+    const existingMonth = acc.find(item => item.name === month);
+    if (existingMonth) {
+      existingMonth.signups += 1;
+    } else {
+      acc.push({ name: month, signups: 1 });
+    }
+    
+    return acc;
+  }, []);
   
   // Get the 5 most recent signups
-  const recentSignups = userSignups ? [...userSignups]
+  const recentSignups = [...signups]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 5) : [];
+    .slice(0, 5);
     
   // Get the 5 most recent logins
-  const recentLogins = userLogins ? [...userLogins]
+  const recentLogins = [...logins]
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-    .slice(0, 5) : [];
+    .slice(0, 5);
   
   return (
     <div className="space-y-6">

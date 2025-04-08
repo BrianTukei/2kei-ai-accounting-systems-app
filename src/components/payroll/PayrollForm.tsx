@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { PayrollData, Employee } from '@/types/PayrollData';
 import { useForm } from 'react-hook-form';
 import { v4 as uuidv4 } from 'uuid';
+import { toast } from 'sonner';
 
 // Import component sections
 import PayrollBasicInfoSection from './PayrollBasicInfoSection';
@@ -20,6 +21,9 @@ import AttendanceSection from './AttendanceSection';
 // Import calculation utilities
 import { calculateGrossAndNetPay, createPayrollEntryData } from './PayrollCalculationUtils';
 
+// Import tax utilities
+import { getCountryConfig } from '@/utils/taxCalculations';
+
 interface PayrollFormProps {
   onAddPayroll: (payrollData: PayrollData) => void;
   employees: Employee[];
@@ -29,6 +33,7 @@ interface PayrollFormProps {
 export default function PayrollForm({ onAddPayroll, employees, selectedEmployee }: PayrollFormProps) {
   const [calculatedGrossPay, setCalculatedGrossPay] = useState(0);
   const [calculatedNetPay, setCalculatedNetPay] = useState(0);
+  const [taxDetails, setTaxDetails] = useState<any>(null);
   
   const form = useForm({
     defaultValues: {
@@ -37,6 +42,7 @@ export default function PayrollForm({ onAddPayroll, employees, selectedEmployee 
       payPeriodEnd: '',
       paymentDate: '',
       currency: 'UGX',
+      selectedEmployeeNationality: '',
       
       // Fixed earnings
       basicSalary: 0,
@@ -91,21 +97,35 @@ export default function PayrollForm({ onAddPayroll, employees, selectedEmployee 
   useEffect(() => {
     if (selectedEmployee) {
       form.setValue('employeeId', selectedEmployee.id);
+      form.setValue('selectedEmployeeNationality', selectedEmployee.nationality);
+      
+      // Update currency based on country
+      const countryConfig = getCountryConfig(selectedEmployee.nationality);
+      form.setValue('currency', countryConfig.currency);
     }
   }, [selectedEmployee, form]);
 
   const handleCalculate = () => {
     const data = form.getValues();
-    const { grossPay, netPay } = calculateGrossAndNetPay(data);
+    const { grossPay, netPay, taxCalculations } = calculateGrossAndNetPay(data);
+    
     setCalculatedGrossPay(grossPay);
     setCalculatedNetPay(netPay);
+    setTaxDetails(taxCalculations);
+    
+    toast.info(
+      `Gross Pay: ${taxCalculations.currencySymbol}${grossPay.toLocaleString()} | ` +
+      `Net Pay: ${taxCalculations.currencySymbol}${netPay.toLocaleString()} | ` +
+      `Total Tax: ${taxCalculations.currencySymbol}${taxCalculations.totalDeductions.toLocaleString()}`
+    );
   };
 
   const onSubmit = (data: any) => {
-    const { grossPay, netPay } = calculateGrossAndNetPay(data);
+    const { grossPay, netPay, taxCalculations } = calculateGrossAndNetPay(data);
     
     const selectedEmployeeData = employees.find(emp => emp.id === data.employeeId);
     if (!selectedEmployeeData) {
+      toast.error("Please select an employee");
       return;
     }
 
@@ -116,8 +136,10 @@ export default function PayrollForm({ onAddPayroll, employees, selectedEmployee 
       netPay
     );
     
+    const payrollId = uuidv4();
+    
     const payrollEntry: PayrollData = {
-      id: uuidv4(),
+      id: payrollId,
       payPeriodStart: data.payPeriodStart,
       payPeriodEnd: data.payPeriodEnd,
       paymentDate: data.paymentDate,
@@ -136,17 +158,35 @@ export default function PayrollForm({ onAddPayroll, employees, selectedEmployee 
       updatedAt: new Date().toISOString(),
     };
     
+    // Track the payroll creation in system logs
+    if (window.payrollTracker) {
+      window.payrollTracker.trackCreate(
+        payrollId,
+        `Created payroll for ${selectedEmployeeData.firstName} ${selectedEmployeeData.lastName} ` +
+        `(${data.currency} ${grossPay.toLocaleString()})`
+      );
+    }
+    
     onAddPayroll(payrollEntry);
+    
+    toast.success(
+      `Payroll created for ${selectedEmployeeData.firstName} ${selectedEmployeeData.lastName}`,
+      {
+        description: `Gross Pay: ${taxCalculations.currencySymbol}${grossPay.toLocaleString()} | Net Pay: ${taxCalculations.currencySymbol}${netPay.toLocaleString()}`
+      }
+    );
+    
     form.reset();
     setCalculatedGrossPay(0);
     setCalculatedNetPay(0);
+    setTaxDetails(null);
   };
 
   return (
     <Card className="glass-card glass-card-hover">
       <CardHeader>
         <CardTitle>Create Payroll Entry</CardTitle>
-        <CardDescription>Fill in the details to create a new payroll entry</CardDescription>
+        <CardDescription>Fill in the details to create a new payroll entry with country-specific tax calculations</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -205,15 +245,54 @@ export default function PayrollForm({ onAddPayroll, employees, selectedEmployee 
               )}
             />
             
+            {/* Tax calculation details */}
+            {taxDetails && (
+              <div className="p-4 border rounded-md bg-slate-50">
+                <h3 className="font-medium mb-2">Tax Calculation Details ({taxDetails.country})</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                  <div>
+                    <p className="text-slate-500">Income Tax</p>
+                    <p className="font-medium">{taxDetails.currencySymbol} {taxDetails.incomeTax.toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-slate-500">Social Security</p>
+                    <p className="font-medium">{taxDetails.currencySymbol} {taxDetails.socialSecurity.toLocaleString()}</p>
+                  </div>
+                  {taxDetails.PAYE > 0 && (
+                    <div>
+                      <p className="text-slate-500">PAYE</p>
+                      <p className="font-medium">{taxDetails.currencySymbol} {taxDetails.PAYE.toLocaleString()}</p>
+                    </div>
+                  )}
+                  {taxDetails.NSSF > 0 && (
+                    <div>
+                      <p className="text-slate-500">NSSF Contribution</p>
+                      <p className="font-medium">{taxDetails.currencySymbol} {taxDetails.NSSF.toLocaleString()}</p>
+                    </div>
+                  )}
+                  {taxDetails.employerNSSF > 0 && (
+                    <div>
+                      <p className="text-slate-500">Employer NSSF</p>
+                      <p className="font-medium">{taxDetails.currencySymbol} {taxDetails.employerNSSF.toLocaleString()}</p>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-slate-500 font-semibold">Total Deductions</p>
+                    <p className="font-medium text-red-600">{taxDetails.currencySymbol} {taxDetails.totalDeductions.toLocaleString()}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <div className="flex justify-between items-center border-t pt-4">
               <div>
                 <Button type="button" variant="outline" onClick={handleCalculate} className="mr-2">
                   Calculate
                 </Button>
-                {(calculatedGrossPay > 0 || calculatedNetPay > 0) && (
+                {(calculatedGrossPay > 0 || calculatedNetPay > 0) && taxDetails && (
                   <span className="text-sm font-medium ml-2">
-                    Gross Pay: <span className="text-blue-600">${calculatedGrossPay.toFixed(2)}</span> | 
-                    Net Pay: <span className="text-green-600">${calculatedNetPay.toFixed(2)}</span>
+                    Gross Pay: <span className="text-blue-600">{taxDetails.currencySymbol} {calculatedGrossPay.toLocaleString()}</span> | 
+                    Net Pay: <span className="text-green-600">{taxDetails.currencySymbol} {calculatedNetPay.toLocaleString()}</span>
                   </span>
                 )}
               </div>

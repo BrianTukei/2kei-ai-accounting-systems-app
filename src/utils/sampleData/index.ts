@@ -3,6 +3,7 @@ import { allTransactions } from '@/data/mockTransactions';
 import { sampleUsers } from './users';
 import { sampleEmployees } from './employees';
 import { samplePayrollData } from './payroll';
+import { initializeAdminStorage } from '../adminUtils';
 
 // Re-export all the sample data for backward compatibility
 export { sampleUsers } from './users';
@@ -44,4 +45,7 @@ export const loadSampleData = () => {
   if (!localStorage.getItem('userSignups')) {
     localStorage.setItem('userSignups', JSON.stringify([]));
   }
+  
+  // Initialize admin tracking storage systems
+  initializeAdminStorage();
 };

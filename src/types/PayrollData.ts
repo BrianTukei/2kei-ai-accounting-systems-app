@@ -84,6 +84,10 @@ export interface Deductions {
   socialSecurity: number;
   healthInsurance?: number;
   unemploymentInsurance?: number;
+  VAT?: number;
+  PAYE?: number;
+  NSSF?: number;
+  otherTaxes?: { [key: string]: number };
 
   // Voluntary Deductions
   employeePension?: number;
@@ -98,6 +102,7 @@ export interface EmployerContributions {
   employerPension: number;
   workersCompensationInsurance?: number;
   payrollTaxes?: number;
+  employerNSSF?: number;
   otherContributions?: { [key: string]: number };
 }
 
@@ -167,4 +172,43 @@ export interface CountryTaxConfig {
   };
   hasPayrollTax?: boolean;
   payrollTaxRate?: number;
+  hasVAT?: boolean;
+  VATRate?: number;
+  hasPAYE?: boolean;
+  PAYERate?: number;
+  hasNSSF?: boolean;
+  NSSFRate?: {
+    employee: number;
+    employer: number;
+  };
+}
+
+// System change log for tracking changes
+export interface SystemChangeLog {
+  id: string;
+  timestamp: string;
+  userId: string;
+  userName: string;
+  actionType: "create" | "update" | "delete";
+  entityType: "employee" | "payroll" | "user" | "setting";
+  entityId: string;
+  description: string;
+}
+
+// User complaint tracking
+export interface UserComplaint {
+  id: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  subject: string;
+  message: string;
+  status: "new" | "in-progress" | "resolved" | "closed";
+  priority: "low" | "medium" | "high" | "critical";
+  category: "payroll" | "user-access" | "technical" | "billing" | "other";
+  createdAt: string;
+  updatedAt: string;
+  assignedTo?: string;
+  resolution?: string;
+  resolutionDate?: string;
 }

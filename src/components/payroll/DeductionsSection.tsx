@@ -3,12 +3,25 @@ import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescripti
 import { Input } from '@/components/ui/input';
 import { UseFormReturn } from 'react-hook-form';
 import { Separator } from '@/components/ui/separator';
+import { useEffect, useState } from 'react';
+import { getCountryConfig } from '@/utils/taxCalculations';
 
 interface DeductionsSectionProps {
   form: UseFormReturn<any>;
 }
 
 export default function DeductionsSection({ form }: DeductionsSectionProps) {
+  const [countryConfig, setCountryConfig] = useState<any>(null);
+  
+  useEffect(() => {
+    const selectedEmployeeNationality = form.watch('selectedEmployeeNationality');
+    
+    if (selectedEmployeeNationality) {
+      const config = getCountryConfig(selectedEmployeeNationality);
+      setCountryConfig(config);
+    }
+  }, [form.watch('selectedEmployeeNationality')]);
+  
   return (
     <div className="space-y-6 pt-4">
       <h3 className="text-lg font-semibold">Statutory Deductions</h3>
@@ -25,7 +38,11 @@ export default function DeductionsSection({ form }: DeductionsSectionProps) {
                 <FormControl>
                   <Input {...field} type="number" step="0.01" required />
                 </FormControl>
-                <FormDescription>Applied to taxable income</FormDescription>
+                <FormDescription>
+                  {countryConfig ? 
+                    `Progressive tax rates in ${countryConfig.name}` : 
+                    'Applied to taxable income'}
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -44,7 +61,11 @@ export default function DeductionsSection({ form }: DeductionsSectionProps) {
                 <FormControl>
                   <Input {...field} type="number" step="0.01" required />
                 </FormControl>
-                <FormDescription>E.g., NSSF, Social Security</FormDescription>
+                <FormDescription>
+                  {countryConfig ? 
+                    `${countryConfig.name} rate: ${countryConfig.socialSecurityRate.employee}%` : 
+                    'E.g., NSSF, Social Security'}
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -70,6 +91,33 @@ export default function DeductionsSection({ form }: DeductionsSectionProps) {
           />
         </div>
       </div>
+      
+      {countryConfig && countryConfig.hasNSSF && (
+        <div className="p-4 border rounded bg-blue-50 mt-4">
+          <h4 className="text-md font-medium mb-2">Country-Specific Deductions ({countryConfig.name})</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {countryConfig.hasPAYE && (
+              <div>
+                <p className="text-sm font-medium">PAYE Tax</p>
+                <p className="text-sm text-gray-600">
+                  Rate: {countryConfig.PAYERate}% (calculated automatically)
+                </p>
+              </div>
+            )}
+            
+            {countryConfig.hasNSSF && (
+              <div>
+                <p className="text-sm font-medium">NSSF Contribution</p>
+                <p className="text-sm text-gray-600">
+                  Employee: {countryConfig.NSSFRate.employee}%, 
+                  Employer: {countryConfig.NSSFRate.employer}% 
+                  (calculated automatically)
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       
       <Separator />
       

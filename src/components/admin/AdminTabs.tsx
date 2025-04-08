@@ -1,9 +1,8 @@
 
-import { useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Layout, Users } from 'lucide-react';
-import AdminOverviewTab from './AdminOverviewTab';
-import AdminUsersTab from './AdminUsersTab';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import AdminOverviewTab from "./AdminOverviewTab";
+import AdminUsersTab from "./AdminUsersTab";
+import AdminSystemLogsTab from "./AdminSystemLogsTab";
 
 type UserSignup = {
   id: string;
@@ -19,31 +18,28 @@ type UserLogin = {
 
 interface AdminTabsProps {
   signups: UserSignup[];
-  logins?: UserLogin[]; // Added logins as an optional prop
+  logins: UserLogin[];
 }
 
-export default function AdminTabs({ signups, logins = [] }: AdminTabsProps) {
-  const [activeTab, setActiveTab] = useState('overview');
-  
+export default function AdminTabs({ signups, logins }: AdminTabsProps) {
   return (
-    <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-      <TabsList>
-        <TabsTrigger value="overview">
-          <Layout className="h-4 w-4 mr-2" />
-          Overview
-        </TabsTrigger>
-        <TabsTrigger value="users">
-          <Users className="h-4 w-4 mr-2" />
-          User List
-        </TabsTrigger>
+    <Tabs defaultValue="overview" className="mt-6">
+      <TabsList className="grid w-full grid-cols-3 mb-8">
+        <TabsTrigger value="overview">Overview</TabsTrigger>
+        <TabsTrigger value="users">Users Management</TabsTrigger>
+        <TabsTrigger value="system-logs">System Logs</TabsTrigger>
       </TabsList>
       
-      <TabsContent value="overview" className="space-y-4">
-        <AdminOverviewTab />
+      <TabsContent value="overview">
+        <AdminOverviewTab signups={signups} logins={logins} />
       </TabsContent>
       
       <TabsContent value="users">
         <AdminUsersTab signups={signups} />
+      </TabsContent>
+      
+      <TabsContent value="system-logs">
+        <AdminSystemLogsTab />
       </TabsContent>
     </Tabs>
   );

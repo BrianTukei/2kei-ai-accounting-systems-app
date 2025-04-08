@@ -1,4 +1,6 @@
 
+import { calculateAllTaxes } from '@/utils/taxCalculations';
+
 /**
  * Utility functions for payroll calculations
  */
@@ -37,12 +39,17 @@ export const calculateGrossAndNetPay = (data: any) => {
     travelReimbursement + medicalReimbursement +
     companyCar + fuelBenefit + stockOptions;
     
-  // Deductions
-  const incomeTaxRate = Number(data.incomeTaxRate) || 0;
-  const incomeTax = grossPay * (incomeTaxRate / 100);
+  // Get employee nationality (if provided) or default to "Uganda"
+  const nationality = data.selectedEmployeeNationality || "Uganda";
   
-  const socialSecurityRate = Number(data.socialSecurityRate) || 0;
-  const socialSecurity = grossPay * (socialSecurityRate / 100);
+  // Calculate taxes based on country
+  const taxCalculations = calculateAllTaxes(grossPay, { nationality });
+  
+  // Deductions
+  const incomeTax = taxCalculations.incomeTax;
+  const socialSecurity = taxCalculations.socialSecurity;
+  const PAYE = taxCalculations.PAYE;
+  const NSSF = taxCalculations.NSSF;
   
   const healthInsurance = Number(data.healthInsurance) || 0;
   const employeePension = Number(data.employeePension) || 0;
@@ -52,15 +59,19 @@ export const calculateGrossAndNetPay = (data: any) => {
   
   // Calculate total deductions
   const totalDeductions = incomeTax + socialSecurity + healthInsurance +
-    employeePension + loanRepayments + unionDues + charitableContributions;
+    employeePension + loanRepayments + unionDues + charitableContributions +
+    PAYE + NSSF;
   
   // Calculate net pay
   const netPay = grossPay - totalDeductions;
   
-  return { grossPay, netPay };
+  return { grossPay, netPay, taxCalculations };
 };
 
 export const createPayrollEntryData = (data: any, selectedEmployee: any, grossPay: number, netPay: number) => {
+  const nationality = selectedEmployee.nationality || "Uganda";
+  const taxCalculations = calculateAllTaxes(grossPay, { nationality });
+  
   const earnings = {
     basicSalary: Number(data.basicSalary),
     allowances: {
@@ -96,19 +107,22 @@ export const createPayrollEntryData = (data: any, selectedEmployee: any, grossPa
   };
   
   const deductions = {
-    incomeTax: grossPay * (Number(data.incomeTaxRate) / 100),
-    socialSecurity: grossPay * (Number(data.socialSecurityRate) / 100),
+    incomeTax: taxCalculations.incomeTax,
+    socialSecurity: taxCalculations.socialSecurity,
     healthInsurance: Number(data.healthInsurance),
     employeePension: Number(data.employeePension),
     loanRepayments: Number(data.loanRepayments),
     unionDues: Number(data.unionDues),
     charitableContributions: Number(data.charitableContributions),
+    PAYE: taxCalculations.PAYE,
+    NSSF: taxCalculations.NSSF,
   };
   
   const employerContributions = {
     employerPension: grossPay * (Number(data.employerPension) / 100),
     workersCompensationInsurance: grossPay * (Number(data.workersCompensation) / 100),
     payrollTaxes: grossPay * (Number(data.payrollTaxes) / 100),
+    employerNSSF: taxCalculations.employerNSSF,
   };
   
   const attendance = {

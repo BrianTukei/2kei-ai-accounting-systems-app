@@ -5,6 +5,7 @@ import AdminAccessCheck from '@/components/admin/AdminAccessCheck';
 import AdminHeader from '@/components/admin/AdminHeader';
 import AdminStatsGrid from '@/components/admin/AdminStatsGrid';
 import AdminTabs from '@/components/admin/AdminTabs';
+import { getUserComplaints } from '@/utils/adminUtils';
 
 type UserSignup = {
   id: string;
@@ -30,11 +31,14 @@ export default function AdminDashboard() {
   const [logins, setLogins] = useState<UserLogin[]>([]);
   const [activeUsers, setActiveUsers] = useState<number>(0);
   const [securityAlerts, setSecurityAlerts] = useState<SecurityAlert[]>([]);
+  const [totalComplaints, setTotalComplaints] = useState<number>(0);
+  const [newComplaints, setNewComplaints] = useState<number>(0);
 
   useEffect(() => {
     fetchSignups();
     fetchLogins();
     fetchSecurityAlerts();
+    fetchComplaintsStats();
   }, []);
 
   const fetchSignups = async () => {
@@ -85,6 +89,22 @@ export default function AdminDashboard() {
     }
   };
 
+  const fetchComplaintsStats = () => {
+    try {
+      const complaints = getUserComplaints();
+      setTotalComplaints(complaints.length);
+      
+      // Count new complaints (not resolved or closed)
+      const newComplaintsCount = complaints.filter(
+        (c: any) => c.status === 'new' || c.status === 'in-progress'
+      ).length;
+      
+      setNewComplaints(newComplaintsCount);
+    } catch (error) {
+      console.error('Error fetching complaints stats:', error);
+    }
+  };
+
   // Calculate new users today
   const newToday = signups.filter(
     s => new Date(s.date).toDateString() === new Date().toDateString()
@@ -99,6 +119,8 @@ export default function AdminDashboard() {
             totalUsers={signups.length} 
             newToday={newToday}
             activeUsers={activeUsers}
+            totalComplaints={totalComplaints}
+            newComplaints={newComplaints}
           />
           <AdminTabs 
             signups={signups} 

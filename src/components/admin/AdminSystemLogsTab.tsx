@@ -11,7 +11,24 @@ import { SystemChangeLog, UserComplaint } from '@/types/PayrollData';
 import { getSystemChanges, getUserComplaints, updateComplaintStatus } from '@/utils/adminUtils';
 import { AlertCircle, CheckCircle, Clock, Search } from 'lucide-react';
 
-export default function AdminSystemLogsTab() {
+type UserSignup = {
+  id: string;
+  name: string;
+  email: string;
+  date: string;
+};
+
+type UserLogin = {
+  email: string;
+  timestamp: string;
+};
+
+interface AdminSystemLogsTabProps {
+  signups?: UserSignup[];
+  logins?: UserLogin[];
+}
+
+export default function AdminSystemLogsTab({ signups = [], logins = [] }: AdminSystemLogsTabProps) {
   const [systemLogs, setSystemLogs] = useState<SystemChangeLog[]>(getSystemChanges());
   const [complaints, setComplaints] = useState<UserComplaint[]>(getUserComplaints());
   const [entityFilter, setEntityFilter] = useState<string>('all');
@@ -110,6 +127,7 @@ export default function AdminSystemLogsTab() {
           <TabsList className="mb-4">
             <TabsTrigger value="changes">System Changes</TabsTrigger>
             <TabsTrigger value="complaints">User Complaints</TabsTrigger>
+            <TabsTrigger value="logins">Login Activity</TabsTrigger>
           </TabsList>
           
           <div className="mb-4 flex flex-col sm:flex-row gap-2">
@@ -151,6 +169,12 @@ export default function AdminSystemLogsTab() {
                     <SelectItem value="closed">Closed</SelectItem>
                   </SelectContent>
                 </Select>
+              </TabsContent>
+
+              <TabsContent value="logins" className="m-0">
+                <span className="text-sm text-muted-foreground">
+                  Showing {logins.length} recent logins
+                </span>
               </TabsContent>
             </div>
           </div>
@@ -285,6 +309,37 @@ export default function AdminSystemLogsTab() {
                   <p className="text-gray-500">No complaints found</p>
                 </div>
               )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="logins">
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date & Time</TableHead>
+                    <TableHead>User Email</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {logins.length > 0 ? (
+                    logins.map((login, index) => (
+                      <TableRow key={index}>
+                        <TableCell className="font-mono text-xs">
+                          {formatDate(login.timestamp)}
+                        </TableCell>
+                        <TableCell>{login.email}</TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={2} className="h-24 text-center">
+                        No login activity found
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
             </div>
           </TabsContent>
         </Tabs>

@@ -39,7 +39,7 @@ export default function AdminTabs({ signups, logins }: AdminTabsProps) {
       </TabsContent>
       
       <TabsContent value="system-logs">
-        <AdminSystemLogsTab />
+        <AdminSystemLogsTab signups={signups} logins={logins} />
       </TabsContent>
     </Tabs>
   );

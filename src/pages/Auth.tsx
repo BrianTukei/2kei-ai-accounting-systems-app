@@ -84,10 +84,10 @@ export default function Auth() {
       setIsLoading(false);
       
       // Check if this is the admin login
-      if (formData.email === 'tukeibrian5@gmail.co' && formData.password === 'Tukei@1000$') {
+      if (formData.email === 'tukeibrian5@gmail.com' && formData.password === 'Tukei@1000$') {
         const adminData = {
           name: 'Tukei Brian',
-          email: 'tukeibrian5@gmail.co',
+          email: 'tukeibrian5@gmail.com',
           isAdmin: true
         };
         localStorage.setItem('user', JSON.stringify(adminData));

@@ -7,25 +7,29 @@ const LOCAL_STORAGE_KEY = 'finance-app-transactions';
 
 export const useTransactions = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Load transactions from localStorage on initial render
   useEffect(() => {
     const storedTransactions = localStorage.getItem(LOCAL_STORAGE_KEY);
+    
     if (storedTransactions) {
       setTransactions(JSON.parse(storedTransactions));
     } else {
-      // Only use mock data if nothing is in localStorage
+      // If nothing is in localStorage, use mock data
       setTransactions(allTransactions);
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(allTransactions));
     }
+    
+    setIsLoading(false);
   }, []);
 
   // Save transactions to localStorage whenever they change
   useEffect(() => {
-    if (transactions.length > 0) {
+    if (!isLoading && transactions.length > 0) {
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(transactions));
     }
-  }, [transactions]);
+  }, [transactions, isLoading]);
 
   const addTransaction = (newTransaction: Omit<Transaction, 'id'>) => {
     const id = (Date.now()).toString(); // Use timestamp for unique IDs
@@ -53,6 +57,7 @@ export const useTransactions = () => {
 
   return {
     transactions,
+    isLoading,
     addTransaction,
     editTransaction,
     deleteTransaction

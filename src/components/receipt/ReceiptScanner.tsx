@@ -40,6 +40,28 @@ export default function ReceiptScanner({ onScanComplete }: ReceiptScannerProps) 
   } = useReceiptScanner({ onScanComplete });
 
   const acceptResults = () => {
+    // Store the receipt in the gallery
+    if (scanResults && previewUrl) {
+      try {
+        const storedReceipts = localStorage.getItem('scannedReceipts');
+        const receipts = storedReceipts ? JSON.parse(storedReceipts) : [];
+        
+        receipts.push({
+          id: `receipt-${Date.now()}`,
+          imageUrl: previewUrl,
+          thumbnailUrl: previewUrl,
+          vendor: scanResults.vendor || 'Unknown Vendor',
+          amount: scanResults.amount,
+          date: scanResults.date,
+          category: scanResults.category
+        });
+        
+        localStorage.setItem('scannedReceipts', JSON.stringify(receipts));
+      } catch (error) {
+        console.error('Error saving receipt to gallery:', error);
+      }
+    }
+    
     setIsOpen(false);
     toast.success('Receipt data saved successfully!');
   };

@@ -48,4 +48,31 @@ export const loadSampleData = () => {
   
   // Initialize admin tracking storage systems
   initializeAdminStorage();
+  
+  // Make sure receipt gallery storage exists
+  if (!localStorage.getItem('scannedReceipts')) {
+    // Initialize with some sample receipt data
+    const sampleReceipts = [
+      {
+        id: 'receipt-1',
+        imageUrl: '/placeholder.svg',
+        thumbnailUrl: '/placeholder.svg',
+        vendor: 'Grocery Store',
+        amount: 54.75,
+        date: '2025-04-15',
+        category: 'Groceries'
+      },
+      {
+        id: 'receipt-2',
+        imageUrl: '/placeholder.svg',
+        thumbnailUrl: '/placeholder.svg',
+        vendor: 'Office Supplies',
+        amount: 23.45,
+        date: '2025-04-10',
+        category: 'Office'
+      }
+    ];
+    localStorage.setItem('scannedReceipts', JSON.stringify(sampleReceipts));
+    console.log('Loaded sample receipt data');
+  }
 };

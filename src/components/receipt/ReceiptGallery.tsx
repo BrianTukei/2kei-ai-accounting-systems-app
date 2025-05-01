@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Trash2, Download, Eye } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { toast } from 'sonner';
 
 interface Receipt {
   id: string;
@@ -22,16 +23,37 @@ export default function ReceiptGallery() {
   
   useEffect(() => {
     // Load receipts from localStorage
-    const storedReceipts = localStorage.getItem('scannedReceipts');
-    if (storedReceipts) {
-      setReceipts(JSON.parse(storedReceipts));
-    }
+    const loadReceipts = () => {
+      try {
+        const storedReceipts = localStorage.getItem('scannedReceipts');
+        if (storedReceipts) {
+          setReceipts(JSON.parse(storedReceipts));
+        } else {
+          // If no receipts exist, initialize with empty array
+          localStorage.setItem('scannedReceipts', JSON.stringify([]));
+          setReceipts([]);
+        }
+      } catch (error) {
+        console.error('Error loading receipts:', error);
+        toast.error('Failed to load receipts');
+      }
+    };
+    
+    loadReceipts();
+    
+    // Add event listener to reload receipts when updated elsewhere
+    window.addEventListener('storage', loadReceipts);
+    
+    return () => {
+      window.removeEventListener('storage', loadReceipts);
+    };
   }, []);
   
   const handleDelete = (id: string) => {
     const updatedReceipts = receipts.filter(receipt => receipt.id !== id);
     setReceipts(updatedReceipts);
     localStorage.setItem('scannedReceipts', JSON.stringify(updatedReceipts));
+    toast.success('Receipt deleted');
   };
   
   const handleView = (receipt: Receipt) => {

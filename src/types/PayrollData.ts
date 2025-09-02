@@ -187,9 +187,8 @@ export interface CountryTaxConfig {
 export interface SystemChangeLog {
   id: string;
   timestamp: string;
-  userId: string;
-  userName: string;
-  actionType: "create" | "update" | "delete";
+  adminId: string;
+  action: "CREATE" | "UPDATE" | "DELETE";
   entityType: "employee" | "payroll" | "user" | "setting";
   entityId: string;
   description: string;

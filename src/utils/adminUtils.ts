@@ -4,9 +4,8 @@ import { SystemChangeLog, UserComplaint } from '@/types/PayrollData';
 
 // Track system changes
 export const trackSystemChange = (
-  userId: string,
-  userName: string,
-  actionType: "create" | "update" | "delete",
+  adminId: string,
+  action: "CREATE" | "UPDATE" | "DELETE",
   entityType: "employee" | "payroll" | "user" | "setting",
   entityId: string,
   description: string
@@ -15,9 +14,8 @@ export const trackSystemChange = (
     const changeLog: SystemChangeLog = {
       id: uuidv4(),
       timestamp: new Date().toISOString(),
-      userId,
-      userName,
-      actionType,
+      adminId,
+      action,
       entityType,
       entityId,
       description
@@ -34,7 +32,7 @@ export const trackSystemChange = (
     }
     
     localStorage.setItem('systemChangeLogs', JSON.stringify(logs));
-    console.log(`System change logged: ${actionType} ${entityType} by ${userName}`);
+    console.log(`System change logged: ${action} ${entityType} by ${adminId}`);
     
     return changeLog;
   } catch (error) {

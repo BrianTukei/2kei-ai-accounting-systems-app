@@ -12,10 +12,15 @@ export default function PayrollActionTracker() {
     // In a real application, we would get the current user from auth context
     const currentUser = JSON.parse(localStorage.getItem('user') || '{"id":"guest","name":"Guest User"}');
     
+    const actionMap = {
+      "create": "CREATE" as const,
+      "update": "UPDATE" as const,
+      "delete": "DELETE" as const
+    };
+    
     return trackSystemChange(
       currentUser.id,
-      currentUser.name,
-      actionType,
+      actionMap[actionType],
       "payroll",
       entityId,
       description

@@ -26,25 +26,25 @@ export default function StatCard({
   const isNegative = trend && trend < 0;
   
   return (
-    <Card className={cn("glass-card glass-card-hover overflow-hidden", className)}>
+    <Card className={cn("glass-card glass-card-hover overflow-hidden group", className)}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <CardTitle className="text-sm font-medium text-foreground">{title}</CardTitle>
         {Icon && (
           <div className={cn(
-            "w-8 h-8 rounded-full flex items-center justify-center",
-            iconClassName || "bg-primary/10 text-primary"
+            "w-8 h-8 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300",
+            iconClassName || "bg-gradient-to-br from-primary/10 to-accent/10 text-primary"
           )}>
             <Icon size={18} />
           </div>
         )}
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
+        <div className="text-2xl font-bold text-foreground">{value}</div>
         {(description || trend) && (
           <p className="text-xs text-muted-foreground mt-1 flex items-center">
             {trend && (
               <span className={cn(
-                "mr-1 text-xs",
+                "mr-1 text-xs font-medium",
                 isPositive && "text-green-500",
                 isNegative && "text-red-500"
               )}>

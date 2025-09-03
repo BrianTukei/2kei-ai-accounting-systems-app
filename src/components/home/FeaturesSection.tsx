@@ -1,6 +1,7 @@
 
 import { forwardRef } from 'react';
 import { CreditCard, BarChart3, DollarSign, Lock, Smartphone, Zap } from 'lucide-react';
+import featuresBg from '@/assets/features-bg.jpg';
 
 const features = [
   {
@@ -37,13 +38,23 @@ const features = [
 
 const FeaturesSection = forwardRef<HTMLDivElement>((props, ref) => {
   return (
-    <section id="features" ref={ref} className="py-20 bg-white">
-      <div className="container mx-auto px-4">
+    <section id="features" ref={ref} className="py-20 relative overflow-hidden">
+      {/* Background with image overlay */}
+      <div className="absolute inset-0 z-0">
+        <img 
+          src={featuresBg} 
+          alt="Financial data visualization background" 
+          className="w-full h-full object-cover opacity-10"
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-background via-background/95 to-background/90" />
+      </div>
+      
+      <div className="container mx-auto px-4 relative z-10">
         <div className="max-w-3xl mx-auto text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold mb-4 animate-on-scroll opacity-0">
-            Designed for Financial Clarity
+            Designed for <span className="gradient-text">Financial Clarity</span>
           </h2>
-          <p className="text-lg text-slate-600 animate-on-scroll opacity-0">
+          <p className="text-lg text-muted-foreground animate-on-scroll opacity-0">
             Everything you need to manage your business finances, organized in one clean interface.
           </p>
         </div>
@@ -55,14 +66,14 @@ const FeaturesSection = forwardRef<HTMLDivElement>((props, ref) => {
             return (
               <div 
                 key={index} 
-                className="glass-card p-6 hover-lift animate-on-scroll opacity-0"
+                className="glass-card glass-card-hover p-6 hover-lift animate-on-scroll opacity-0 group"
                 style={{ animationDelay: `${0.1 * index}s` }}
               >
-                <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center mb-4">
-                  <Icon className="h-6 w-6 text-blue-600" />
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <Icon className="h-6 w-6 text-primary group-hover:text-accent transition-colors duration-300" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-                <p className="text-slate-600">{feature.description}</p>
+                <h3 className="text-xl font-semibold mb-2 text-foreground">{feature.title}</h3>
+                <p className="text-muted-foreground">{feature.description}</p>
               </div>
             );
           })}

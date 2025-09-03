@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { BellRing, Lock, User, Moon, Bell } from 'lucide-react';
+import { BellRing, Lock, User, Moon, Bell, ArrowLeft, LayoutDashboard, CreditCard, BarChart } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { toast } from "sonner";
 
 export default function Settings() {

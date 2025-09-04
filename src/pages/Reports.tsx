@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FileText, BarChart3, Download, ArrowUpDown as ArrowsUpDown, Receipt, BarChart, Users } from 'lucide-react';
+import { FileText, BarChart3, Download, ArrowUpDown as ArrowsUpDown, Receipt, BarChart, Users, Book } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { DateRangePicker } from '@/components/DateRangePicker';
 import OverviewChart from '@/components/OverviewChart';
@@ -96,7 +96,24 @@ export default function Reports() {
             </CardContent>
           </Card>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <Card className="hover:shadow-md transition-shadow">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-md">Cash Book (Ledger)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-slate-500 mb-4">
+                  Complete record of all cash inflows and outflows
+                </p>
+                <Link to="/cash-book">
+                  <Button className="w-full bg-gradient-primary hover:bg-gradient-primary/90">
+                    <Book className="h-4 w-4 mr-2" />
+                    View Ledger
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+            
             <Card className="hover:shadow-md transition-shadow">
               <CardHeader className="pb-2">
                 <CardTitle className="text-md">Payroll Reports</CardTitle>

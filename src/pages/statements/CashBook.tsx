@@ -84,7 +84,7 @@ export default function CashBook() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-gradient-subtle">
       <Navbar />
       
       <main className="container mx-auto px-4 py-8">
@@ -108,12 +108,12 @@ export default function CashBook() {
         </div>
 
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight animate-fade-in flex items-center">
-              <Book className="h-8 w-8 mr-3 text-primary" />
+          <div className="space-y-3">
+            <h1 className="text-4xl font-display font-bold tracking-tight text-shadow gradient-text flex items-center">
+              <Book className="h-10 w-10 mr-4 text-primary drop-shadow-lg" />
               Cash Book
             </h1>
-            <p className="text-slate-500 animate-fade-in">
+            <p className="text-muted-foreground text-lg font-medium">
               A comprehensive record of all cash inflows and outflows
             </p>
           </div>
@@ -126,12 +126,12 @@ export default function CashBook() {
               Filter
             </Button>
             
-            <Button onClick={generatePDF} className="bg-gradient-primary hover:bg-gradient-primary/90">
+            <Button onClick={generatePDF} className="bg-gradient-primary hover:bg-gradient-primary/90 shadow-elegant hover:shadow-glow transition-all duration-300 hover:scale-105">
               <Download className="h-4 w-4 mr-2" />
               Export PDF
             </Button>
             
-            <Button asChild className="bg-gradient-primary hover:bg-gradient-primary/90">
+            <Button asChild className="bg-gradient-primary hover:bg-gradient-primary/90 shadow-elegant hover:shadow-glow transition-all duration-300 hover:scale-105">
               <Link to="/transactions">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Transaction
@@ -140,13 +140,13 @@ export default function CashBook() {
           </div>
         </div>
         
-        <Card className="glass-card glass-card-hover shadow-elegant">
-          <CardHeader className="bg-gradient-subtle rounded-t-lg">
-            <CardTitle className="flex items-center text-xl">
-              <Book className="h-5 w-5 mr-2 text-primary" />
+        <Card className="modern-card-hover shadow-elegant backdrop-blur-xl">
+          <CardHeader className="bg-gradient-glass rounded-t-3xl border-b border-border/50">
+            <CardTitle className="flex items-center text-2xl font-display">
+              <Book className="h-6 w-6 mr-3 text-primary" />
               Cash Book Ledger
             </CardTitle>
-            <CardDescription>Complete record of all cash inflows and outflows</CardDescription>
+            <CardDescription className="text-base text-muted-foreground">Complete record of all cash inflows and outflows</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
@@ -191,39 +191,42 @@ export default function CashBook() {
                 <BarChart className="h-5 w-5 mr-2 text-primary" />
                 Financial Summary
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border border-green-100 shadow-glow">
-                  <div className="flex items-center justify-between">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="modern-card-hover success-gradient text-white relative overflow-hidden group">
+                  <div className="absolute inset-0 bg-gradient-glass opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="flex items-center justify-between relative z-10">
                     <div>
-                      <p className="text-sm font-medium text-green-700">Total Income</p>
-                      <p className="text-3xl font-bold text-green-600">${totalIncome.toFixed(2)}</p>
+                      <p className="text-sm font-semibold text-white/90 uppercase tracking-wide">Total Income</p>
+                      <p className="text-4xl font-bold text-white">${totalIncome.toFixed(2)}</p>
                     </div>
-                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                      <BarChart className="h-6 w-6 text-green-600" />
+                    <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
+                      <BarChart className="h-7 w-7 text-white" />
                     </div>
                   </div>
                 </div>
-                <div className="p-6 bg-gradient-to-br from-red-50 to-rose-50 rounded-lg border border-red-100 shadow-glow">
-                  <div className="flex items-center justify-between">
+                <div className="modern-card-hover bg-gradient-to-br from-destructive to-red-500 text-white relative overflow-hidden group">
+                  <div className="absolute inset-0 bg-gradient-glass opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="flex items-center justify-between relative z-10">
                     <div>
-                      <p className="text-sm font-medium text-red-700">Total Expenses</p>
-                      <p className="text-3xl font-bold text-red-600">${totalExpenses.toFixed(2)}</p>
+                      <p className="text-sm font-semibold text-white/90 uppercase tracking-wide">Total Expenses</p>
+                      <p className="text-4xl font-bold text-white">${totalExpenses.toFixed(2)}</p>
                     </div>
-                    <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-                      <BarChart className="h-6 w-6 text-red-600" />
+                    <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
+                      <BarChart className="h-7 w-7 text-white" />
                     </div>
                   </div>
                 </div>
-                <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-100 shadow-glow">
-                  <div className="flex items-center justify-between">
+                <div className={`modern-card-hover text-white relative overflow-hidden group ${netCashFlow >= 0 ? 'bg-gradient-primary' : 'bg-gradient-to-br from-destructive to-red-500'}`}>
+                  <div className="absolute inset-0 bg-gradient-glass opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="flex items-center justify-between relative z-10">
                     <div>
-                      <p className="text-sm font-medium text-blue-700">Net Cash Flow</p>
-                      <p className={`text-3xl font-bold ${netCashFlow >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                      <p className="text-sm font-semibold text-white/90 uppercase tracking-wide">Net Cash Flow</p>
+                      <p className="text-4xl font-bold text-white">
                         ${netCashFlow.toFixed(2)}
                       </p>
                     </div>
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${netCashFlow >= 0 ? 'bg-blue-100' : 'bg-red-100'}`}>
-                      <BarChart className={`h-6 w-6 ${netCashFlow >= 0 ? 'text-blue-600' : 'text-red-600'}`} />
+                    <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
+                      <BarChart className="h-7 w-7 text-white" />
                     </div>
                   </div>
                 </div>

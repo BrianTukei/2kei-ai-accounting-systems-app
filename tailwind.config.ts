@@ -27,7 +27,9 @@ export default {
 				foreground: 'hsl(var(--foreground))',
 				primary: {
 					DEFAULT: 'hsl(var(--primary))',
-					foreground: 'hsl(var(--primary-foreground))'
+					foreground: 'hsl(var(--primary-foreground))',
+					glow: 'hsl(var(--primary-glow))',
+					dark: 'hsl(var(--primary-dark))'
 				},
 				secondary: {
 					DEFAULT: 'hsl(var(--secondary))',
@@ -43,7 +45,20 @@ export default {
 				},
 				accent: {
 					DEFAULT: 'hsl(var(--accent))',
-					foreground: 'hsl(var(--accent-foreground))'
+					foreground: 'hsl(var(--accent-foreground))',
+					light: 'hsl(var(--accent-light))'
+				},
+				success: {
+					DEFAULT: 'hsl(var(--success))',
+					foreground: 'hsl(var(--success-foreground))'
+				},
+				warning: {
+					DEFAULT: 'hsl(var(--warning))',
+					foreground: 'hsl(var(--warning-foreground))'
+				},
+				info: {
+					DEFAULT: 'hsl(var(--info))',
+					foreground: 'hsl(var(--info-foreground))'
 				},
 				popover: {
 					DEFAULT: 'hsl(var(--popover))',
@@ -131,15 +146,28 @@ export default {
 			},
             backgroundImage: {
                 'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+                'gradient-primary': 'var(--gradient-primary)',
+                'gradient-secondary': 'var(--gradient-secondary)',
+                'gradient-hero': 'var(--gradient-hero)',
+                'gradient-subtle': 'var(--gradient-subtle)',
+                'gradient-glass': 'var(--gradient-glass)',
             },
             boxShadow: {
                 'subtle': '0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)',
-                'glass': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                'glass': 'var(--shadow-glass)',
                 'glass-lg': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
                 'glass-xl': '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+                'elegant': 'var(--shadow-elegant)',
+                'glow': 'var(--shadow-glow)',
+                'soft': 'var(--shadow-soft)',
+            },
+            fontFamily: {
+                'display': ['Playfair Display', 'serif'],
+                'sans': ['Inter', 'system-ui', 'sans-serif'],
             },
             transitionDuration: {
                 '400': '400ms',
+                '600': '600ms',
             },
 		}
 	},

@@ -51,16 +51,16 @@ export default function Reports() {
   }, [transactions]);
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-gradient-subtle">
       <Navbar />
       
       <main className="container mx-auto px-4 py-8">
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight animate-fade-in">
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 animate-fade-up">
+          <div className="space-y-3">
+            <h1 className="text-4xl font-display font-bold tracking-tight text-shadow gradient-text">
               Reports
             </h1>
-            <p className="text-slate-500 animate-fade-in">
+            <p className="text-muted-foreground text-lg font-medium">
               Generate and analyze your financial data.
             </p>
           </div>
@@ -81,32 +81,35 @@ export default function Reports() {
           </div>
         </div>
         
-        <div className="grid grid-cols-1 gap-8">
-          <Card className="glass-card glass-card-hover">
-            <CardHeader>
-              <CardTitle>Financial Overview</CardTitle>
-              <CardDescription>Detailed financial analysis over time</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <OverviewChart 
-                data={chartData}
-                title="Financial Performance"
-                description="Income vs Expenses"
-              />
-            </CardContent>
-          </Card>
-          
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-            <Card className="hover:shadow-md transition-shadow">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-md">Cash Book (Ledger)</CardTitle>
+        <div className="grid grid-cols-1 gap-10">
+          <div className="animate-fade-up" style={{ animationDelay: '0.2s' }}>
+            <Card className="modern-card-hover backdrop-blur-xl shadow-elegant">
+              <CardHeader className="bg-gradient-glass border-b border-border/50">
+                <CardTitle className="text-2xl font-display">Financial Overview</CardTitle>
+                <CardDescription className="text-base">Detailed financial analysis over time</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-slate-500 mb-4">
+                <OverviewChart 
+                  data={chartData}
+                  title="Financial Performance"
+                  description="Income vs Expenses"
+                />
+              </CardContent>
+            </Card>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10 animate-fade-up" style={{ animationDelay: '0.3s' }}>
+            <Card className="modern-card-hover group relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-10 transition-opacity duration-500" />
+              <CardHeader className="pb-3 relative z-10">
+                <CardTitle className="text-lg font-display">Cash Book (Ledger)</CardTitle>
+              </CardHeader>
+              <CardContent className="relative z-10">
+                <p className="text-sm text-muted-foreground mb-4 font-medium">
                   Complete record of all cash inflows and outflows
                 </p>
                 <Link to="/cash-book">
-                  <Button className="w-full bg-gradient-primary hover:bg-gradient-primary/90">
+                  <Button className="w-full bg-gradient-primary hover:bg-gradient-primary/90 shadow-soft hover:shadow-elegant transition-all duration-300 hover:scale-105">
                     <Book className="h-4 w-4 mr-2" />
                     View Ledger
                   </Button>

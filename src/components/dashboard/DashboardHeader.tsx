@@ -32,32 +32,34 @@ export default function DashboardHeader({ title, subtitle }: DashboardHeaderProp
   };
 
   return (
-    <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight animate-fade-in">
-          {title}
-        </h1>
-        <p className="text-slate-500 animate-fade-in">
-          {subtitle}
-        </p>
-      </div>
-      
-      <div className="mt-4 md:mt-0 flex flex-col sm:flex-row gap-2 animate-fade-in">
-        <Button 
-          variant="outline"
-          className="rounded-full"
-          onClick={() => setIsRecurringModalOpen(true)}
-        >
-          <Repeat className="h-4 w-4 mr-2" />
-          Add Recurring
-        </Button>
-        <Button 
-          className="rounded-full"
-          onClick={() => setIsAddModalOpen(true)}
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          New Transaction
-        </Button>
+    <>
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
+        <div className="space-y-2">
+          <h1 className="text-4xl font-display font-bold tracking-tight text-shadow gradient-text">
+            {title}
+          </h1>
+          <p className="text-muted-foreground text-lg font-medium">
+            {subtitle}
+          </p>
+        </div>
+        
+        <div className="mt-6 md:mt-0 flex flex-col sm:flex-row gap-3">
+          <Button 
+            variant="outline"
+            className="modern-card-hover border-primary/20 hover:border-primary/40 backdrop-blur-sm"
+            onClick={() => setIsRecurringModalOpen(true)}
+          >
+            <Repeat className="h-4 w-4 mr-2" />
+            Add Recurring
+          </Button>
+          <Button 
+            className="bg-gradient-primary hover:bg-gradient-primary/90 shadow-elegant hover:shadow-glow transition-all duration-300 hover:scale-105"
+            onClick={() => setIsAddModalOpen(true)}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            New Transaction
+          </Button>
+        </div>
       </div>
 
       <AddTransactionModal 
@@ -71,6 +73,6 @@ export default function DashboardHeader({ title, subtitle }: DashboardHeaderProp
         onClose={() => setIsRecurringModalOpen(false)}
         onAddRecurringTransaction={handleAddRecurringTransaction}
       />
-    </div>
+    </>
   );
 }

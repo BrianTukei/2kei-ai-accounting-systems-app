@@ -63,27 +63,31 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-gradient-subtle">
       <Navbar />
       
       <main className="container mx-auto px-4 py-8">
-        <DashboardHeader 
-          title="Dashboard" 
-          subtitle="Welcome back! Here's your financial overview."
-        />
+        <div className="mb-8 animate-fade-up">
+          <DashboardHeader 
+            title="Dashboard" 
+            subtitle="Welcome back! Here's your financial overview."
+          />
+        </div>
         
         {/* Admin Access Card - only visible to admin */}
-        <div className="mb-6">
+        <div className="mb-8 animate-fade-up" style={{ animationDelay: '0.1s' }}>
           <AdminAccessCard />
         </div>
         
-        <DashboardTabs 
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          chartData={getChartData()}
-          recentTransactions={recentTransactions}
-          onAddTransaction={handleAddTransaction}
-        />
+        <div className="animate-fade-up" style={{ animationDelay: '0.2s' }}>
+          <DashboardTabs 
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            chartData={getChartData()}
+            recentTransactions={recentTransactions}
+            onAddTransaction={handleAddTransaction}
+          />
+        </div>
       </main>
     </div>
   );

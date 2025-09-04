@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, CreditCard } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { Transaction } from '@/components/TransactionCard';
 import AddTransactionModal from '@/components/AddTransactionModal';
@@ -53,23 +53,24 @@ export default function Transactions() {
   });
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-gradient-subtle">
       <Navbar />
       
       <main className="container mx-auto px-4 py-8">
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight animate-fade-in">
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 animate-fade-up">
+          <div className="space-y-3">
+            <h1 className="text-4xl font-display font-bold tracking-tight text-shadow gradient-text flex items-center">
+              <CreditCard className="h-10 w-10 mr-4 text-primary drop-shadow-lg" />
               Transactions
             </h1>
-            <p className="text-slate-500 animate-fade-in">
+            <p className="text-muted-foreground text-lg font-medium">
               Manage your income and expenses
             </p>
           </div>
           
-          <div className="mt-4 md:mt-0 flex flex-col sm:flex-row gap-2 animate-fade-in">
+          <div className="mt-6 md:mt-0 flex flex-col sm:flex-row gap-3">
             <Button 
-              className="rounded-full"
+              className="bg-gradient-primary hover:bg-gradient-primary/90 shadow-elegant hover:shadow-glow transition-all duration-300 hover:scale-105"
               onClick={() => setIsAddModalOpen(true)}
             >
               <Plus className="h-4 w-4 mr-2" />
@@ -78,20 +79,26 @@ export default function Transactions() {
           </div>
         </div>
         
-        <TransactionFilters 
-          searchQuery={searchQuery}
-          onSearchChange={handleSearch}
-          filterType={filterType}
-          onFilterChange={handleFilter}
-        />
+        <div className="animate-fade-up" style={{ animationDelay: '0.1s' }}>
+          <TransactionFilters 
+            searchQuery={searchQuery}
+            onSearchChange={handleSearch}
+            filterType={filterType}
+            onFilterChange={handleFilter}
+          />
+        </div>
         
-        <TransactionSummary transactions={filteredTransactions} />
+        <div className="animate-fade-up" style={{ animationDelay: '0.2s' }}>
+          <TransactionSummary transactions={filteredTransactions} />
+        </div>
         
-        <TransactionList 
-          transactions={filteredTransactions}
-          onEditTransaction={handleEditTransaction}
-          onDeleteTransaction={handleDeleteTransaction}
-        />
+        <div className="animate-fade-up" style={{ animationDelay: '0.3s' }}>
+          <TransactionList 
+            transactions={filteredTransactions}
+            onEditTransaction={handleEditTransaction}
+            onDeleteTransaction={handleDeleteTransaction}
+          />
+        </div>
       </main>
       
       <AddTransactionModal 

@@ -26,34 +26,37 @@ export default function StatCard({
   const isNegative = trend && trend < 0;
   
   return (
-    <Card className={cn("glass-card glass-card-hover overflow-hidden group", className)}>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium text-foreground">{title}</CardTitle>
+    <Card className={cn("modern-card-hover relative overflow-hidden group backdrop-blur-xl", className)}>
+      <div className="absolute inset-0 bg-gradient-glass opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+      
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 relative z-10">
+        <CardTitle className="text-sm font-semibold text-foreground/80 tracking-wide uppercase">{title}</CardTitle>
         {Icon && (
           <div className={cn(
-            "w-8 h-8 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300",
-            iconClassName || "bg-gradient-to-br from-primary/10 to-accent/10 text-primary"
+            "w-12 h-12 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-all duration-500",
+            iconClassName || "bg-gradient-primary/10 text-primary"
           )}>
-            <Icon size={18} />
+            <Icon size={20} />
           </div>
         )}
       </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold text-foreground">{value}</div>
+      
+      <CardContent className="relative z-10">
+        <div className="text-3xl font-bold text-foreground tracking-tight mb-2">{value}</div>
         {(description || trend) && (
-          <p className="text-xs text-muted-foreground mt-1 flex items-center">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground font-medium">{description}</p>
             {trend && (
               <span className={cn(
-                "mr-1 text-xs font-medium",
-                isPositive && "text-green-500",
-                isNegative && "text-red-500"
+                "px-2.5 py-1 rounded-full text-xs font-semibold",
+                isPositive && "bg-success/10 text-success",
+                isNegative && "bg-destructive/10 text-destructive"
               )}>
                 {isPositive && '+'}
                 {trend}%
               </span>
             )}
-            {description}
-          </p>
+          </div>
         )}
       </CardContent>
     </Card>

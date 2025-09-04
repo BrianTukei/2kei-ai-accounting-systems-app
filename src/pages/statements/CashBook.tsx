@@ -5,7 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { DateRangePicker } from '@/components/DateRangePicker';
-import { Download, Book } from 'lucide-react';
+import { Download, Book, ArrowLeft, LayoutDashboard, BarChart, Plus, Filter } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useTransactions } from '@/hooks/useTransactions';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -87,30 +88,65 @@ export default function CashBook() {
       <Navbar />
       
       <main className="container mx-auto px-4 py-8">
+        {/* Navigation Breadcrumb */}
+        <div className="flex items-center space-x-2 mb-6 animate-fade-in">
+          <Button variant="ghost" size="sm" asChild className="text-slate-600 hover:text-primary">
+            <Link to="/dashboard">
+              <LayoutDashboard className="h-4 w-4 mr-2" />
+              Dashboard
+            </Link>
+          </Button>
+          <span className="text-slate-400">/</span>
+          <Button variant="ghost" size="sm" asChild className="text-slate-600 hover:text-primary">
+            <Link to="/reports">
+              <BarChart className="h-4 w-4 mr-2" />
+              Reports
+            </Link>
+          </Button>
+          <span className="text-slate-400">/</span>
+          <span className="text-slate-900 font-medium">Cash Book</span>
+        </div>
+
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight animate-fade-in">
+            <h1 className="text-3xl font-bold tracking-tight animate-fade-in flex items-center">
+              <Book className="h-8 w-8 mr-3 text-primary" />
               Cash Book
             </h1>
             <p className="text-slate-500 animate-fade-in">
-              A record of all cash transactions
+              A comprehensive record of all cash inflows and outflows
             </p>
           </div>
           
-          <div className="mt-4 md:mt-0 flex space-x-2 animate-fade-in">
+          <div className="mt-4 md:mt-0 flex flex-wrap gap-2 animate-fade-in">
             <DateRangePicker />
             
-            <Button onClick={generatePDF}>
+            <Button variant="outline" size="sm">
+              <Filter className="h-4 w-4 mr-2" />
+              Filter
+            </Button>
+            
+            <Button onClick={generatePDF} className="bg-gradient-primary hover:bg-gradient-primary/90">
               <Download className="h-4 w-4 mr-2" />
               Export PDF
+            </Button>
+            
+            <Button asChild className="bg-gradient-primary hover:bg-gradient-primary/90">
+              <Link to="/transactions">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Transaction
+              </Link>
             </Button>
           </div>
         </div>
         
-        <Card className="glass-card glass-card-hover">
-          <CardHeader>
-            <CardTitle>Cash Book</CardTitle>
-            <CardDescription>All cash inflows and outflows</CardDescription>
+        <Card className="glass-card glass-card-hover shadow-elegant">
+          <CardHeader className="bg-gradient-subtle rounded-t-lg">
+            <CardTitle className="flex items-center text-xl">
+              <Book className="h-5 w-5 mr-2 text-primary" />
+              Cash Book Ledger
+            </CardTitle>
+            <CardDescription>Complete record of all cash inflows and outflows</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
@@ -150,21 +186,46 @@ export default function CashBook() {
               </Table>
             </div>
             
-            <div className="border-t mt-6 pt-4">
-              <div className="grid grid-cols-3 gap-4">
-                <div className="p-4 bg-green-50 rounded-lg">
-                  <p className="text-sm text-slate-600">Total Income</p>
-                  <p className="text-2xl font-semibold text-green-600">${totalIncome.toFixed(2)}</p>
+            <div className="border-t mt-6 pt-6">
+              <h3 className="text-lg font-semibold mb-4 flex items-center">
+                <BarChart className="h-5 w-5 mr-2 text-primary" />
+                Financial Summary
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border border-green-100 shadow-glow">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-green-700">Total Income</p>
+                      <p className="text-3xl font-bold text-green-600">${totalIncome.toFixed(2)}</p>
+                    </div>
+                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                      <BarChart className="h-6 w-6 text-green-600" />
+                    </div>
+                  </div>
                 </div>
-                <div className="p-4 bg-red-50 rounded-lg">
-                  <p className="text-sm text-slate-600">Total Expenses</p>
-                  <p className="text-2xl font-semibold text-red-600">${totalExpenses.toFixed(2)}</p>
+                <div className="p-6 bg-gradient-to-br from-red-50 to-rose-50 rounded-lg border border-red-100 shadow-glow">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-red-700">Total Expenses</p>
+                      <p className="text-3xl font-bold text-red-600">${totalExpenses.toFixed(2)}</p>
+                    </div>
+                    <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                      <BarChart className="h-6 w-6 text-red-600" />
+                    </div>
+                  </div>
                 </div>
-                <div className="p-4 bg-blue-50 rounded-lg">
-                  <p className="text-sm text-slate-600">Net Cash Flow</p>
-                  <p className={`text-2xl font-semibold ${netCashFlow >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
-                    ${netCashFlow.toFixed(2)}
-                  </p>
+                <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-100 shadow-glow">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-blue-700">Net Cash Flow</p>
+                      <p className={`text-3xl font-bold ${netCashFlow >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                        ${netCashFlow.toFixed(2)}
+                      </p>
+                    </div>
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${netCashFlow >= 0 ? 'bg-blue-100' : 'bg-red-100'}`}>
+                      <BarChart className={`h-6 w-6 ${netCashFlow >= 0 ? 'text-blue-600' : 'text-red-600'}`} />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

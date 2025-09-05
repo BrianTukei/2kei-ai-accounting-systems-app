@@ -52,10 +52,10 @@ const FeaturesSection = forwardRef<HTMLDivElement>((props, ref) => {
       <div className="container mx-auto px-4 relative z-10">
         <div className="max-w-3xl mx-auto text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold mb-4 animate-on-scroll opacity-0">
-            Designed for <span className="gradient-text">Financial Clarity</span>
+            Why <span className="gradient-text">Smart Businesses Choose</span> 2KÈI Ledgery
           </h2>
           <p className="text-lg text-muted-foreground animate-on-scroll opacity-0">
-            Everything you need to manage your business finances, organized in one clean interface.
+            While others waste time with complicated software, you'll have everything you need in one powerful, intuitive platform. <span className="font-semibold text-primary">This is why we're the industry leader.</span>
           </p>
         </div>
         

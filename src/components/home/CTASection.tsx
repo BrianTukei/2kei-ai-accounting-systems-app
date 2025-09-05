@@ -14,14 +14,14 @@ const CTASection = () => {
           {/* Content */}
           <div className="text-center lg:text-left">
             <h2 className="text-3xl md:text-4xl font-bold mb-6 animate-on-scroll opacity-0">
-              Ready to <span className="gradient-text">simplify</span> your accounting?
+              Don't Let Poor <span className="gradient-text">Financial Management</span> Kill Your Business
             </h2>
             <p className="text-lg text-muted-foreground mb-8 animate-on-scroll opacity-0">
-              Join thousands of businesses that use 2KÈI Ledgery Accounting to manage their finances effortlessly.
+              Every day you delay is money lost. While competitors struggle with outdated tools, smart business owners choose 2KÈI Ledgery. <span className="font-semibold text-primary">Your future self will thank you.</span>
             </p>
             <Button asChild size="lg" className="rounded-full px-8 py-6 text-base animate-on-scroll opacity-0 hero-glow bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 border-0 shadow-elegant">
               <Link to="/auth?action=signup">
-                Start Your Free Trial
+                Secure Your Competitive Edge Now
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>

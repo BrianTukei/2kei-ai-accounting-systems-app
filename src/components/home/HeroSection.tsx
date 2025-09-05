@@ -69,25 +69,23 @@ const HeroSection = ({ featuresRef }: HeroSectionProps) => {
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-primary/10 to-accent/10 backdrop-blur-sm border border-primary/20 px-4 py-2 text-sm font-medium text-primary mb-8 animate-fade-in">
             <Sparkles className="w-4 h-4" />
-            Simplified Cash Management
+            #1 Choice for Smart Business Owners
             <TrendingUp className="w-4 h-4" />
           </div>
           
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 tracking-tight animate-fade-up">
-            <span className="gradient-text">
-              Smart Accounting
-            </span>{" "}
-            for Your Business
+            The <span className="gradient-text">Only</span> Accounting Solution{" "}
+            <span className="gradient-text">Your Business</span> Will Ever Need
           </h1>
           
           <p className="text-lg md:text-xl text-slate-600 mb-8 max-w-3xl mx-auto animate-fade-up" style={{ animationDelay: '0.1s' }}>
-            Ledgerly streamlines your financial workflow with intuitive tools for tracking income, expenses, and generating reports—all in one beautifully designed platform.
+            Why struggle with complex accounting software when 2KÈI Ledgery makes financial management effortless? Join 50,000+ businesses who chose us over the competition. <span className="font-semibold text-primary">Stop wasting time. Start winning.</span>
           </p>
           
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-up" style={{ animationDelay: '0.2s' }}>
             <Button asChild size="lg" className="rounded-full px-8 py-6 text-base hero-glow bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 border-0 shadow-elegant">
               <Link to="/auth?action=signup">
-                Get Started Free
+                Claim Your Free Account Now
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>

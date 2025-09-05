@@ -1,8 +1,9 @@
 
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Sparkles, TrendingUp } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { ArrowRight, Sparkles, TrendingUp, ChevronDown, BarChart, CreditCard, FileText, Calculator, PieChart, Target } from 'lucide-react';
 import dashboardHero from '@/assets/dashboard-hero.jpg';
 
 interface HeroSectionProps {
@@ -10,6 +11,46 @@ interface HeroSectionProps {
 }
 
 const HeroSection = ({ featuresRef }: HeroSectionProps) => {
+  const [isOpen, setIsOpen] = useState(false);
+  
+  const features = [
+    {
+      name: "Financial Dashboard",
+      description: "Real-time insights and analytics",
+      icon: BarChart,
+      link: "/dashboard"
+    },
+    {
+      name: "Transaction Management",
+      description: "Track income and expenses effortlessly",
+      icon: CreditCard,
+      link: "/transactions"
+    },
+    {
+      name: "Financial Forecast",
+      description: "AI-powered predictions and trends",
+      icon: TrendingUp,
+      link: "/forecast"
+    },
+    {
+      name: "Advanced Reports",
+      description: "Comprehensive financial statements",
+      icon: FileText,
+      link: "/reports"
+    },
+    {
+      name: "Payroll Management",
+      description: "Streamlined employee payments",
+      icon: Calculator,
+      link: "/payroll"
+    },
+    {
+      name: "Expense Analytics",
+      description: "Category breakdowns and insights",
+      icon: PieChart,
+      link: "/forecast"
+    }
+  ];
   return (
     <section className="relative pt-20 pb-24 overflow-hidden">
       {/* Animated background */}
@@ -51,15 +92,77 @@ const HeroSection = ({ featuresRef }: HeroSectionProps) => {
               </Link>
             </Button>
             
-            <Button
-              asChild
-              variant="outline"
-              size="lg"
-              className="rounded-full px-8 py-6 text-base bg-white/10 backdrop-blur-sm border-white/20 hover:bg-white/20 hover:border-white/30"
-              onClick={() => featuresRef.current?.scrollIntoView({ behavior: 'smooth' })}
-            >
-              <a href="#features">Explore Features</a>
-            </Button>
+            <Popover open={isOpen} onOpenChange={setIsOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="rounded-full px-8 py-6 text-base bg-white/10 backdrop-blur-sm border-white/20 hover:bg-white/20 hover:border-white/30 transition-all duration-300"
+                >
+                  Explore Features
+                  <ChevronDown className={`ml-2 h-4 w-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent 
+                className="w-96 p-0 glass-card border-white/20 shadow-elegant animate-scale-in" 
+                align="center"
+                sideOffset={12}
+              >
+                <div className="p-6">
+                  <div className="flex items-center mb-4">
+                    <Target className="h-5 w-5 text-primary mr-2" />
+                    <h3 className="font-semibold text-lg gradient-text">Key Features</h3>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 gap-3">
+                    {features.map((feature, index) => {
+                      const Icon = feature.icon;
+                      return (
+                        <Link
+                          key={feature.name}
+                          to={feature.link}
+                          className="group p-3 rounded-lg border border-border/50 hover:border-primary/30 hover:bg-primary/5 transition-all duration-200 hover-lift"
+                          onClick={() => setIsOpen(false)}
+                          style={{ animationDelay: `${index * 50}ms` }}
+                        >
+                          <div className="flex items-start space-x-3">
+                            <div className="p-2 rounded-md bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                              <Icon className="h-4 w-4 text-primary" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-foreground group-hover:text-primary transition-colors">
+                                {feature.name}
+                              </p>
+                              <p className="text-sm text-muted-foreground mt-1">
+                                {feature.description}
+                              </p>
+                            </div>
+                            <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all duration-200" />
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                  
+                  <div className="mt-4 pt-4 border-t border-border/50">
+                    <Button
+                      asChild
+                      variant="ghost"
+                      className="w-full text-sm hover:bg-primary/10"
+                      onClick={() => {
+                        setIsOpen(false);
+                        featuresRef.current?.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                    >
+                      <a href="#features">
+                        View All Features
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </a>
+                    </Button>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
         

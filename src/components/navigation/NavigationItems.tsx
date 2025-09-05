@@ -7,7 +7,8 @@ import {
   BarChart, 
   Settings, 
   FileText,
-  Book
+  Book,
+  TrendingUp
 } from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
 
@@ -20,6 +21,7 @@ export interface NavItem {
 export const navItems: NavItem[] = [
   { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
   { name: 'Transactions', path: '/transactions', icon: CreditCard },
+  { name: 'Forecast', path: '/forecast', icon: TrendingUp },
   { name: 'Reports', path: '/reports', icon: BarChart },
   { name: 'Income Statement', path: '/income-statement', icon: FileText },
   { name: 'Cash Flow', path: '/cash-flow', icon: FileText },

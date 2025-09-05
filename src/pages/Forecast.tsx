@@ -9,6 +9,9 @@ import Navbar from '@/components/Navbar';
 import { useForecast } from '@/hooks/useForecast';
 import ForecastChart from '@/components/forecast/ForecastChart';
 import ForecastSummary from '@/components/forecast/ForecastSummary';
+import ExpenseBreakdownChart from '@/components/forecast/ExpenseBreakdownChart';
+import CashFlowChart from '@/components/forecast/CashFlowChart';
+import ForecastInsights from '@/components/forecast/ForecastInsights';
 
 export default function Forecast() {
   const [forecastMonths, setForecastMonths] = useState<number>(6);
@@ -16,27 +19,27 @@ export default function Forecast() {
   const { forecastData, isLoading } = useForecast(forecastMonths);
   
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-gradient-subtle">
       <Navbar />
       
       <main className="container mx-auto px-4 py-8">
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 animate-fade-up">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight animate-fade-in flex items-center">
-              <TrendingUp className="mr-2 h-8 w-8" />
+            <h1 className="text-4xl font-bold tracking-tight gradient-text flex items-center">
+              <TrendingUp className="mr-3 h-10 w-10 text-primary" />
               Financial Forecast
             </h1>
-            <p className="text-slate-500 animate-fade-in">
-              Predict your future financial patterns
+            <p className="text-muted-foreground mt-2 text-lg">
+              Advanced analytics and predictions for your financial future
             </p>
           </div>
           
-          <div className="mt-4 md:mt-0 flex flex-col sm:flex-row gap-2 animate-fade-in">
+          <div className="mt-4 md:mt-0 flex flex-col sm:flex-row gap-3 animate-fade-in" style={{ animationDelay: '0.1s' }}>
             <Select 
               value={forecastMonths.toString()} 
               onValueChange={(value) => setForecastMonths(parseInt(value))}
             >
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-[180px] glass-card">
                 <SelectValue placeholder="Forecast Period" />
               </SelectTrigger>
               <SelectContent>
@@ -46,11 +49,12 @@ export default function Forecast() {
               </SelectContent>
             </Select>
             
-            <div className="flex space-x-1">
+            <div className="flex space-x-2">
               <Button 
                 variant={chartType === 'bar' ? 'default' : 'outline'} 
                 size="icon" 
                 onClick={() => setChartType('bar')}
+                className="glass-card glass-card-hover"
               >
                 <BarChart className="h-4 w-4" />
               </Button>
@@ -58,6 +62,7 @@ export default function Forecast() {
                 variant={chartType === 'line' ? 'default' : 'outline'} 
                 size="icon" 
                 onClick={() => setChartType('line')}
+                className="glass-card glass-card-hover"
               >
                 <LineChartIcon className="h-4 w-4" />
               </Button>
@@ -76,72 +81,85 @@ export default function Forecast() {
           </Card>
         ) : forecastData ? (
           <>
-            <ForecastSummary data={forecastData} />
+            <div className="animate-fade-up" style={{ animationDelay: '0.2s' }}>
+              <ForecastSummary data={forecastData} />
+            </div>
             
-            <ForecastChart 
-              data={forecastData.monthly}
-              title="Monthly Financial Forecast"
-              description="Projected income, expenses, and balance for upcoming months"
-              chartType={chartType}
-            />
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mt-8">
+              <div className="animate-fade-up" style={{ animationDelay: '0.3s' }}>
+                <ForecastChart 
+                  data={forecastData.monthly}
+                  title="Monthly Financial Forecast"
+                  description="Projected income, expenses, and balance for upcoming months"
+                  chartType={chartType}
+                />
+              </div>
+              
+              <div className="animate-fade-up" style={{ animationDelay: '0.4s' }}>
+                <ExpenseBreakdownChart data={forecastData.expenseBreakdown} />
+              </div>
+            </div>
             
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-              <Card className="glass-card glass-card-hover">
+            <div className="mt-8 animate-fade-up" style={{ animationDelay: '0.5s' }}>
+              <CashFlowChart data={forecastData.monthly} />
+            </div>
+            
+            <div className="mt-8 animate-fade-up" style={{ animationDelay: '0.6s' }}>
+              <ForecastInsights data={forecastData} months={forecastMonths} />
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+              <Card className="glass-card glass-card-hover animate-fade-up" style={{ animationDelay: '0.7s' }}>
                 <CardHeader>
-                  <CardTitle>Forecast Methodology</CardTitle>
+                  <CardTitle className="gradient-text">Forecast Methodology</CardTitle>
                   <CardDescription>How we calculate your financial projections</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <p>Our forecast is built using:</p>
-                    <ul className="list-disc pl-5 space-y-2">
-                      <li>Historical transaction patterns from your past records</li>
-                      <li>Recurring transactions you've scheduled</li>
-                      <li>Growth trend analysis based on your last 3 months of activity</li>
-                      <li>Seasonal adjustments when applicable</li>
+                    <p className="text-foreground">Our advanced forecast engine analyzes:</p>
+                    <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
+                      <li>Historical transaction patterns from your financial records</li>
+                      <li>Income and expense growth trends over the last 3 months</li>
+                      <li>Category-based spending analysis for detailed breakdowns</li>
+                      <li>Compound growth calculations for long-term projections</li>
                     </ul>
-                    <p className="text-sm text-muted-foreground mt-4">
-                      Note: This forecast is an estimate based on available data. Actual results may vary.
+                    <p className="text-sm text-muted-foreground mt-4 p-3 bg-muted/50 rounded-lg">
+                      <strong>Note:</strong> This forecast is an estimate based on available data. Actual results may vary based on market conditions and personal financial decisions.
                     </p>
                   </div>
                 </CardContent>
               </Card>
               
-              <Card className="glass-card glass-card-hover">
+              <Card className="glass-card glass-card-hover animate-fade-up" style={{ animationDelay: '0.8s' }}>
                 <CardHeader>
-                  <CardTitle>Financial Insights</CardTitle>
-                  <CardDescription>Analysis based on your forecast</CardDescription>
+                  <CardTitle className="gradient-text">About Your Data</CardTitle>
+                  <CardDescription>Understanding your financial patterns</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {forecastData.netGain >= 0 ? (
-                      <p>Your financial forecast shows a positive trend with a projected net gain of ${forecastData.netGain.toFixed(2)} over the next {forecastMonths} months.</p>
-                    ) : (
-                      <p>Your forecast indicates a potential deficit of ${Math.abs(forecastData.netGain).toFixed(2)} over the next {forecastMonths} months. Consider reviewing your expenses.</p>
-                    )}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="text-center p-4 bg-primary/5 rounded-lg">
+                        <div className="text-2xl font-bold text-primary">{forecastData.monthly.length}</div>
+                        <div className="text-sm text-muted-foreground">Months Projected</div>
+                      </div>
+                      <div className="text-center p-4 bg-success/5 rounded-lg">
+                        <div className="text-2xl font-bold text-success">{forecastData.expenseBreakdown.length}</div>
+                        <div className="text-sm text-muted-foreground">Expense Categories</div>
+                      </div>
+                    </div>
                     
-                    {forecastData.growthRate > 0 ? (
-                      <p>Your balance is projected to grow by {forecastData.growthRate}% during this period.</p>
-                    ) : (
-                      <p>Your balance is projected to decrease by {Math.abs(forecastData.growthRate)}% during this period.</p>
-                    )}
-                    
-                    <div className="mt-4 pt-4 border-t">
-                      <h4 className="font-medium mb-2">Recommendations:</h4>
-                      <ul className="list-disc pl-5 space-y-2">
-                        {forecastData.netGain < 0 && (
-                          <li>Consider reducing non-essential expenses to improve your financial outlook.</li>
-                        )}
-                        {forecastData.totalIncome < forecastData.totalExpenses * 1.1 && (
-                          <li>Your income is only slightly higher than expenses. Consider building an emergency fund.</li>
-                        )}
-                        {forecastData.growthRate < 3 && forecastData.growthRate >= 0 && (
-                          <li>Your growth rate is modest. Consider opportunities to increase income or reduce regular expenses.</li>
-                        )}
-                        {forecastData.growthRate < 0 && (
-                          <li>Your financial trajectory is negative. Review your budget as soon as possible.</li>
-                        )}
-                      </ul>
+                    <div className="pt-4 border-t">
+                      <h4 className="font-medium mb-2 text-foreground">Key Metrics:</h4>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Expense Ratio:</span>
+                          <span className="font-medium">{((forecastData.totalExpenses / forecastData.totalIncome) * 100).toFixed(1)}%</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Savings Rate:</span>
+                          <span className="font-medium text-success">{(100 - (forecastData.totalExpenses / forecastData.totalIncome) * 100).toFixed(1)}%</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </CardContent>

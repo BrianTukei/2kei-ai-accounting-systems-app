@@ -169,67 +169,37 @@ const calculatePreviousMonthsAverage = (transactions: Transaction[], monthsBack:
 
 // Generate expense breakdown by category
 const generateExpenseBreakdown = (transactions: Transaction[], totalProjectedExpenses: number): CategoryBreakdown[] => {
-  // Define common expense categories
-  const categories = {
-    'Food & Dining': ['food', 'restaurant', 'grocery', 'dining', 'meal'],
-    'Transportation': ['transport', 'gas', 'fuel', 'car', 'uber', 'taxi'],
-    'Utilities': ['utility', 'electric', 'water', 'internet', 'phone'],
-    'Entertainment': ['entertainment', 'movie', 'game', 'music', 'streaming'],
-    'Shopping': ['shopping', 'clothes', 'amazon', 'store'],
-    'Healthcare': ['health', 'medical', 'doctor', 'pharmacy'],
-    'Other': []
-  };
-  
-  // Group expenses by category
-  const categoryTotals: {[key: string]: number} = {};
-  Object.keys(categories).forEach(cat => categoryTotals[cat] = 0);
-  
-  // Analyze expense transactions
+  // Filter expense transactions
   const expenseTransactions = transactions.filter(t => t.type === 'expense');
   
+  if (expenseTransactions.length === 0) {
+    // Return default breakdown if no expense data
+    return [
+      { category: 'Office Rent', amount: totalProjectedExpenses * 0.35, percentage: 35 },
+      { category: 'Utilities', amount: totalProjectedExpenses * 0.20, percentage: 20 },
+      { category: 'Office Supplies', amount: totalProjectedExpenses * 0.15, percentage: 15 },
+      { category: 'Marketing', amount: totalProjectedExpenses * 0.15, percentage: 15 },
+      { category: 'Equipment', amount: totalProjectedExpenses * 0.10, percentage: 10 },
+      { category: 'Other', amount: totalProjectedExpenses * 0.05, percentage: 5 }
+    ];
+  }
+  
+  // Group expenses by their actual category from transaction data
+  const categoryTotals: {[key: string]: number} = {};
+  
   expenseTransactions.forEach(transaction => {
-    const description = (transaction.description || '').toLowerCase();
-    let categorized = false;
-    
-    // Try to categorize based on description keywords
-    for (const [category, keywords] of Object.entries(categories)) {
-      if (category === 'Other') continue;
-      
-      if (keywords.some(keyword => description.includes(keyword))) {
-        categoryTotals[category] += transaction.amount;
-        categorized = true;
-        break;
-      }
-    }
-    
-    // If not categorized, add to "Other"
-    if (!categorized) {
-      categoryTotals['Other'] += transaction.amount;
-    }
+    const category = transaction.category || 'Other';
+    categoryTotals[category] = (categoryTotals[category] || 0) + transaction.amount;
   });
   
   // Calculate total actual expenses
   const totalActualExpenses = Object.values(categoryTotals).reduce((sum, amount) => sum + amount, 0);
   
-  // If we have actual expenses, scale them to match projected expenses
-  // If no actual expenses, distribute evenly
+  // Scale categories to match projected expenses
   const scaleFactor = totalActualExpenses > 0 ? totalProjectedExpenses / totalActualExpenses : 1;
   
-  // If no actual expense data, create a default distribution
-  if (totalActualExpenses === 0) {
-    return [
-      { category: 'Food & Dining', amount: totalProjectedExpenses * 0.3, percentage: 30 },
-      { category: 'Transportation', amount: totalProjectedExpenses * 0.2, percentage: 20 },
-      { category: 'Utilities', amount: totalProjectedExpenses * 0.15, percentage: 15 },
-      { category: 'Entertainment', amount: totalProjectedExpenses * 0.1, percentage: 10 },
-      { category: 'Shopping', amount: totalProjectedExpenses * 0.15, percentage: 15 },
-      { category: 'Other', amount: totalProjectedExpenses * 0.1, percentage: 10 }
-    ];
-  }
-  
-  // Create breakdown with actual data
-  return Object.entries(categoryTotals)
-    .filter(([_, amount]) => amount > 0)
+  // Create breakdown with scaled amounts
+  const breakdown = Object.entries(categoryTotals)
     .map(([category, amount]) => {
       const projectedAmount = amount * scaleFactor;
       return {
@@ -238,5 +208,14 @@ const generateExpenseBreakdown = (transactions: Transaction[], totalProjectedExp
         percentage: Number(((projectedAmount / totalProjectedExpenses) * 100).toFixed(1))
       };
     })
-    .sort((a, b) => b.amount - a.amount);
+    .sort((a, b) => b.amount - a.amount); // Sort by amount descending
+  
+  // Ensure we have at least some categories to display
+  if (breakdown.length === 0) {
+    return [
+      { category: 'General Expenses', amount: totalProjectedExpenses, percentage: 100 }
+    ];
+  }
+  
+  return breakdown;
 };

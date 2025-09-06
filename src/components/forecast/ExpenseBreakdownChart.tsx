@@ -24,16 +24,42 @@ export default function ExpenseBreakdownChart({ data }: ExpenseBreakdownProps) {
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0];
+      const formatCurrency = (amount: number) => {
+        return new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'USD',
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0
+        }).format(amount);
+      };
+      
       return (
         <div className="glass-card p-4 border border-border/50 rounded-lg shadow-elegant">
           <p className="font-medium text-foreground">{data.payload.category}</p>
-          <p className="text-primary font-semibold">${data.value.toFixed(2)}</p>
-          <p className="text-muted-foreground text-sm">{data.payload.percentage}% of total</p>
+          <p className="text-primary font-semibold">{formatCurrency(data.value)}</p>
+          <p className="text-muted-foreground text-sm">{data.payload.percentage.toFixed(1)}% of total</p>
         </div>
       );
     }
     return null;
   };
+
+  if (!data || data.length === 0) {
+    return (
+      <Card className="glass-card glass-card-hover">
+        <CardHeader>
+          <CardTitle className="gradient-text">Expense Categories</CardTitle>
+          <CardDescription>Breakdown of projected expenses by category</CardDescription>
+        </CardHeader>
+        <CardContent className="h-[400px] flex items-center justify-center">
+          <p className="text-muted-foreground text-center">
+            No expense data available.<br />
+            Add some expense transactions to see the breakdown.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="glass-card glass-card-hover">
@@ -50,8 +76,10 @@ export default function ExpenseBreakdownChart({ data }: ExpenseBreakdownProps) {
               cy="50%"
               innerRadius={60}
               outerRadius={140}
-              paddingAngle={2}
+              paddingAngle={3}
               dataKey="amount"
+              animationBegin={0}
+              animationDuration={800}
             >
               {data.map((entry, index) => (
                 <Cell 
@@ -65,12 +93,16 @@ export default function ExpenseBreakdownChart({ data }: ExpenseBreakdownProps) {
             <Tooltip content={<CustomTooltip />} />
             <Legend 
               verticalAlign="bottom" 
-              height={36}
-              formatter={(value, entry) => (
-                <span style={{ color: entry.color }}>
-                  {value}
+              height={60}
+              formatter={(value, entry: any) => (
+                <span style={{ color: entry.color, fontSize: '14px' }}>
+                  {value} ({entry.payload.percentage.toFixed(1)}%)
                 </span>
               )}
+              wrapperStyle={{
+                paddingTop: '20px',
+                fontSize: '14px'
+              }}
             />
           </PieChart>
         </ResponsiveContainer>

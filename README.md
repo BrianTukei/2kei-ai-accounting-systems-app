@@ -1,4 +1,4 @@
-# Welcome to your Lovable project
+# Welcome to 2KÈI Ledgery software project
 
 ## Project info
 

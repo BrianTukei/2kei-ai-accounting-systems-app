@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, TooltipProps } from 'recharts';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface ChartData {
   name: string;
@@ -18,6 +19,7 @@ interface OverviewChartProps {
 
 export default function OverviewChart({ data, title, description }: OverviewChartProps) {
   const isMobile = useIsMobile();
+  const { formatCurrency } = useCurrency();
   
   const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
     if (active && payload && payload.length) {
@@ -27,11 +29,11 @@ export default function OverviewChart({ data, title, description }: OverviewChar
           <div className="space-y-1">
             <p className="flex items-center text-green-600">
               <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-              Income: ${payload[0].value?.toFixed(2)}
+              Income: {formatCurrency(payload[0].value || 0)}
             </p>
             <p className="flex items-center text-red-600">
               <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
-              Expenses: ${payload[1].value?.toFixed(2)}
+              Expenses: {formatCurrency(payload[1].value || 0)}
             </p>
           </div>
         </div>
@@ -68,7 +70,7 @@ export default function OverviewChart({ data, title, description }: OverviewChar
               tick={{ fontSize: 12 }} 
               tickLine={false}
               axisLine={{ stroke: '#e2e8f0' }}
-              tickFormatter={(value) => `$${value}`}
+              tickFormatter={(value) => formatCurrency(value).replace(/\.\d{2}$/, '')}
             />
             <Tooltip content={<CustomTooltip />} />
             <Line

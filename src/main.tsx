@@ -3,6 +3,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
+import { CurrencyProvider } from './contexts/CurrencyContext'
 
 // Update the document title
 document.title = '2KÉI Ledgery Accounting'
@@ -15,6 +16,8 @@ document.head.appendChild(metaDescription)
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <App />
+    <CurrencyProvider>
+      <App />
+    </CurrencyProvider>
   </React.StrictMode>,
 )

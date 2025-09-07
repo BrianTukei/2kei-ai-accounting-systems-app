@@ -7,16 +7,18 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { BellRing, Lock, User, Moon, Bell, ArrowLeft, LayoutDashboard, CreditCard, BarChart } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { BellRing, Lock, User, Moon, Bell, ArrowLeft, LayoutDashboard, CreditCard, BarChart, DollarSign } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from "sonner";
+import { useCurrency, CURRENCIES } from '@/contexts/CurrencyContext';
 
 export default function Settings() {
   const [name, setName] = useState("John Doe");
   const [email, setEmail] = useState("john.doe@example.com");
   const [notifications, setNotifications] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
-  const [currency, setCurrency] = useState("USD");
+  const { selectedCurrency, setCurrency: setAppCurrency, formatCurrency } = useCurrency();
 
   const handleSaveProfile = () => {
     toast.success("Profile settings saved successfully!");
@@ -24,6 +26,14 @@ export default function Settings() {
 
   const handleSavePreferences = () => {
     toast.success("Preferences saved successfully!");
+  };
+
+  const handleCurrencyChange = (currencyCode: string) => {
+    const newCurrency = CURRENCIES.find(c => c.code === currencyCode);
+    if (newCurrency) {
+      setAppCurrency(newCurrency);
+      toast.success(`Currency changed to ${newCurrency.name}`);
+    }
   };
 
   return (
@@ -41,7 +51,7 @@ export default function Settings() {
               <span>Profile</span>
             </TabsTrigger>
             <TabsTrigger value="preferences" className="flex items-center gap-2">
-              <BellRing size={16} />
+              <DollarSign size={16} />
               <span>Preferences</span>
             </TabsTrigger>
             <TabsTrigger value="security" className="flex items-center gap-2">
@@ -135,13 +145,27 @@ export default function Settings() {
                   
                   <div className="space-y-2">
                     <Label htmlFor="currency">Currency</Label>
-                    <Input 
-                      id="currency" 
-                      value={currency} 
-                      onChange={(e) => setCurrency(e.target.value)} 
-                    />
+                    <Select 
+                      value={selectedCurrency.code} 
+                      onValueChange={handleCurrencyChange}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select currency" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-60 overflow-y-auto bg-popover z-50">
+                        {CURRENCIES.map((currency) => (
+                          <SelectItem key={currency.code} value={currency.code}>
+                            <div className="flex items-center gap-3">
+                              <span className="font-medium">{currency.symbol}</span>
+                              <span>{currency.code}</span>
+                              <span className="text-muted-foreground">- {currency.name}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <p className="text-sm text-muted-foreground">
-                      Set your preferred currency for transactions
+                      Set your preferred currency for transactions. Example: {formatCurrency(1234.56)}
                     </p>
                   </div>
                 </div>

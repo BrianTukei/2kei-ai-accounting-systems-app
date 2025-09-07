@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { Transaction } from '@/components/TransactionCard';
 import { useTransactions } from './useTransactions';
+import { Transaction } from '@/components/TransactionCard';
 
 export interface FinancialStats {
   totalBalance: number;

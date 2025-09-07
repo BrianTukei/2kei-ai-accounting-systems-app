@@ -2,6 +2,7 @@
 import StatCard from '@/components/StatCard';
 import { DollarSign, ArrowUpRight, ArrowDownLeft, CreditCard } from 'lucide-react';
 import { useFinancialStats } from '@/hooks/useFinancialStats';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 export default function StatsGrid() {
   const {
@@ -12,13 +13,8 @@ export default function StatsGrid() {
     incomeGrowth,
     expenseGrowth
   } = useFinancialStats();
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
-  };
+  
+  const { formatCurrency } = useCurrency();
 
   const formatTrend = (trend: number) => {
     return Math.round(trend);

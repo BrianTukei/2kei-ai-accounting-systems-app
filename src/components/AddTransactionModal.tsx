@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Transaction } from './TransactionCard';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface AddTransactionModalProps {
   isOpen: boolean;
@@ -22,6 +23,7 @@ export default function AddTransactionModal({
   onEditTransaction,
   transactionToEdit 
 }: AddTransactionModalProps) {
+  const { getCurrencySymbol } = useCurrency();
   const [amount, setAmount] = useState<string>('');
   const [type, setType] = useState<'income' | 'expense'>('income');
   const [category, setCategory] = useState<string>('');
@@ -137,7 +139,7 @@ export default function AddTransactionModal({
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="amount">Amount ($)</Label>
+            <Label htmlFor="amount">Amount ({getCurrencySymbol()})</Label>
             <Input
               id="amount"
               type="number"

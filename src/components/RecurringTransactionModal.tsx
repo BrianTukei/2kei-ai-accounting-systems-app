@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { RecurrenceFrequency, RecurringTransaction, RecurringTransactionFormData } from '@/types/RecurringTransaction';
 import { format } from 'date-fns';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface RecurringTransactionModalProps {
   isOpen: boolean;
@@ -24,6 +25,7 @@ export default function RecurringTransactionModal({
   onUpdateRecurringTransaction,
   transactionToEdit 
 }: RecurringTransactionModalProps) {
+  const { getCurrencySymbol } = useCurrency();
   const [amount, setAmount] = useState<string>('');
   const [type, setType] = useState<'income' | 'expense'>('income');
   const [category, setCategory] = useState<string>('');
@@ -164,7 +166,7 @@ export default function RecurringTransactionModal({
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="amount">Amount ($)</Label>
+            <Label htmlFor="amount">Amount ({getCurrencySymbol()})</Label>
             <Input
               id="amount"
               type="number"

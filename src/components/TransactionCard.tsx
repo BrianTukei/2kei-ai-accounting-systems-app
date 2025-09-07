@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils';
 import { ArrowUpRight, ArrowDownLeft, Pencil, Trash2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 export interface Transaction {
   id: string;
@@ -33,6 +34,7 @@ export default function TransactionCard({
   onEdit,
   onDelete
 }: TransactionCardProps) {
+  const { formatCurrency } = useCurrency();
   const { id, type, amount, category, description, date } = transaction;
   const isIncome = type === 'income';
   
@@ -69,7 +71,7 @@ export default function TransactionCard({
                 "font-semibold",
                 isIncome ? "text-green-600" : "text-red-600"
               )}>
-                {isIncome ? '+' : '-'}${Math.abs(amount).toFixed(2)}
+                {isIncome ? '+' : '-'}{formatCurrency(Math.abs(amount)).replace(/^[^\d]*/, '')}
               </p>
               <p className="text-xs text-muted-foreground">{date}</p>
             </div>

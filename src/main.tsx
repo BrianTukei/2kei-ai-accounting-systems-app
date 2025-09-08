@@ -4,6 +4,7 @@ import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
 import { CurrencyProvider } from './contexts/CurrencyContext'
+import AuthCheck from './components/auth/AuthCheck.tsx'
 
 // Update the document title
 document.title = '2KÉI Ledgery Accounting'
@@ -17,7 +18,9 @@ document.head.appendChild(metaDescription)
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <CurrencyProvider>
-      <App />
+      <AuthCheck>
+        <App />
+      </AuthCheck>
     </CurrencyProvider>
   </React.StrictMode>,
 )

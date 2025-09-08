@@ -2,6 +2,8 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { useCurrency } from '@/contexts/CurrencyContext';
+import { formatCurrency } from '@/lib/utils';
 
 interface ReceiptResultsProps {
   scanResults: {
@@ -10,6 +12,7 @@ interface ReceiptResultsProps {
     amount: number;
     description: string;
     category: string;
+    currency: string;
     subtotal: number;
     taxAmount: number;
     items: Array<{ name: string; price: number; quantity?: number }>;
@@ -27,6 +30,7 @@ export default function ReceiptResults({
   onRescan, 
   onAccept 
 }: ReceiptResultsProps) {
+  const { selectedCurrency } = useCurrency();
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -64,7 +68,7 @@ export default function ReceiptResults({
             {scanResults.items.map((item, index) => (
               <div key={index} className="flex justify-between text-sm mb-1">
                 <span>{item.quantity || 1}x {item.name}</span>
-                <span>${(item.price * (item.quantity || 1)).toFixed(2)}</span>
+                <span>{formatCurrency(item.price * (item.quantity || 1), scanResults.currency || selectedCurrency.code)}</span>
               </div>
             ))}
           </div>
@@ -74,15 +78,15 @@ export default function ReceiptResults({
           <div className="space-y-1">
             <div className="flex justify-between text-sm">
               <span>Subtotal</span>
-              <span>${scanResults.subtotal.toFixed(2)}</span>
+              <span>{formatCurrency(scanResults.subtotal, scanResults.currency || selectedCurrency.code)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span>Tax</span>
-              <span>${scanResults.taxAmount.toFixed(2)}</span>
+              <span>{formatCurrency(scanResults.taxAmount, scanResults.currency || selectedCurrency.code)}</span>
             </div>
             <div className="flex justify-between font-bold mt-1">
               <span>Total</span>
-              <span>${scanResults.amount.toFixed(2)}</span>
+              <span>{formatCurrency(scanResults.amount, scanResults.currency || selectedCurrency.code)}</span>
             </div>
           </div>
         </CardContent>

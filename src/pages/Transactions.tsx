@@ -5,6 +5,7 @@ import { Plus, CreditCard } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { Transaction } from '@/components/TransactionCard';
 import AddTransactionModal from '@/components/AddTransactionModal';
+import ReceiptScanner from '@/components/receipt/ReceiptScanner';
 import TransactionFilters from '@/components/transactions/TransactionFilters';
 import TransactionSummary from '@/components/transactions/TransactionSummary';
 import TransactionList from '@/components/transactions/TransactionList';
@@ -42,6 +43,17 @@ export default function Transactions() {
     setTransactionToEdit(undefined);
   };
 
+  const handleReceiptScan = (data: any) => {
+    addTransaction({
+      amount: data.amount,
+      type: 'expense',
+      category: data.category,
+      description: data.description,
+      date: data.date
+    });
+    toast.success('Receipt scanned and transaction added!');
+  };
+
   const filteredTransactions = transactions.filter(transaction => {
     const matchesSearch = !searchQuery || 
       transaction.category.toLowerCase().includes(searchQuery) ||
@@ -69,6 +81,7 @@ export default function Transactions() {
           </div>
           
           <div className="mt-6 md:mt-0 flex flex-col sm:flex-row gap-3">
+            <ReceiptScanner onScanComplete={handleReceiptScan} />
             <Button 
               className="bg-gradient-primary hover:bg-gradient-primary/90 shadow-elegant hover:shadow-glow transition-all duration-300 hover:scale-105"
               onClick={() => setIsAddModalOpen(true)}

@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
+import AuthCheck from '@/components/auth/AuthCheck';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -84,8 +85,9 @@ export default function CashBook() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
-      <Navbar />
+    <AuthCheck>
+      <div className="min-h-screen bg-gradient-subtle">
+        <Navbar />
       
       <main className="container mx-auto px-4 py-8">
         {/* Navigation Breadcrumb */}
@@ -236,5 +238,6 @@ export default function CashBook() {
         </Card>
       </main>
     </div>
+    </AuthCheck>
   );
 }

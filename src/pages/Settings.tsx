@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { BellRing, Lock, User, Moon, Bell, ArrowLeft, LayoutDashboard, CreditCard, BarChart, DollarSign } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from "sonner";
+import AuthCheck from '@/components/auth/AuthCheck';
 import { useCurrency, CURRENCIES } from '@/contexts/CurrencyContext';
 
 export default function Settings() {
@@ -37,7 +38,8 @@ export default function Settings() {
   };
 
   return (
-    <div className="container mx-auto py-10 px-4">
+    <AuthCheck>
+      <div className="container mx-auto py-10 px-4">
       <div className="flex flex-col gap-6">
         <div>
           <h1 className="text-3xl font-bold">Settings</h1>
@@ -206,5 +208,6 @@ export default function Settings() {
         </Tabs>
       </div>
     </div>
+    </AuthCheck>
   );
 }

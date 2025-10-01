@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FileText, BarChart3, Download, ArrowUpDown as ArrowsUpDown, Receipt, BarChart, Users, Book } from 'lucide-react';
 import Navbar from '@/components/Navbar';
+import AuthCheck from '@/components/auth/AuthCheck';
 import { DateRangePicker } from '@/components/DateRangePicker';
 import OverviewChart from '@/components/OverviewChart';
 import ReportsTabContent from '@/components/dashboard/ReportsTabContent';
@@ -17,8 +18,9 @@ export default function Reports() {
   const { monthlyData } = useFinancialStats();
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
-      <Navbar />
+    <AuthCheck>
+      <div className="min-h-screen bg-gradient-subtle">
+        <Navbar />
       
       <main className="container mx-auto px-4 py-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 animate-fade-up">
@@ -139,5 +141,6 @@ export default function Reports() {
         </div>
       </main>
     </div>
+    </AuthCheck>
   );
 }

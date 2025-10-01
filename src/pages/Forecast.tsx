@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, BarChart, LineChart as LineChartIcon } from 'lucide-react';
 import Navbar from '@/components/Navbar';
+import AuthCheck from '@/components/auth/AuthCheck';
 import { useForecast } from '@/hooks/useForecast';
 import ForecastChart from '@/components/forecast/ForecastChart';
 import ForecastSummary from '@/components/forecast/ForecastSummary';
@@ -19,8 +20,9 @@ export default function Forecast() {
   const { forecastData, isLoading } = useForecast(forecastMonths);
   
   return (
-    <div className="min-h-screen bg-gradient-subtle">
-      <Navbar />
+    <AuthCheck>
+      <div className="min-h-screen bg-gradient-subtle">
+        <Navbar />
       
       <main className="container mx-auto px-4 py-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 animate-fade-up">
@@ -181,5 +183,6 @@ export default function Forecast() {
         )}
       </main>
     </div>
+    </AuthCheck>
   );
 }

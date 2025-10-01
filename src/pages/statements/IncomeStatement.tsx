@@ -1,6 +1,7 @@
 
 import { useMemo } from 'react';
 import { useTransactions } from '@/hooks/useTransactions';
+import AuthCheck from '@/components/auth/AuthCheck';
 import StatementLayout, { generateBasePDF } from '@/components/statements/StatementLayout';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
@@ -65,9 +66,10 @@ export default function IncomeStatement() {
     
     generateBasePDF('Income Statement', tableData, summary);
   };
-  
+
   return (
-    <StatementLayout 
+    <AuthCheck>
+      <StatementLayout
       title="Income Statement" 
       description="Summary of revenues, costs, and expenses"
       generatePDF={generatePDF}
@@ -142,6 +144,7 @@ export default function IncomeStatement() {
           </Table>
         </div>
       </div>
-    </StatementLayout>
+      </StatementLayout>
+    </AuthCheck>
   );
 }

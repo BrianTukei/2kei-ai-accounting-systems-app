@@ -8,8 +8,7 @@ import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { SignupForm } from '@/components/auth/SignupForm';
-import { ProfileUploadDialog } from '@/components/auth/ProfileUploadDialog';
-import { trackLogin, trackSignup } from '@/utils/authUtils';
+import { supabase } from '@/lib/supabase';
 
 export default function Auth() {
   const location = useLocation();
@@ -17,8 +16,6 @@ export default function Auth() {
   
   const [actionType, setActionType] = useState<string>('signin');
   const [isLoading, setIsLoading] = useState(false);
-  const [showProfileUpload, setShowProfileUpload] = useState(false);
-  const [profileImage, setProfileImage] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -33,10 +30,12 @@ export default function Auth() {
       setActionType('signup');
     }
 
-    const user = localStorage.getItem('user');
-    if (user) {
-      navigate('/dashboard');
-    }
+    // Check if user is already logged in
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        navigate('/dashboard');
+      }
+    });
   }, [location.search, navigate]);
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -44,27 +43,7 @@ export default function Auth() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
   
-  const handleProfileUploadSubmit = () => {
-    if (profileImage) {
-      // Save the user data with the profile image
-      const userData = JSON.parse(localStorage.getItem('user') || '{}');
-      userData.profileImage = profileImage;
-      localStorage.setItem('user', JSON.stringify(userData));
-      
-      toast.success('Profile picture uploaded successfully!');
-      setShowProfileUpload(false);
-      navigate('/dashboard');
-    } else {
-      toast.error('Please select an image to upload');
-    }
-  };
-
-  const handleSkipUpload = () => {
-    setShowProfileUpload(false);
-    navigate('/dashboard');
-  };
-  
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
@@ -80,85 +59,65 @@ export default function Auth() {
       return;
     }
     
-    setTimeout(() => {
-      setIsLoading(false);
-      
-      // Check if this is the admin login
-      if (formData.email === 'tukeibrian5@gmail.com' && formData.password === 'Tukei@1000$') {
-        const adminData = {
-          name: 'Tukei Brian',
-          email: 'tukeibrian5@gmail.com',
-          isAdmin: true
-        };
-        localStorage.setItem('user', JSON.stringify(adminData));
-        trackLogin(adminData);
-        toast.success('Welcome back, Admin!');
-        navigate('/admin');
-        return;
-      }
-      
-      // For signup, store the full user data
+    try {
       if (actionType === 'signup') {
-        const userData = {
-          name: formData.name,
+        // Sign up with Supabase
+        const { data, error } = await supabase.auth.signUp({
           email: formData.email,
-          password: formData.password, // In a real app, you'd never store passwords in localStorage
-        };
-        localStorage.setItem('user', JSON.stringify(userData));
-        trackSignup(userData);
-        toast.success('Account created successfully!');
-        setShowProfileUpload(true);
-      } else {
-        // For login, verify credentials against stored data
-        const storedUsers = JSON.parse(localStorage.getItem('userSignups') || '[]');
-        const matchedUser = storedUsers.find((user: any) => 
-          user.email === formData.email
-        );
-        
-        if (!matchedUser) {
-          toast.error('Invalid email or password');
-          setIsLoading(false);
-          return;
-        }
-        
-        const userData = {
-          name: matchedUser.name,
-          email: matchedUser.email,
-        };
-        
-        localStorage.setItem('user', JSON.stringify(userData));
-        trackLogin(userData);
-        toast.success(`Welcome back, ${userData.name}!`);
+          password: formData.password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/dashboard`,
+            data: {
+              name: formData.name,
+            }
+          }
+        });
+
+        if (error) throw error;
+
+        toast.success('Account created! Please check your email to verify your account.');
         navigate('/dashboard');
+      } else {
+        // Sign in with Supabase
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password: formData.password,
+        });
+
+        if (error) throw error;
+
+        toast.success('Welcome back!');
+        
+        // Check if admin and redirect accordingly
+        if (formData.email === 'tukeibrian5@gmail.com') {
+          navigate('/admin');
+        } else {
+          navigate('/dashboard');
+        }
       }
-      
-    }, 1500);
+    } catch (error: any) {
+      toast.error(error.message || 'Authentication failed');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleGoogleSignIn = () => {
+  const handleGoogleSignIn = async () => {
     setIsLoading(true);
     
-    setTimeout(() => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+        }
+      });
+
+      if (error) throw error;
+    } catch (error: any) {
+      toast.error(error.message || 'Google sign in failed');
       setIsLoading(false);
-      
-      const googleUserData = {
-        name: 'Google User',
-        email: 'user@gmail.com',
-      };
-      
-      localStorage.setItem('user', JSON.stringify(googleUserData));
-      
-      const isNewUser = Math.random() > 0.5;
-      if (isNewUser) {
-        trackSignup(googleUserData);
-        setShowProfileUpload(true);
-      } else {
-        trackLogin(googleUserData);
-        navigate('/dashboard');
-      }
-      
-      toast.success('Signed in with Google successfully!');
-    }, 1500);
+    }
   };
   
   return (
@@ -228,15 +187,6 @@ export default function Auth() {
           </CardFooter>
         </Card>
       </div>
-
-      <ProfileUploadDialog
-        open={showProfileUpload}
-        onOpenChange={setShowProfileUpload}
-        onSubmit={handleProfileUploadSubmit}
-        onSkip={handleSkipUpload}
-        profileImage={profileImage}
-        setProfileImage={setProfileImage}
-      />
     </div>
   );
 }

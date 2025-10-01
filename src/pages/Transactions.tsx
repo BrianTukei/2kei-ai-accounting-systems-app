@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, CreditCard } from 'lucide-react';
 import Navbar from '@/components/Navbar';
+import AuthCheck from '@/components/auth/AuthCheck';
 import { Transaction } from '@/components/TransactionCard';
 import AddTransactionModal from '@/components/AddTransactionModal';
 import ReceiptScanner from '@/components/receipt/ReceiptScanner';
@@ -65,62 +66,64 @@ export default function Transactions() {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
-      <Navbar />
-      
-      <main className="container mx-auto px-4 py-8">
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 animate-fade-up">
-          <div className="space-y-3">
-            <h1 className="text-4xl font-display font-bold tracking-tight text-shadow gradient-text flex items-center">
-              <CreditCard className="h-10 w-10 mr-4 text-primary drop-shadow-lg" />
-              Transactions
-            </h1>
-            <p className="text-muted-foreground text-lg font-medium">
-              Manage your income and expenses
-            </p>
+    <AuthCheck>
+      <div className="min-h-screen bg-gradient-subtle">
+        <Navbar />
+        
+        <main className="container mx-auto px-4 py-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 animate-fade-up">
+            <div className="space-y-3">
+              <h1 className="text-4xl font-display font-bold tracking-tight text-shadow gradient-text flex items-center">
+                <CreditCard className="h-10 w-10 mr-4 text-primary drop-shadow-lg" />
+                Transactions
+              </h1>
+              <p className="text-muted-foreground text-lg font-medium">
+                Manage your income and expenses
+              </p>
+            </div>
+            
+            <div className="mt-6 md:mt-0 flex flex-col sm:flex-row gap-3">
+              <ReceiptScanner onScanComplete={handleReceiptScan} />
+              <Button 
+                className="bg-gradient-primary hover:bg-gradient-primary/90 shadow-elegant hover:shadow-glow transition-all duration-300 hover:scale-105"
+                onClick={() => setIsAddModalOpen(true)}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                New Transaction
+              </Button>
+            </div>
           </div>
           
-          <div className="mt-6 md:mt-0 flex flex-col sm:flex-row gap-3">
-            <ReceiptScanner onScanComplete={handleReceiptScan} />
-            <Button 
-              className="bg-gradient-primary hover:bg-gradient-primary/90 shadow-elegant hover:shadow-glow transition-all duration-300 hover:scale-105"
-              onClick={() => setIsAddModalOpen(true)}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              New Transaction
-            </Button>
+          <div className="animate-fade-up" style={{ animationDelay: '0.1s' }}>
+            <TransactionFilters 
+              searchQuery={searchQuery}
+              onSearchChange={handleSearch}
+              filterType={filterType}
+              onFilterChange={handleFilter}
+            />
           </div>
-        </div>
+          
+          <div className="animate-fade-up" style={{ animationDelay: '0.2s' }}>
+            <TransactionSummary transactions={filteredTransactions} />
+          </div>
+          
+          <div className="animate-fade-up" style={{ animationDelay: '0.3s' }}>
+            <TransactionList 
+              transactions={filteredTransactions}
+              onEditTransaction={handleEditTransaction}
+              onDeleteTransaction={handleDeleteTransaction}
+            />
+          </div>
+        </main>
         
-        <div className="animate-fade-up" style={{ animationDelay: '0.1s' }}>
-          <TransactionFilters 
-            searchQuery={searchQuery}
-            onSearchChange={handleSearch}
-            filterType={filterType}
-            onFilterChange={handleFilter}
-          />
-        </div>
-        
-        <div className="animate-fade-up" style={{ animationDelay: '0.2s' }}>
-          <TransactionSummary transactions={filteredTransactions} />
-        </div>
-        
-        <div className="animate-fade-up" style={{ animationDelay: '0.3s' }}>
-          <TransactionList 
-            transactions={filteredTransactions}
-            onEditTransaction={handleEditTransaction}
-            onDeleteTransaction={handleDeleteTransaction}
-          />
-        </div>
-      </main>
-      
-      <AddTransactionModal 
-        isOpen={isAddModalOpen}
-        onClose={handleCloseModal}
-        onAddTransaction={addTransaction}
-        onEditTransaction={editTransaction}
-        transactionToEdit={transactionToEdit}
-      />
-    </div>
+        <AddTransactionModal 
+          isOpen={isAddModalOpen}
+          onClose={handleCloseModal}
+          onAddTransaction={addTransaction}
+          onEditTransaction={editTransaction}
+          transactionToEdit={transactionToEdit}
+        />
+      </div>
+    </AuthCheck>
   );
 }

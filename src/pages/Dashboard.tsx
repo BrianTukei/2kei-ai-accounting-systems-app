@@ -6,6 +6,7 @@ import DashboardTabs from '@/components/dashboard/DashboardTabs';
 import AdminAccessCard from '@/components/dashboard/AdminAccessCard';
 import StatsGrid from '@/components/dashboard/StatsGrid';
 import RealTimeStatsCard from '@/components/dashboard/RealTimeStatsCard';
+import AuthCheck from '@/components/auth/AuthCheck';
 import { Transaction } from '@/components/TransactionCard';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useFinancialStats } from '@/hooks/useFinancialStats';
@@ -39,36 +40,38 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
-      <Navbar />
-      
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-8 animate-fade-up">
-          <DashboardHeader 
-            title="Dashboard" 
-            subtitle="Welcome back! Here's your financial overview."
-          />
-        </div>
+    <AuthCheck>
+      <div className="min-h-screen bg-gradient-subtle">
+        <Navbar />
         
-        {/* Admin Access Card - only visible to admin */}
-        <div className="mb-8 animate-fade-up" style={{ animationDelay: '0.1s' }}>
-          <AdminAccessCard />
-        </div>
-        
-        <StatsGrid />
-        
-        <RealTimeStatsCard />
-        
-        <div className="animate-fade-up" style={{ animationDelay: '0.2s' }}>
-          <DashboardTabs 
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            chartData={monthlyData}
-            recentTransactions={recentTransactions}
-            onAddTransaction={handleAddTransaction}
-          />
-        </div>
-      </main>
-    </div>
+        <main className="container mx-auto px-4 py-8">
+          <div className="mb-8 animate-fade-up">
+            <DashboardHeader 
+              title="Dashboard" 
+              subtitle="Welcome back! Here's your financial overview."
+            />
+          </div>
+          
+          {/* Admin Access Card - only visible to admin */}
+          <div className="mb-8 animate-fade-up" style={{ animationDelay: '0.1s' }}>
+            <AdminAccessCard />
+          </div>
+          
+          <StatsGrid />
+          
+          <RealTimeStatsCard />
+          
+          <div className="animate-fade-up" style={{ animationDelay: '0.2s' }}>
+            <DashboardTabs 
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+              chartData={monthlyData}
+              recentTransactions={recentTransactions}
+              onAddTransaction={handleAddTransaction}
+            />
+          </div>
+        </main>
+      </div>
+    </AuthCheck>
   );
 }

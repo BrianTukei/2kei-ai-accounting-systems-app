@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useTransactions } from '@/hooks/useTransactions';
+import AuthCheck from '@/components/auth/AuthCheck';
 import StatementLayout, { generateBasePDF } from '@/components/statements/StatementLayout';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
@@ -89,9 +90,10 @@ export default function CashFlow() {
     
     generateBasePDF('Cash Flow Statement', tableData, summary);
   };
-  
+
   return (
-    <StatementLayout 
+    <AuthCheck>
+      <StatementLayout
       title="Cash Flow Statement" 
       description="Summary of cash inflows and outflows"
       generatePDF={generatePDF}
@@ -210,6 +212,7 @@ export default function CashFlow() {
           </Table>
         </div>
       </div>
-    </StatementLayout>
+      </StatementLayout>
+    </AuthCheck>
   );
 }

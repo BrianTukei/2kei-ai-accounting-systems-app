@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
+import AuthCheck from '@/components/auth/AuthCheck';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PayrollData, Employee } from '@/types/PayrollData';
 import { toast } from 'sonner';
@@ -97,8 +98,9 @@ export default function Payroll() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <Navbar />
+    <AuthCheck>
+      <div className="min-h-screen bg-slate-50">
+        <Navbar />
       
       {/* Activity Tracker (No UI) */}
       <PayrollActionTracker />
@@ -159,5 +161,6 @@ export default function Payroll() {
         </Tabs>
       </main>
     </div>
+    </AuthCheck>
   );
 }

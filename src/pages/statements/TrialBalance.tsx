@@ -1,6 +1,7 @@
 
 import { useMemo } from 'react';
 import { useTransactions } from '@/hooks/useTransactions';
+import AuthCheck from '@/components/auth/AuthCheck';
 import StatementLayout, { generateBasePDF } from '@/components/statements/StatementLayout';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
@@ -57,9 +58,10 @@ export default function TrialBalance() {
     
     generateBasePDF('Trial Balance', tableData, summary);
   };
-  
+
   return (
-    <StatementLayout 
+    <AuthCheck>
+      <StatementLayout
       title="Trial Balance" 
       description="Accounting verification of debits and credits"
       generatePDF={generatePDF}
@@ -106,6 +108,7 @@ export default function TrialBalance() {
           </p>
         </div>
       </div>
-    </StatementLayout>
+      </StatementLayout>
+    </AuthCheck>
   );
 }

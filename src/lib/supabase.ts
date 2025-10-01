@@ -1,7 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Lovable Cloud automatically injects these credentials
+const supabaseUrl = "https://uufqnrwqxxrhxfqmilqd.supabase.co";
+const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1ZnFucndxeHhyaHhmcW1pbHFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkyMzc3NTMsImV4cCI6MjA3NDgxMzc1M30.YMWfWZyG_vY4EcuLRy6d1vGsIkPQMQ-HzJPgbFOWLPA";
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 

@@ -210,11 +210,11 @@ export default function ReceiptGallery() {
                     </div>
                   </div>
                   
-                  {selectedReceipt.items && selectedReceipt.items.length > 0 && (
+                  {selectedReceipt.items && Array.isArray(selectedReceipt.items) && selectedReceipt.items.length > 0 && (
                     <div>
                       <p className="text-muted-foreground text-sm mb-2">Items</p>
                       <div className="space-y-1 text-sm">
-                        {selectedReceipt.items.map((item: any, index: number) => (
+                        {(selectedReceipt.items as any[]).map((item: any, index: number) => (
                           <div key={index} className="flex justify-between">
                             <span>{item.quantity || 1}x {item.name}</span>
                             <span>

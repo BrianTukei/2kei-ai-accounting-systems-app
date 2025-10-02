@@ -36,6 +36,15 @@ export default function Auth() {
         navigate('/dashboard');
       }
     });
+
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        navigate('/dashboard');
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, [location.search, navigate]);
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -75,8 +84,13 @@ export default function Auth() {
 
         if (error) throw error;
 
-        toast.success('Account created! Please check your email to verify your account.');
-        navigate('/dashboard');
+        if (data.session) {
+          // Auto-confirm is enabled, user is logged in immediately
+          toast.success('Account created successfully! Welcome!');
+          // Navigation will be handled by onAuthStateChange
+        } else {
+          toast.success('Account created! Please check your email to verify.');
+        }
       } else {
         // Sign in with Supabase
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -87,13 +101,7 @@ export default function Auth() {
         if (error) throw error;
 
         toast.success('Welcome back!');
-        
-        // Check if admin and redirect accordingly
-        if (formData.email === 'tukeibrian5@gmail.com') {
-          navigate('/admin');
-        } else {
-          navigate('/dashboard');
-        }
+        // Navigation will be handled by onAuthStateChange
       }
     } catch (error: any) {
       toast.error(error.message || 'Authentication failed');

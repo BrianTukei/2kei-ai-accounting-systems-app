@@ -8,7 +8,7 @@ import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { SignupForm } from '@/components/auth/SignupForm';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function Auth() {
   const location = useLocation();

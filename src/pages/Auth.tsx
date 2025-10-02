@@ -82,13 +82,18 @@ export default function Auth() {
           }
         });
 
-        if (error) throw error;
+        if (error) {
+          console.error('Signup error:', error);
+          throw error;
+        }
+
+        console.log('Signup successful:', { session: !!data.session, user: !!data.user });
 
         if (data.session) {
           // Auto-confirm is enabled, user is logged in immediately
-          toast.success('Account created successfully! Welcome!');
+          toast.success('Account created successfully! Redirecting...');
           // Navigation will be handled by onAuthStateChange
-        } else {
+        } else if (data.user) {
           toast.success('Account created! Please check your email to verify.');
         }
       } else {
@@ -98,13 +103,23 @@ export default function Auth() {
           password: formData.password,
         });
 
-        if (error) throw error;
+        if (error) {
+          console.error('Login error:', error);
+          if (error.message.includes('Invalid login credentials')) {
+            toast.error('Invalid email or password. Please check your credentials or sign up for a new account.');
+          } else {
+            toast.error(error.message);
+          }
+          throw error;
+        }
 
-        toast.success('Welcome back!');
+        console.log('Login successful');
+        toast.success('Welcome back! Redirecting...');
         // Navigation will be handled by onAuthStateChange
       }
     } catch (error: any) {
-      toast.error(error.message || 'Authentication failed');
+      // Error already handled above with specific messages
+      console.error('Auth error:', error);
     } finally {
       setIsLoading(false);
     }

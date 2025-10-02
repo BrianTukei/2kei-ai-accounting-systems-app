@@ -3,7 +3,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Eye, Download, Trash2, Loader2 } from 'lucide-react';
-import { supabase, type Receipt } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
+
+type Receipt = Database['public']['Tables']['receipts']['Row'];
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';

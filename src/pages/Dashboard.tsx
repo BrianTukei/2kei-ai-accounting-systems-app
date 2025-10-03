@@ -6,6 +6,7 @@ import DashboardTabs from '@/components/dashboard/DashboardTabs';
 import AdminAccessCard from '@/components/dashboard/AdminAccessCard';
 import StatsGrid from '@/components/dashboard/StatsGrid';
 import RealTimeStatsCard from '@/components/dashboard/RealTimeStatsCard';
+import FinancialPieChart from '@/components/dashboard/FinancialPieChart';
 import AuthCheck from '@/components/auth/AuthCheck';
 import { Transaction } from '@/components/TransactionCard';
 import { useTransactions } from '@/hooks/useTransactions';
@@ -16,8 +17,23 @@ import { useNavigate } from 'react-router-dom';
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const { transactions, addTransaction } = useTransactions();
-  const { monthlyData } = useFinancialStats();
+  const { monthlyData, categoryBreakdown } = useFinancialStats();
   const navigate = useNavigate();
+
+  // Prepare pie chart data from category breakdown
+  const pieChartColors = [
+    'hsl(var(--chart-1))',
+    'hsl(var(--chart-2))',
+    'hsl(var(--chart-3))',
+    'hsl(var(--chart-4))',
+    'hsl(var(--chart-5))',
+  ];
+
+  const pieChartData = categoryBreakdown.slice(0, 5).map((item, index) => ({
+    name: item.category,
+    value: item.amount,
+    color: pieChartColors[index % pieChartColors.length]
+  }));
 
   // Check if user is logged in (this would use your auth system in a real app)
   useEffect(() => {
@@ -61,7 +77,15 @@ export default function Dashboard() {
           
           <RealTimeStatsCard />
           
-          <div className="animate-fade-up" style={{ animationDelay: '0.2s' }}>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 animate-fade-up" style={{ animationDelay: '0.2s' }}>
+            <FinancialPieChart 
+              data={pieChartData}
+              title="Expense Breakdown"
+              description="Your top spending categories"
+            />
+          </div>
+          
+          <div className="animate-fade-up" style={{ animationDelay: '0.3s' }}>
             <DashboardTabs 
               activeTab={activeTab}
               setActiveTab={setActiveTab}

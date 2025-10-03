@@ -149,6 +149,10 @@ const analyzeHistoricalData = (transactions: Transaction[], lookbackMonths: numb
   // Group transactions by month
   transactions.forEach(transaction => {
     const transactionDate = transaction.date ? new Date(transaction.date) : now;
+    // Validate the date before formatting
+    if (isNaN(transactionDate.getTime())) {
+      return; // Skip invalid dates
+    }
     const monthKey = format(transactionDate, 'yyyy-MM');
     
     if (!monthlyTotals[monthKey]) {

@@ -11,19 +11,39 @@ import type { User } from '@supabase/supabase-js';
 
 export default function UserMenu() {
   const [user, setUser] = useState<User | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
+      if (session?.user) {
+        checkAdminRole(session.user.id);
+      }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      if (session?.user) {
+        setTimeout(() => checkAdminRole(session.user.id), 0);
+      } else {
+        setIsAdmin(false);
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const checkAdminRole = async (userId: string) => {
+    const { data } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId)
+      .eq('role', 'admin')
+      .maybeSingle();
+    
+    setIsAdmin(!!data);
+  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -54,9 +74,9 @@ export default function UserMenu() {
             {user.user_metadata?.avatar_url ? (
               <AvatarImage src={user.user_metadata.avatar_url} alt={userName} />
             ) : (
-              <AvatarFallback className={user.email === 'tukeibrian5@gmail.com' ? "bg-red-500 text-white" : "bg-primary text-primary-foreground"}>
-                {initials}
-              </AvatarFallback>
+          <AvatarFallback className={isAdmin ? "bg-red-500 text-white" : "bg-primary text-primary-foreground"}>
+            {initials}
+          </AvatarFallback>
             )}
           </Avatar>
         </Button>
@@ -65,7 +85,7 @@ export default function UserMenu() {
         <div className="p-2 border-b">
           <p className="font-medium">{userName}</p>
           <p className="text-xs text-slate-500">{user.email}</p>
-          {user.email === 'tukeibrian5@gmail.com' && (
+          {isAdmin && (
             <p className="text-xs mt-1 font-semibold text-red-500">Administrator</p>
           )}
         </div>
@@ -73,7 +93,7 @@ export default function UserMenu() {
           <UserIcon className="mr-2 h-4 w-4" />
           <span>Profile</span>
         </DropdownMenuItem>
-        {user.email === 'tukeibrian5@gmail.com' && (
+        {isAdmin && (
           <DropdownMenuItem onClick={() => navigate('/admin')}>
             <Shield className="mr-2 h-4 w-4" />
             <span>Admin Dashboard</span>

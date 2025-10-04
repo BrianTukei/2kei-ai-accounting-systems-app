@@ -16,6 +16,7 @@ interface LoginFormProps {
   handleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleSubmit: (e: React.FormEvent) => void;
   handleGoogleSignIn: () => void;
+  onForgotPassword: () => void;
 }
 
 export function LoginForm({ 
@@ -23,7 +24,8 @@ export function LoginForm({
   isLoading, 
   handleChange, 
   handleSubmit, 
-  handleGoogleSignIn 
+  handleGoogleSignIn,
+  onForgotPassword 
 }: LoginFormProps) {
   const [showPassword, setShowPassword] = useState(false);
 
@@ -49,9 +51,13 @@ export function LoginForm({
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label htmlFor="password">Password</Label>
-            <a href="#" className="text-xs text-primary hover:underline">
+            <button 
+              type="button"
+              onClick={onForgotPassword}
+              className="text-xs text-primary hover:underline"
+            >
               Forgot password?
-            </a>
+            </button>
           </div>
           <div className="relative">
             <Input

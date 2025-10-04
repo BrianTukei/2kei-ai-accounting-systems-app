@@ -9,6 +9,16 @@ import { toast } from 'sonner';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { SignupForm } from '@/components/auth/SignupForm';
 import { supabase } from '@/integrations/supabase/client';
+import { Input } from '@/components/ui/input';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function Auth() {
   const location = useLocation();
@@ -16,6 +26,8 @@ export default function Auth() {
   
   const [actionType, setActionType] = useState<string>('signin');
   const [isLoading, setIsLoading] = useState(false);
+  const [showResetDialog, setShowResetDialog] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
   
   const [formData, setFormData] = useState({
     name: '',
@@ -142,6 +154,31 @@ export default function Auth() {
       setIsLoading(false);
     }
   };
+
+  const handleForgotPassword = () => {
+    setResetEmail(formData.email);
+    setShowResetDialog(true);
+  };
+
+  const handlePasswordReset = async () => {
+    if (!resetEmail) {
+      toast.error('Please enter your email address');
+      return;
+    }
+
+    setIsLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+      redirectTo: `${window.location.origin}/auth?reset=true`,
+    });
+
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success('Password reset email sent! Check your inbox.');
+      setShowResetDialog(false);
+    }
+    setIsLoading(false);
+  };
   
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
@@ -177,13 +214,14 @@ export default function Auth() {
             </TabsList>
             
             <TabsContent value="signin">
-              <LoginForm 
-                formData={formData}
-                isLoading={isLoading}
-                handleChange={handleChange}
-                handleSubmit={handleSubmit}
-                handleGoogleSignIn={handleGoogleSignIn}
-              />
+                  <LoginForm
+                    formData={formData}
+                    isLoading={isLoading}
+                    handleChange={handleChange}
+                    handleSubmit={handleSubmit}
+                    handleGoogleSignIn={handleGoogleSignIn}
+                    onForgotPassword={handleForgotPassword}
+                  />
             </TabsContent>
             
             <TabsContent value="signup">
@@ -210,6 +248,31 @@ export default function Auth() {
           </CardFooter>
         </Card>
       </div>
+
+      <AlertDialog open={showResetDialog} onOpenChange={setShowResetDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset Password</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-4">
+              <p>Enter your email address and we'll send you a link to reset your password.</p>
+              <Input
+                type="email"
+                placeholder="your@email.com"
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+              />
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <Button variant="outline" onClick={() => setShowResetDialog(false)}>
+              Cancel
+            </Button>
+            <AlertDialogAction onClick={handlePasswordReset} disabled={isLoading}>
+              {isLoading ? 'Sending...' : 'Send Reset Link'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

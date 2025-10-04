@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { AlertTriangle } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AdminAccessCheckProps {
   children: React.ReactNode;
@@ -18,53 +19,43 @@ export default function AdminAccessCheck({ children }: AdminAccessCheckProps) {
 
   // Check if user is admin
   useEffect(() => {
-    const user = localStorage.getItem('user');
-    if (!user) {
-      toast.error("Please sign in to access the admin dashboard");
-      navigate('/auth');
-      return;
-    }
+    const checkAdminAccess = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast.error("Please sign in to access the admin dashboard");
+        navigate('/auth');
+        return;
+      }
 
-    const userData = JSON.parse(user);
-    // Check for specific admin credentials
-    if (userData.email === 'tukeibrian5@gmail.com') {
-      setIsAdmin(true);
-      // Record admin login activity
-      try {
-        const timestamp = new Date().toISOString();
-        const adminActivity = localStorage.getItem('adminActivity') || '[]';
-        const activities = JSON.parse(adminActivity);
-        activities.push({ action: 'access_admin_dashboard', timestamp });
-        localStorage.setItem('adminActivity', JSON.stringify(activities));
-      } catch (error) {
-        console.error('Error logging admin activity:', error);
-      }
-    } else {
-      // Record unauthorized access attempt
-      setAccessAttempts(prev => prev + 1);
-      toast.error("You don't have permission to access this page");
-      
-      try {
-        const timestamp = new Date().toISOString();
-        const securityAlerts = localStorage.getItem('securityAlerts') || '[]';
-        const alerts = JSON.parse(securityAlerts);
-        alerts.push({ 
-          action: 'unauthorized_admin_access', 
-          email: userData.email,
-          name: userData.name,
-          timestamp 
-        });
-        localStorage.setItem('securityAlerts', JSON.stringify(alerts));
-      } catch (error) {
-        console.error('Error logging security alert:', error);
-      }
-      
-      // Redirect after short delay to allow toast to be seen
-      setTimeout(() => {
+      // Check if user has admin role
+      const { data: roleData, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'admin')
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error checking admin role:', error);
+        toast.error("Error verifying permissions");
         navigate('/dashboard');
-      }, 1500);
-    }
-    setIsLoading(false);
+        return;
+      }
+
+      if (roleData) {
+        setIsAdmin(true);
+      } else {
+        setAccessAttempts(prev => prev + 1);
+        toast.error("You don't have permission to access this page");
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 1500);
+      }
+      setIsLoading(false);
+    };
+
+    checkAdminAccess();
   }, [navigate]);
 
   if (isLoading) {

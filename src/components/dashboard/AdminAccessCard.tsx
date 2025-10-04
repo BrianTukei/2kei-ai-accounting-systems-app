@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Shield, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function AdminAccessCard() {
   const navigate = useNavigate();
@@ -11,15 +12,25 @@ export default function AdminAccessCard() {
   const [totalSignups, setTotalSignups] = useState(0);
   
   useEffect(() => {
-    // Check if user is admin
-    const user = localStorage.getItem('user');
-    if (user) {
-      const userData = JSON.parse(user);
-      if (userData.email === 'tukeibrian5@gmail.com') {
-        setIsAdmin(true);
-        fetchTotalSignups();
+    const checkAdminAccess = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        const { data: roleData } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .eq('role', 'admin')
+          .maybeSingle();
+
+        if (roleData) {
+          setIsAdmin(true);
+          fetchTotalSignups();
+        }
       }
-    }
+    };
+
+    checkAdminAccess();
   }, []);
   
   const fetchTotalSignups = () => {

@@ -30,7 +30,7 @@ export default function ReportsTabContent() {
     
     // Add a company logo or name
     doc.setFontSize(16);
-    doc.text('2KÉI Ledgery Accounting', 14, 45);
+    doc.text('2KÉI Ledgerly Accounting', 14, 45);
     
     // Filter only income transactions
     const incomeTransactions = transactions.filter(t => t.type === 'income');
@@ -83,7 +83,7 @@ export default function ReportsTabContent() {
       doc.setPage(i);
       doc.setFontSize(8);
       doc.text(
-        '2KÉI Ledgery Accounting - Confidential financial information',
+        '2KÉI Ledgerly Accounting - Confidential financial information',
         14,
         doc.internal.pageSize.height - 10
       );
@@ -118,7 +118,7 @@ export default function ReportsTabContent() {
     
     // Add a company logo or name
     doc.setFontSize(16);
-    doc.text('2KÉI Ledgery Accounting', 14, 45);
+    doc.text('2KÉI Ledgerly Accounting', 14, 45);
     
     // Filter only expense transactions
     const expenseTransactions = transactions.filter(t => t.type === 'expense');
@@ -171,7 +171,7 @@ export default function ReportsTabContent() {
       doc.setPage(i);
       doc.setFontSize(8);
       doc.text(
-        '2KÉI Ledgery Accounting - Confidential financial information',
+        '2KÉI Ledgerly Accounting - Confidential financial information',
         14,
         doc.internal.pageSize.height - 10
       );
@@ -206,7 +206,7 @@ export default function ReportsTabContent() {
     
     // Add a company logo or name
     doc.setFontSize(16);
-    doc.text('2KÉI Ledgery Accounting', 14, 45);
+    doc.text('2KÉI Ledgerly Accounting', 14, 45);
     
     // Add report data as a table
     const tableColumn = ["Category", "Description", "Type", "Amount ($)"];
@@ -281,7 +281,7 @@ export default function ReportsTabContent() {
       doc.setPage(i);
       doc.setFontSize(8);
       doc.text(
-        '2KÉI Ledgery Accounting - Confidential financial information',
+        '2KÉI Ledgerly Accounting - Confidential financial information',
         14,
         doc.internal.pageSize.height - 10
       );

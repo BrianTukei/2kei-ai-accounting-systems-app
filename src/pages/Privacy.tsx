@@ -21,7 +21,7 @@ export default function Privacy() {
         <section>
           <h2 className="text-xl font-semibold mb-3">1. Information We Collect</h2>
           <p>
-            When you use 2KÉI Ledgery, we collect information that you provide directly to us, such as personal 
+            When you use 2KÉI Ledgerly, we collect information that you provide directly to us, such as personal 
             details, financial data, and account credentials. We also automatically collect certain information 
             about your device and how you interact with our services.
           </p>

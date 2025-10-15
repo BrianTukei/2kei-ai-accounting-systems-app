@@ -68,7 +68,7 @@ export const generateBasePDF = (title: string, content: any[][], summary: any[][
   
   // Add a company logo or name
   doc.setFontSize(16);
-  doc.text('2KÉI Ledgery', 14, 45);
+  doc.text('2KÉI Ledgerly', 14, 45);
   
   // Add report data as a table
   autoTable(doc, {
@@ -101,7 +101,7 @@ export const generateBasePDF = (title: string, content: any[][], summary: any[][
     doc.setPage(i);
     doc.setFontSize(8);
     doc.text(
-      '2KÉI Ledgery - This report contains confidential financial information.',
+      '2KÉI Ledgerly - This report contains confidential financial information.',
       14,
       doc.internal.pageSize.height - 10
     );

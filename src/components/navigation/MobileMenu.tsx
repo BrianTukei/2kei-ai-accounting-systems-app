@@ -36,7 +36,7 @@ export default function MobileMenu({ isOpen, onClose, user }: MobileMenuProps) {
             <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
               <span className="text-white font-bold">2K</span>
             </div>
-            <span className="font-semibold text-xl">2KÈI Ledgery</span>
+            <span className="font-semibold text-xl">2KÉI Ledgerly</span>
           </Link>
           <button className="focus:outline-none" onClick={onClose}>
             <X size={24} className="text-slate-800" />

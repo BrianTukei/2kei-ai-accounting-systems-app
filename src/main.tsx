@@ -6,12 +6,12 @@ import './index.css'
 import { CurrencyProvider } from './contexts/CurrencyContext'
 
 // Update the document title
-document.title = '2KÉI Ledgery Accounting'
+document.title = '2KÉI Ledgerly Accounting'
 
 // Create a meta description
 const metaDescription = document.createElement('meta')
 metaDescription.name = 'description'
-metaDescription.content = '2KÉI Ledgery Accounting - Smart financial management for your business'
+metaDescription.content = '2KÉI Ledgerly Accounting - Smart financial management for your business'
 document.head.appendChild(metaDescription)
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

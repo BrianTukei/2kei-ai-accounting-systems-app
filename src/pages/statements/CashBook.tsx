@@ -43,7 +43,7 @@ export default function CashBook() {
     doc.text(`Generated on ${new Date().toLocaleDateString()}`, 14, 30);
     
     doc.setFontSize(16);
-    doc.text('2KÉI Ledgery', 14, 45);
+    doc.text('2KÉI Ledgerly', 14, 45);
     
     const tableData = filteredTransactions.map(t => [
       t.date, 

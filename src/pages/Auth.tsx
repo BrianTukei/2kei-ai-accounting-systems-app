@@ -198,7 +198,7 @@ export default function Auth() {
               </div>
             </div>
             <CardTitle className="text-2xl mt-4">
-              2KÈI Ledgery Accounting
+              2KÉI Ledgerly Accounting
             </CardTitle>
             <CardDescription>
               {actionType === 'signin' 

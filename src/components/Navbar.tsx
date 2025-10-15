@@ -13,11 +13,11 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-white shadow">
+    <nav className="bg-background shadow-sm border-b border-border">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          <Link to="/dashboard" className="text-xl font-semibold text-primary">
-            2KÈI Ledgery Accounting
+          <Link to="/dashboard" className="text-xl font-semibold text-primary hover:text-primary/90 transition-colors">
+            2KÉI Ledgerly Accounting
           </Link>
 
           <div className="hidden md:block">
@@ -27,7 +27,7 @@ export default function Navbar() {
           <div className="md:hidden">
             <button 
               onClick={toggleMenu}
-              className="text-gray-600 hover:text-primary"
+              className="text-muted-foreground hover:text-primary transition-colors"
               aria-label="Toggle menu"
             >
               {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -42,7 +42,7 @@ export default function Navbar() {
 
       {/* Mobile menu */}
       {isMenuOpen && (
-        <div className="md:hidden bg-white shadow-md py-4 border-t">
+        <div className="md:hidden bg-background shadow-md py-4 border-t border-border animate-fade-in">
           <div className="container mx-auto px-4">
             <NavigationItems orientation="vertical" onItemClick={() => setIsMenuOpen(false)} />
           </div>

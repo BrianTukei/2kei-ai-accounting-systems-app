@@ -79,7 +79,7 @@ const HeroSection = ({ featuresRef }: HeroSectionProps) => {
           </h1>
           
           <p className="text-lg md:text-xl text-slate-600 mb-8 max-w-3xl mx-auto animate-fade-up" style={{ animationDelay: '0.1s' }}>
-            Why struggle with complex accounting software when 2KÈI Ledgery makes financial management effortless? Join 50,000+ businesses who chose us over the competition. <span className="font-semibold text-primary">Stop wasting time. Start winning.</span>
+            Why struggle with complex accounting software when 2KÉI Ledgerly makes financial management effortless? Join 50,000+ businesses who chose us over the competition. <span className="font-semibold text-primary">Stop wasting time. Start winning.</span>
           </p>
           
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-up" style={{ animationDelay: '0.2s' }}>
@@ -170,7 +170,7 @@ const HeroSection = ({ featuresRef }: HeroSectionProps) => {
             <div className="relative">
               <img
                 src={dashboardHero}
-                alt="2KÈI Ledgery Accounting Dashboard - Modern financial management interface"
+                alt="2KÉI Ledgerly Accounting Dashboard - Modern financial management interface"
                 className="w-full h-auto rounded-lg shadow-glass-lg"
                 style={{ objectFit: 'cover' }}
               />

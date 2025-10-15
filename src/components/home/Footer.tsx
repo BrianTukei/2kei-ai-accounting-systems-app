@@ -4,32 +4,32 @@ import { FileText, Lock } from 'lucide-react';
 
 const Footer = () => {
   return (
-    <footer className="bg-white py-12 border-t border-slate-200">
+    <footer className="bg-background py-12 border-t border-border">
       <div className="container mx-auto px-4">
         <div className="flex flex-col md:flex-row justify-between items-center">
           <div className="mb-6 md:mb-0">
             <Link to="/" className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                <span className="text-white font-bold text-sm">L</span>
+                <span className="text-primary-foreground font-bold text-sm">L</span>
               </div>
-              <span className="font-semibold text-lg">Ledgerly</span>
+              <span className="font-semibold text-lg text-foreground">Ledgerly</span>
             </Link>
-            <p className="text-sm text-slate-500 mt-2">
-              © {new Date().getFullYear()} 2KÉI Ledgery. All rights reserved.
+            <p className="text-sm text-muted-foreground mt-2">
+              © {new Date().getFullYear()} 2KÉI Ledgerly. All rights reserved.
             </p>
           </div>
           
           <div className="flex space-x-8">
-            <Link to="/terms" className="text-slate-600 hover:text-primary text-sm flex items-center gap-1">
+            <Link to="/terms" className="text-muted-foreground hover:text-primary text-sm flex items-center gap-1 transition-colors">
               <FileText size={14} />
               Terms
             </Link>
-            <Link to="/privacy" className="text-slate-600 hover:text-primary text-sm flex items-center gap-1">
+            <Link to="/privacy" className="text-muted-foreground hover:text-primary text-sm flex items-center gap-1 transition-colors">
               <Lock size={14} />
               Privacy
             </Link>
-            <div className="text-slate-600 text-sm flex flex-col items-end">
-              <span className="font-semibold">Contact</span>
+            <div className="text-muted-foreground text-sm flex flex-col items-end">
+              <span className="font-semibold text-foreground">Contact</span>
               <span>Phone: +256753634290</span>
               <span>Email: tukeibrian5@gmail.com</span>
             </div>

@@ -17,7 +17,7 @@ const CTASection = () => {
               Don't Let Poor <span className="gradient-text">Financial Management</span> Kill Your Business
             </h2>
             <p className="text-lg text-muted-foreground mb-8 animate-on-scroll opacity-0">
-              Every day you delay is money lost. While competitors struggle with outdated tools, smart business owners choose 2KÈI Ledgery. <span className="font-semibold text-primary">Your future self will thank you.</span>
+              Every day you delay is money lost. While competitors struggle with outdated tools, smart business owners choose 2KÉI Ledgerly. <span className="font-semibold text-primary">Your future self will thank you.</span>
             </p>
             <Button asChild size="lg" className="rounded-full px-8 py-6 text-base animate-on-scroll opacity-0 hero-glow bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 border-0 shadow-elegant">
               <Link to="/auth?action=signup">

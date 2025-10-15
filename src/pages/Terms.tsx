@@ -21,7 +21,7 @@ export default function Terms() {
         <section>
           <h2 className="text-xl font-semibold mb-3">1. Acceptance of Terms</h2>
           <p>
-            By accessing or using 2KÉI Ledgery, you agree to be bound by these Terms of Service. If you disagree 
+            By accessing or using 2KÉI Ledgerly, you agree to be bound by these Terms of Service. If you disagree 
             with any part of the terms, you may not access the service.
           </p>
         </section>
@@ -29,7 +29,7 @@ export default function Terms() {
         <section>
           <h2 className="text-xl font-semibold mb-3">2. Description of Service</h2>
           <p>
-            2KÉI Ledgery provides personal finance management tools to help users track expenses, income, and generate 
+            2KÉI Ledgerly provides personal finance management tools to help users track expenses, income, and generate 
             financial reports. The service is provided "as is" and "as available" without warranties of any kind.
           </p>
         </section>
@@ -46,7 +46,7 @@ export default function Terms() {
           <h2 className="text-xl font-semibold mb-3">4. Data Privacy</h2>
           <p>
             Our data practices are outlined in our <Link to="/privacy" className="text-primary hover:underline">Privacy Policy</Link>. 
-            By using 2KÉI Ledgery, you agree to our collection and use of information in accordance with this policy.
+            By using 2KÉI Ledgerly, you agree to our collection and use of information in accordance with this policy.
           </p>
         </section>
         

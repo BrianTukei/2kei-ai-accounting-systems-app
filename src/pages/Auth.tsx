@@ -41,7 +41,9 @@ export default function Auth() {
     if (action === 'signup') {
       setActionType('signup');
     }
+  }, [location.search]);
 
+  useEffect(() => {
     // Check if user is already logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
@@ -57,7 +59,7 @@ export default function Auth() {
     });
 
     return () => subscription.unsubscribe();
-  }, [location.search, navigate]);
+  }, [navigate]);
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;

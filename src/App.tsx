@@ -8,6 +8,7 @@ import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import Auth from './pages/Auth';
 import AdminDashboard from './pages/AdminDashboard';
+import AdminUserManagement from './pages/AdminUserManagement';
 import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
 import IncomeStatement from './pages/statements/IncomeStatement';
@@ -37,6 +38,7 @@ function App() {
         <Route path="/settings" element={<Settings />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/users" element={<AdminUserManagement />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
         <Route path="/income-statement" element={<IncomeStatement />} />

@@ -11,9 +11,14 @@ export default function AdminHeader() {
         <h1 className="text-3xl font-bold">Admin Dashboard</h1>
         <p className="text-muted-foreground">Track user signups and system performance</p>
       </div>
-      <Button onClick={() => navigate('/dashboard')}>
-        Back to Dashboard
-      </Button>
+      <div className="flex gap-2">
+        <Button variant="outline" onClick={() => navigate('/admin/users')}>
+          Manage Admins
+        </Button>
+        <Button onClick={() => navigate('/dashboard')}>
+          Back to Dashboard
+        </Button>
+      </div>
     </div>
   );
 }

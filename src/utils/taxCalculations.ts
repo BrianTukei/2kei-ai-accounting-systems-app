@@ -94,22 +94,22 @@ export const countryTaxConfigs: { [key: string]: CountryTaxConfig } = {
 export const calculateProgressiveIncomeTax = (income: number, brackets: TaxBracket[]): number => {
   let tax = 0;
   let remainingIncome = income;
+  let previousMax = 0;
 
-  for (let i = 0; i < brackets.length; i++) {
-    const { min, max, rate } = brackets[i];
-    
-    if (remainingIncome <= 0) break;
-    
-    if (max === undefined) {
-      // This is the highest bracket
-      tax += (remainingIncome * rate) / 100;
+  for (const bracket of brackets) {
+    if (remainingIncome <= 0) {
       break;
-    } else {
-      // Calculate tax for this bracket
-      const taxableInThisBracket = Math.min(remainingIncome, max - min + 1);
-      tax += (taxableInThisBracket * rate) / 100;
-      remainingIncome -= taxableInThisBracket;
     }
+
+    const bracketSize = (bracket.max ?? Infinity) - previousMax;
+    const taxableInBracket = Math.min(remainingIncome, bracketSize);
+
+    if (income > previousMax) {
+      tax += taxableInBracket * (bracket.rate / 100);
+      remainingIncome -= taxableInBracket;
+    }
+
+    previousMax = bracket.max ?? 0;
   }
 
   return tax;

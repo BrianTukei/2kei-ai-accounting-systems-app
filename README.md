@@ -1,22 +1,16 @@
 # Welcome to 2KÈI Ledgery software project
 
-## Project info
+## About
 
-**URL**: https://lovable.dev/projects/30c3ec9a-be4b-4afe-aee0-8434cf35d017
+This project is an accounting software created by Tukei Brian.
 
 ## How can I edit this code?
 
 There are several ways of editing your application.
 
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/30c3ec9a-be4b-4afe-aee0-8434cf35d017) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
 **Use your preferred IDE**
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+If you want to work locally using your own IDE, you can clone this repo and push changes.
 
 The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 
@@ -62,8 +56,4 @@ This project is built with .
 
 ## How can I deploy this project?
 
-Simply open [Lovable](https://lovable.dev/projects/30c3ec9a-be4b-4afe-aee0-8434cf35d017) and click on Share -> Publish.
-
-## I want to use a custom domain - is that possible?
-
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+You can deploy this project using any modern hosting provider that supports Node.js applications, such as Netlify, Vercel, or AWS.

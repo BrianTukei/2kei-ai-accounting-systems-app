@@ -8,6 +8,9 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
   },
+  preview: {
+    allowedHosts: ["briantukei-2kei-ai-accounting-systems-app.onrender.com"],
+  },
   build: {
     chunkSizeWarningLimit: 1500,
   },

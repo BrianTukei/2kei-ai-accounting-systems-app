@@ -24,6 +24,14 @@ const EmailConfirmation = () => {
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
+  // ── Grab email from query param (passed from signup page) ──
+  useEffect(() => {
+    const emailParam = searchParams.get('email');
+    if (emailParam && !userEmail) {
+      setUserEmail(emailParam);
+    }
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── Handle automatic verification from URL tokens ──
   useEffect(() => {
     const handleEmailConfirmation = async () => {
@@ -123,6 +131,7 @@ const EmailConfirmation = () => {
       }
 
       // ── 4. No tokens — show OTP input for manual code entry ──
+      const emailParam = searchParams.get('email');
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user && user.email_confirmed_at) {
@@ -131,14 +140,24 @@ const EmailConfirmation = () => {
         } else if (user && !user.email_confirmed_at) {
           setUserEmail(user.email || '');
           setStatus('otp');
-          setMessage(`We've sent a verification email to ${user.email}. Enter the 6-digit code from your email, or click the link in the email.`);
+          setMessage(`We've sent a verification code to ${user.email}. Enter the 6-digit code from your email.`);
+        } else if (emailParam) {
+          setUserEmail(emailParam);
+          setStatus('otp');
+          setMessage(`We've sent a verification code to ${emailParam}. Enter the 6-digit code from your email.`);
         } else {
           setStatus('otp');
-          setMessage('Please check your inbox for the verification email. Enter the 6-digit code below, or click the link in the email.');
+          setMessage('Please check your inbox for the verification email. Enter the 6-digit code below.');
         }
       } catch {
-        setStatus('otp');
-        setMessage('Please check your inbox for the verification email. Enter the 6-digit code below, or click the link in the email.');
+        if (emailParam) {
+          setUserEmail(emailParam);
+          setStatus('otp');
+          setMessage(`We've sent a verification code to ${emailParam}. Enter the 6-digit code from your email.`);
+        } else {
+          setStatus('otp');
+          setMessage('Please check your inbox for the verification email. Enter the 6-digit code below.');
+        }
       }
     };
 
@@ -232,11 +251,34 @@ const EmailConfirmation = () => {
 
       if (error) throw error;
 
-      if (data.user) {
+      if (data.user && data.session) {
+        // OTP verified — user is now signed in automatically via the returned session
         setStatus('success');
-        setMessage('Your email has been verified successfully! Welcome to 2K AI Accounting Systems.');
-        toast.success("Email verified! Your account is now active.");
-        setTimeout(() => navigate('/onboarding'), 2500);
+        setMessage('Email verified! Signing you in...');
+        toast.success("Email verified! You're now signed in.");
+        // Short delay so the user sees the success state, then redirect
+        setTimeout(() => {
+          // Use window.location to ensure full app reload with new session
+          window.location.href = '/onboarding';
+        }, 1500);
+      } else if (data.user) {
+        // Verified but no session returned — sign in automatically
+        setStatus('success');
+        setMessage('Email verified! Signing you in...');
+        toast.success("Email verified! Signing you in...");
+        try {
+          // The user just verified; try to get the session
+          const { data: sessionData } = await supabase.auth.getSession();
+          if (sessionData.session) {
+            setTimeout(() => { window.location.href = '/onboarding'; }, 1500);
+          } else {
+            // Fallback: redirect to auth page with a success message
+            toast.info('Please sign in with your credentials.');
+            setTimeout(() => navigate('/auth'), 2000);
+          }
+        } catch {
+          setTimeout(() => navigate('/auth'), 2000);
+        }
       } else {
         throw new Error('Verification failed — no user returned');
       }

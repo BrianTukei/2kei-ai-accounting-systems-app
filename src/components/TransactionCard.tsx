@@ -45,9 +45,9 @@ export default function TransactionCard({
         className
       )}
     >
-      <CardContent className="p-4">
+      <CardContent className="p-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3">
             <div className={cn(
               "w-10 h-10 rounded-full flex items-center justify-center",
               isIncome ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"

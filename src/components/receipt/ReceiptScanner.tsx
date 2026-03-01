@@ -35,6 +35,7 @@ export default function ReceiptScanner({ onScanComplete }: ReceiptScannerProps) 
     confidence,
     handleFileChange,
     clearFile,
+    setFileDirectly,
     simulateScanning,
     setScanResults
   } = useReceiptScanner({ onScanComplete });
@@ -99,6 +100,7 @@ export default function ReceiptScanner({ onScanComplete }: ReceiptScannerProps) 
                 previewUrl={previewUrl}
                 onFileChange={handleFileChange}
                 onClearFile={clearFile}
+                onFileSet={setFileDirectly}
               />
             ) : (
               <ReceiptResults

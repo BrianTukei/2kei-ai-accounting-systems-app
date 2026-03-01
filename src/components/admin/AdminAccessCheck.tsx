@@ -1,87 +1,185 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Shield, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+
+/** Platform owner emails that always have admin access */
+const OWNER_EMAILS = [
+  'briantukei1000@gmail.com',
+  'tukeibrian5@gmail.com',
+];
 
 interface AdminAccessCheckProps {
   children: React.ReactNode;
 }
 
+type AccessState = 'checking' | 'granted' | 'denied' | 'no-auth';
+
 export default function AdminAccessCheck({ children }: AdminAccessCheckProps) {
   const navigate = useNavigate();
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [accessAttempts, setAccessAttempts] = useState(0);
+  const { user, authResolved } = useAuth();
+  const [accessState, setAccessState] = useState<AccessState>('checking');
+  const checkStarted = useRef(false);
 
-  // Check if user is admin
   useEffect(() => {
-    const checkAdminAccess = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+    // Wait for auth to resolve first
+    if (!authResolved) return;
+    
+    // Prevent multiple checks
+    if (checkStarted.current) return;
+    checkStarted.current = true;
+
+    // No user - redirect to auth
+    if (!user) {
+      setAccessState('no-auth');
+      return;
+    }
+
+    const userEmail = user.email?.toLowerCase() || '';
+    
+    // Owner email = instant access (no database check needed)
+    if (OWNER_EMAILS.some(e => e.toLowerCase() === userEmail)) {
+      console.log('[AdminAccessCheck] Owner email detected:', userEmail);
+      setAccessState('granted');
       
-      if (!user) {
-        toast.error("Please sign in to access the admin dashboard");
-        navigate('/auth');
+      // Background: ensure DB entries (non-blocking)
+      setupAdminDbEntries(user.id).catch(console.error);
+      return;
+    }
+
+    // For non-owners, check database
+    checkDatabaseAccess(user.id);
+  }, [authResolved, user]);
+
+  const setupAdminDbEntries = async (userId: string) => {
+    try {
+      // Try RPC bootstrap
+      await supabase.rpc('bootstrap_admin_if_owner').catch(() => {});
+      
+      // Upsert admin_users
+      await (supabase as any)
+        .from('admin_users')
+        .upsert({
+          user_id: userId,
+          admin_role: 'super_admin',
+          department: 'Platform',
+          permissions: ['*'],
+          is_active: true
+        }, { onConflict: 'user_id' })
+        .catch(() => {});
+      
+      // Upsert user_roles
+      await supabase
+        .from('user_roles')
+        .upsert({ user_id: userId, role: 'admin' }, { onConflict: 'user_id,role' })
+        .catch(() => {});
+    } catch (e) {
+      console.log('[AdminAccessCheck] DB setup error (non-fatal):', e);
+    }
+  };
+
+  const checkDatabaseAccess = async (userId: string) => {
+    try {
+      // Check admin_users table
+      const { data: adminData } = await (supabase as any)
+        .from('admin_users')
+        .select('id, admin_role, is_active')
+        .eq('user_id', userId)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (adminData) {
+        setAccessState('granted');
         return;
       }
 
-      // Check if user has admin role
-      const { data: roleData, error } = await supabase
+      // Fallback: check user_roles
+      const { data: roleData } = await supabase
         .from('user_roles')
         .select('role')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .eq('role', 'admin')
         .maybeSingle();
 
-      if (error) {
-        console.error('Error checking admin role:', error);
-        toast.error("Error verifying permissions");
-        navigate('/dashboard');
+      if (roleData) {
+        setAccessState('granted');
         return;
       }
 
-      if (roleData) {
-        setIsAdmin(true);
-      } else {
-        setAccessAttempts(prev => prev + 1);
-        toast.error("You don't have permission to access this page");
-        setTimeout(() => {
-          navigate('/dashboard');
-        }, 1500);
-      }
-      setIsLoading(false);
-    };
+      // No access
+      setAccessState('denied');
+    } catch (error) {
+      console.error('[AdminAccessCheck] Database check error:', error);
+      setAccessState('denied');
+    }
+  };
 
-    checkAdminAccess();
-  }, [navigate]);
-
-  if (isLoading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  // Still waiting for auth
+  if (!authResolved || accessState === 'checking') {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-950">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center animate-pulse">
+            <Shield className="w-8 h-8 text-white" />
+          </div>
+          <div className="flex items-center gap-2 text-slate-400">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span>Verifying admin access...</span>
+          </div>
+        </div>
+      </div>
+    );
   }
 
-  if (!isAdmin) {
+  // Not authenticated
+  if (accessState === 'no-auth') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-100">
-        <Card className="w-96 shadow-lg border-red-200 animate-pulse">
-          <CardHeader className="bg-red-50 border-b border-red-200">
+      <div className="min-h-screen flex items-center justify-center bg-slate-950">
+        <Card className="w-96 shadow-lg border-slate-800 bg-slate-900">
+          <CardHeader>
+            <CardTitle className="text-white">Sign In Required</CardTitle>
+            <CardDescription className="text-slate-400">
+              Please sign in to access the admin dashboard.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button 
+              className="w-full bg-red-600 hover:bg-red-700 text-white" 
+              onClick={() => navigate('/auth', { replace: true })}
+            >
+              Sign In
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Access denied
+  if (accessState === 'denied') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-950">
+        <Card className="w-96 shadow-lg border-red-900/50 bg-slate-900">
+          <CardHeader className="bg-red-950/50 border-b border-red-900/30">
             <div className="flex items-center space-x-2">
               <AlertTriangle className="h-6 w-6 text-red-500" />
-              <CardTitle className="text-red-700">Access Restricted</CardTitle>
+              <CardTitle className="text-red-400">Access Restricted</CardTitle>
             </div>
-            <CardDescription className="text-red-600">
+            <CardDescription className="text-red-300/70">
               This area is only accessible to authorized administrators.
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-6 space-y-4">
-            <p className="text-center text-sm text-muted-foreground">
-              Your access attempt has been logged.
+            <p className="text-center text-sm text-slate-400">
+              Contact support if you believe this is an error.
             </p>
             <Button 
-              className="w-full bg-blue-600 hover:bg-blue-700" 
-              onClick={() => navigate('/dashboard')}
+              className="w-full bg-red-600 hover:bg-red-700 text-white" 
+              onClick={() => navigate('/dashboard', { replace: true })}
             >
               Return to Dashboard
             </Button>
@@ -91,5 +189,6 @@ export default function AdminAccessCheck({ children }: AdminAccessCheckProps) {
     );
   }
 
+  // Access granted
   return <>{children}</>;
 }

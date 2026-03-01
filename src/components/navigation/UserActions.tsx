@@ -2,6 +2,8 @@
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import UserMenu from '@/components/UserMenu';
+import { useAuth } from '@/contexts/AuthContext';
+import { cn } from '@/lib/utils';
 
 interface UserActionsProps {
   user: { name: string; email: string } | null;
@@ -10,6 +12,8 @@ interface UserActionsProps {
 }
 
 export default function UserActions({ user, orientation = 'horizontal', onActionClick }: UserActionsProps) {
+  const { signOut } = useAuth();
+
   const handleClick = () => {
     if (onActionClick) {
       onActionClick();
@@ -47,10 +51,9 @@ export default function UserActions({ user, orientation = 'horizontal', onAction
           <Button 
             className="w-full" 
             variant="destructive"
-            onClick={() => {
-              localStorage.removeItem('user');
-              window.location.href = '/';
+            onClick={async () => {
               if (onActionClick) onActionClick();
+              await signOut();
             }}
           >
             Log Out
@@ -60,6 +63,3 @@ export default function UserActions({ user, orientation = 'horizontal', onAction
     </div>
   );
 }
-
-// Import cn utility
-import { cn } from '@/lib/utils';

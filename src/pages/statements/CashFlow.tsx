@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useTransactions } from '@/hooks/useTransactions';
 import AuthCheck from '@/components/auth/AuthCheck';
-import StatementLayout, { generateBasePDF } from '@/components/statements/StatementLayout';
+import StatementLayout, { generateBasePDF, formatCurrency } from '@/components/statements/StatementLayout';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 // Define cash flow categories
@@ -61,27 +61,27 @@ export default function CashFlow() {
   
   const generatePDF = () => {
     const tableData = [
-      ['Category', 'Amount ($)'],
+      ['Category / Description', 'Amount'],
       ['Operating Activities', ''],
       ...cashFlowData.operating.map(t => [
         `${t.category} - ${t.description}`,
-        (t.type === 'income' ? '+' : '-') + t.amount.toFixed(2)
+        (t.type === 'income' ? '' : '-') + formatCurrency(Math.abs(t.amount))
       ]),
-      ['Net Cash from Operating Activities', formatCashFlow(operatingTotal)],
+      ['Net Cash from Operating Activities', formatCurrency(operatingTotal)],
       ['', ''],
       ['Investing Activities', ''],
       ...cashFlowData.investing.map(t => [
         `${t.category} - ${t.description}`,
-        (t.type === 'income' ? '+' : '-') + t.amount.toFixed(2)
+        (t.type === 'income' ? '' : '-') + formatCurrency(Math.abs(t.amount))
       ]),
-      ['Net Cash from Investing Activities', formatCashFlow(investingTotal)],
+      ['Net Cash from Investing Activities', formatCurrency(investingTotal)],
       ['', ''],
       ['Financing Activities', ''],
       ...cashFlowData.financing.map(t => [
         `${t.category} - ${t.description}`,
-        (t.type === 'income' ? '+' : '-') + t.amount.toFixed(2)
+        (t.type === 'income' ? '' : '-') + formatCurrency(Math.abs(t.amount))
       ]),
-      ['Net Cash from Financing Activities', formatCashFlow(financingTotal)],
+      ['Net Cash from Financing Activities', formatCurrency(financingTotal)],
     ];
     
     const summary = [
@@ -98,29 +98,29 @@ export default function CashFlow() {
       description="Summary of cash inflows and outflows"
       generatePDF={generatePDF}
     >
-      <div className="space-y-8">
+      <div className="compact-spacing max-w-3xl mx-auto px-2 sm:px-0">
         <div>
-          <h3 className="text-lg font-semibold mb-4">Operating Activities</h3>
-          <Table>
+          <h3 className="compact-text-lg font-semibold mb-2">Operating Activities</h3>
+          <Table className="compact-table">
             <TableHeader>
-              <TableRow>
-                <TableHead>Description</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
+              <TableRow className="h-8">
+                <TableHead className="px-1 sm:px-2 py-1 text-xs sm:text-sm">Description</TableHead>
+                <TableHead className="text-right px-1 sm:px-2 py-1 text-xs sm:text-sm">Amount</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {cashFlowData.operating.map((t, index) => (
-                <TableRow key={index}>
-                  <TableCell>{t.category} - {t.description}</TableCell>
-                  <TableCell className={`text-right font-medium ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                    {t.type === 'income' ? '+' : '-'}${t.amount.toFixed(2)}
+                <TableRow key={index} className="h-8">
+                  <TableCell className="px-1 sm:px-2 py-1 text-xs sm:text-sm truncate max-w-0">{t.category} - {t.description}</TableCell>
+                  <TableCell className={`text-right font-medium px-1 sm:px-2 py-1 text-xs sm:text-sm ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                    {t.type === 'income' ? formatCurrency(t.amount) : `-${formatCurrency(Math.abs(t.amount))}`}
                   </TableCell>
                 </TableRow>
               ))}
-              <TableRow>
-                <TableCell className="font-bold">Net Cash from Operating Activities</TableCell>
-                <TableCell className={`text-right font-bold ${operatingTotal >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {formatCashFlow(operatingTotal)}
+              <TableRow className="h-8">
+                <TableCell className="font-bold px-1 sm:px-2 py-1 text-xs sm:text-sm">Net Cash from Operating Activities</TableCell>
+                <TableCell className={`text-right font-bold px-1 sm:px-2 py-1 text-xs sm:text-sm ${operatingTotal >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {formatCurrency(operatingTotal)}
                 </TableCell>
               </TableRow>
             </TableBody>
@@ -128,34 +128,34 @@ export default function CashFlow() {
         </div>
         
         <div>
-          <h3 className="text-lg font-semibold mb-4">Investing Activities</h3>
-          <Table>
+          <h3 className="compact-text-lg font-semibold mb-2">Investing Activities</h3>
+          <Table className="compact-table">
             <TableHeader>
-              <TableRow>
-                <TableHead>Description</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
+              <TableRow className="h-8">
+                <TableHead className="px-1 sm:px-2 py-1 text-xs sm:text-sm">Description</TableHead>
+                <TableHead className="text-right px-1 sm:px-2 py-1 text-xs sm:text-sm">Amount</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {cashFlowData.investing.length > 0 ? (
                 <>
                   {cashFlowData.investing.map((t, index) => (
-                    <TableRow key={index}>
-                      <TableCell>{t.category} - {t.description}</TableCell>
-                      <TableCell className={`text-right font-medium ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                    <TableRow key={index} className="h-8">
+                      <TableCell className="px-1 sm:px-2 py-1 text-xs sm:text-sm truncate max-w-0">{t.category} - {t.description}</TableCell>
+                      <TableCell className={`text-right font-medium px-1 sm:px-2 py-1 text-xs sm:text-sm ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
                         {t.type === 'income' ? '+' : '-'}${t.amount.toFixed(2)}
                       </TableCell>
                     </TableRow>
                   ))}
                 </>
               ) : (
-                <TableRow>
-                  <TableCell colSpan={2} className="text-center text-muted-foreground">No investing activities</TableCell>
+                <TableRow className="h-8">
+                  <TableCell colSpan={2} className="text-center text-muted-foreground px-1 sm:px-2 py-1 text-xs sm:text-sm">No investing activities</TableCell>
                 </TableRow>
               )}
-              <TableRow>
-                <TableCell className="font-bold">Net Cash from Investing Activities</TableCell>
-                <TableCell className={`text-right font-bold ${investingTotal >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              <TableRow className="h-8">
+                <TableCell className="font-bold px-1 sm:px-2 py-1 text-xs sm:text-sm">Net Cash from Investing Activities</TableCell>
+                <TableCell className={`text-right font-bold px-1 sm:px-2 py-1 text-xs sm:text-sm ${investingTotal >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                   {formatCashFlow(investingTotal)}
                 </TableCell>
               </TableRow>
@@ -164,34 +164,34 @@ export default function CashFlow() {
         </div>
         
         <div>
-          <h3 className="text-lg font-semibold mb-4">Financing Activities</h3>
-          <Table>
+          <h3 className="compact-text-lg font-semibold mb-2">Financing Activities</h3>
+          <Table className="compact-table">
             <TableHeader>
-              <TableRow>
-                <TableHead>Description</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
+              <TableRow className="h-8">
+                <TableHead className="px-1 sm:px-2 py-1 text-xs sm:text-sm">Description</TableHead>
+                <TableHead className="text-right px-1 sm:px-2 py-1 text-xs sm:text-sm">Amount</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {cashFlowData.financing.length > 0 ? (
                 <>
                   {cashFlowData.financing.map((t, index) => (
-                    <TableRow key={index}>
-                      <TableCell>{t.category} - {t.description}</TableCell>
-                      <TableCell className={`text-right font-medium ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                    <TableRow key={index} className="h-8">
+                      <TableCell className="px-1 sm:px-2 py-1 text-xs sm:text-sm truncate max-w-0">{t.category} - {t.description}</TableCell>
+                      <TableCell className={`text-right font-medium px-1 sm:px-2 py-1 text-xs sm:text-sm ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
                         {t.type === 'income' ? '+' : '-'}${t.amount.toFixed(2)}
                       </TableCell>
                     </TableRow>
                   ))}
                 </>
               ) : (
-                <TableRow>
-                  <TableCell colSpan={2} className="text-center text-muted-foreground">No financing activities</TableCell>
+                <TableRow className="h-8">
+                  <TableCell colSpan={2} className="text-center text-muted-foreground px-1 sm:px-2 py-1 text-xs sm:text-sm">No financing activities</TableCell>
                 </TableRow>
               )}
-              <TableRow>
-                <TableCell className="font-bold">Net Cash from Financing Activities</TableCell>
-                <TableCell className={`text-right font-bold ${financingTotal >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              <TableRow className="h-8">
+                <TableCell className="font-bold px-1 sm:px-2 py-1 text-xs sm:text-sm">Net Cash from Financing Activities</TableCell>
+                <TableCell className={`text-right font-bold px-1 sm:px-2 py-1 text-xs sm:text-sm ${financingTotal >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                   {formatCashFlow(financingTotal)}
                 </TableCell>
               </TableRow>
@@ -200,11 +200,11 @@ export default function CashFlow() {
         </div>
         
         <div className="border-t pt-4">
-          <Table>
+          <Table className="compact-table">
             <TableBody>
-              <TableRow>
-                <TableCell className="font-bold text-lg">Net Increase in Cash</TableCell>
-                <TableCell className={`text-right font-bold text-lg ${netCashFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              <TableRow className="h-8">
+                <TableCell className="font-bold text-xs sm:text-lg px-1 sm:px-2 py-1">Net Increase in Cash</TableCell>
+                <TableCell className={`text-right font-bold text-xs sm:text-lg px-1 sm:px-2 py-1 ${netCashFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                   {formatCashFlow(netCashFlow)}
                 </TableCell>
               </TableRow>

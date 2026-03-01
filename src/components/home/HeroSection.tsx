@@ -4,7 +4,9 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ArrowRight, Sparkles, TrendingUp, ChevronDown, BarChart, CreditCard, FileText, Calculator, PieChart, Target } from 'lucide-react';
-import dashboardHero from '@/assets/dashboard-hero.jpg';
+
+// High-quality Unsplash image - Modern financial dashboard on laptop
+const dashboardHero = 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&q=80&auto=format&fit=crop';
 
 interface HeroSectionProps {
   featuresRef: React.RefObject<HTMLDivElement>;
@@ -52,7 +54,7 @@ const HeroSection = ({ featuresRef }: HeroSectionProps) => {
     }
   ];
   return (
-    <section className="relative pt-20 pb-24 overflow-hidden">
+    <section className="relative pt-20 pb-12 overflow-hidden">
       {/* Animated background */}
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-accent/5 to-primary/10" />
@@ -79,7 +81,7 @@ const HeroSection = ({ featuresRef }: HeroSectionProps) => {
           </h1>
           
           <p className="text-lg md:text-xl text-slate-600 mb-8 max-w-3xl mx-auto animate-fade-up" style={{ animationDelay: '0.1s' }}>
-            Why struggle with complex accounting software when 2KÉI Ledgerly makes financial management effortless? Join 50,000+ businesses who chose us over the competition. <span className="font-semibold text-primary">Stop wasting time. Start winning.</span>
+            Why struggle with complex accounting software when 2K AI Accounting Systems makes financial management effortless? Join 50,000+ businesses who chose us over the competition. <span className="font-semibold text-primary">Stop wasting time. Start winning.</span>
           </p>
           
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-up" style={{ animationDelay: '0.2s' }}>
@@ -170,7 +172,7 @@ const HeroSection = ({ featuresRef }: HeroSectionProps) => {
             <div className="relative">
               <img
                 src={dashboardHero}
-                alt="2KÉI Ledgerly Accounting Dashboard - Modern financial management interface"
+                alt="2K AI Accounting Systems Dashboard - Modern financial management interface"
                 className="w-full h-auto rounded-lg shadow-glass-lg"
                 style={{ objectFit: 'cover' }}
               />

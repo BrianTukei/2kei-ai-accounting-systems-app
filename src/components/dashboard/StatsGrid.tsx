@@ -21,7 +21,7 @@ export default function StatsGrid() {
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 compact-spacing">
       <div className="animate-scale-in" style={{ animationDelay: '0.1s' }}>
         <StatCard 
           title="Total Balance" 

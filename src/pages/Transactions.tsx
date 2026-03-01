@@ -2,8 +2,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, CreditCard } from 'lucide-react';
-import Navbar from '@/components/Navbar';
-import AuthCheck from '@/components/auth/AuthCheck';
+import PageLayout from '@/components/layout/PageLayout';
 import { Transaction } from '@/components/TransactionCard';
 import AddTransactionModal from '@/components/AddTransactionModal';
 import ReceiptScanner from '@/components/receipt/ReceiptScanner';
@@ -66,22 +65,11 @@ export default function Transactions() {
   });
 
   return (
-    <AuthCheck>
-      <div className="min-h-screen bg-gradient-subtle">
-        <Navbar />
-        
-        <main className="container mx-auto px-4 py-8">
-          <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 animate-fade-up">
-            <div className="space-y-3">
-              <h1 className="text-4xl font-display font-bold tracking-tight text-shadow gradient-text flex items-center">
-                <CreditCard className="h-10 w-10 mr-4 text-primary drop-shadow-lg" />
-                Transactions
-              </h1>
-              <p className="text-muted-foreground text-lg font-medium">
-                Manage your income and expenses
-              </p>
-            </div>
-            
+    <PageLayout 
+      title="Transactions" 
+      subtitle="Manage your income and expenses"
+    >
+          <div className="flex flex-col md:flex-row md:items-center justify-end mb-10 animate-fade-up">
             <div className="mt-6 md:mt-0 flex flex-col sm:flex-row gap-3">
               <ReceiptScanner onScanComplete={handleReceiptScan} />
               <Button 
@@ -114,7 +102,6 @@ export default function Transactions() {
               onDeleteTransaction={handleDeleteTransaction}
             />
           </div>
-        </main>
         
         <AddTransactionModal 
           isOpen={isAddModalOpen}
@@ -123,7 +110,6 @@ export default function Transactions() {
           onEditTransaction={editTransaction}
           transactionToEdit={transactionToEdit}
         />
-      </div>
-    </AuthCheck>
+    </PageLayout>
   );
 }

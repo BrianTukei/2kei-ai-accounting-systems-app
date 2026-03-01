@@ -1,53 +1,361 @@
 
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Menu, X } from "lucide-react";
-import UserMenu from "./UserMenu";
-import NavigationItems from "./navigation/NavigationItems";
+import { useEffect, useState, useRef } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import {
+  Menu,
+  X,
+  Search,
+  Sun,
+  Moon,
+  ChevronDown,
+  Maximize,
+  Minimize,
+  ShieldAlert,
+  Users as UsersIcon,
+} from 'lucide-react';
+import UserMenu from './UserMenu';
+import NavigationItems, { navItems } from './navigation/NavigationItems';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet';
+import { cn } from '@/lib/utils';
+import { useFullscreen } from '@/hooks/useFullscreen';
+import SearchCommandPalette from '@/components/SearchCommandPalette';
+import BrandLogo from '@/components/BrandLogo';
+import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+
+/** Platform owner emails that always get admin access */
+const OWNER_EMAILS = ['briantukei1000@gmail.com', 'tukeibrian5@gmail.com'];
 
 export default function Navbar() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => (localStorage.getItem('theme') as 'light' | 'dark') || 'light');
+  const location = useLocation();
+  const { user } = useAuth();
 
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen);
+  // Check admin role
+  useEffect(() => {
+    if (!user) { setIsAdmin(false); return; }
+    const check = async () => {
+      const { data } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'admin')
+        .maybeSingle();
+      const isOwner = OWNER_EMAILS.map(e => e.toLowerCase()).includes(user.email?.toLowerCase() || '');
+      setIsAdmin(!!data || isOwner);
+    };
+    check();
+  }, [user]);
+
+  useEffect(() => {
+    const onScroll = () => setIsScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  // Close the sheet whenever the route changes
+  useEffect(() => {
+    setIsSheetOpen(false);
+  }, [location.pathname]);
+
+  const toggleTheme = () => setTheme((t) => (t === 'light' ? 'dark' : 'light'));
+  const { isFullscreen, toggleFullscreen } = useFullscreen();
+  const isLandingPage = location.pathname === '/';
+
+  // Smooth scroll to a section on the landing page
+  const scrollToSection = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
   };
 
-  return (
-    <nav className="bg-background shadow-sm border-b border-border">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
-          <Link to="/dashboard" className="text-xl font-semibold text-primary hover:text-primary/90 transition-colors">
-            2KÉI Ledgerly Accounting
-          </Link>
+  // Grouped items for the hamburger sheet
+  const groups: { label: string; keys: string[] }[] = [
+    { label: 'Main', keys: ['main', 'reports'] },
+    { label: 'Financial Statements', keys: ['financial'] },
+    { label: 'Account', keys: ['saas'] },
+  ];
 
-          <div className="hidden md:block">
-            <NavigationItems />
+  return (
+    <header
+      role="banner"
+      className={`sticky top-0 z-40 transition-all duration-300 ${isScrolled ? 'backdrop-blur-md bg-white/50 dark:bg-slate-900/50 shadow-lg' : 'bg-transparent'} `}
+    >
+      <nav
+        role="navigation"
+        aria-label="Main navigation"
+        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
+      >
+        <div className="flex items-center justify-between h-16">
+          {/* Left: Hamburger + Brand */}
+          <div className="flex items-center space-x-3">
+            {/* Hamburger menu — always visible */}
+            <button
+              aria-label="Open navigation menu"
+              onClick={() => setIsSheetOpen(true)}
+              className="relative w-10 h-10 flex items-center justify-center rounded-lg text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800 transition-all"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+
+            <Link to="/dashboard" className="flex items-center space-x-3 focus:outline-none focus:ring-2 focus:ring-primary rounded">
+              <BrandLogo size="md" />
+              <div className="hidden sm:block">
+                <div className="text-sm font-semibold leading-4 text-slate-900 dark:text-slate-100">2K AI Accounting Systems</div>
+                <div className="text-xs text-slate-500 dark:text-slate-400">Premium Financial Suite</div>
+              </div>
+            </Link>
           </div>
 
-          <div className="md:hidden">
-            <button 
-              onClick={toggleMenu}
-              className="text-muted-foreground hover:text-primary transition-colors"
-              aria-label="Toggle menu"
+          {/* Center: primary nav items (desktop only) */}
+          <div className="hidden md:flex md:items-center md:space-x-2">
+            {isLandingPage ? (
+              <>
+                {['features', 'pricing', 'testimonials'].map((section) => (
+                  <button
+                    key={section}
+                    onClick={() => scrollToSection(section)}
+                    className="px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-primary transition-colors capitalize"
+                  >
+                    {section}
+                  </button>
+                ))}
+                <Link
+                  to="/auth"
+                  className="px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-primary transition-colors"
+                >
+                  Login
+                </Link>
+                <Button asChild size="sm" className="rounded-full ml-1 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 border-0">
+                  <Link to="/auth?action=signup">Sign Up</Link>
+                </Button>
+              </>
+            ) : (
+              <NavigationItems onlyPrimary />
+            )}
+          </div>
+
+          {/* Right actions */}
+          <div className="flex items-center space-x-2">
+            <button
+              aria-label="Search (Ctrl+K)"
+              title="Search (Ctrl+K)"
+              onClick={() => setIsSearchOpen(true)}
+              className="p-2 rounded-md text-slate-600 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
             >
-              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+              <Search className="w-5 h-5" />
+            </button>
+
+            <button
+              onClick={toggleFullscreen}
+              aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+              className="p-2 rounded-md text-slate-600 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+            >
+              {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
+            </button>
+
+            <button
+              onClick={toggleTheme}
+              aria-pressed={theme === 'dark'}
+              aria-label="Toggle dark mode"
+              className="p-2 rounded-md text-slate-600 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            >
+              {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
+
+            <div className="hidden md:block">
+              <UserMenu />
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* ─── Hamburger Sheet ─── */}
+      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+        <SheetContent side="left" className="w-80 p-0 overflow-y-auto">
+          <SheetHeader className="p-5 border-b">
+            <div className="flex items-center space-x-3">
+              <BrandLogo size="sm" />
+              <div>
+                <SheetTitle className="text-sm font-semibold text-slate-900 dark:text-slate-100">2K AI Accounting</SheetTitle>
+                <SheetDescription className="text-xs text-slate-500 dark:text-slate-400">Navigate your workspace</SheetDescription>
+              </div>
+            </div>
+          </SheetHeader>
+
+          {/* Search trigger (opens command palette) */}
+          <div className="px-4 pt-4 pb-2">
+            <button
+              onClick={() => { setIsSheetOpen(false); setTimeout(() => setIsSearchOpen(true), 150); }}
+              className="w-full flex items-center gap-2 pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-400 hover:border-primary/40 transition-colors text-left relative"
+            >
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+              Search pages…
+              <kbd className="ml-auto text-[10px] px-1.5 py-0.5 rounded border bg-muted font-mono">Ctrl+K</kbd>
             </button>
           </div>
 
-          <div className="flex items-center space-x-4">
-            <UserMenu />
-          </div>
-        </div>
-      </div>
+          {/* Grouped nav items */}
+          <div className="px-3 py-2 space-y-5">
+            {groups.map((group) => {
+              const groupItems = navItems.filter((i) => group.keys.includes(i.group || ''));
+              if (groupItems.length === 0) return null;
+              return (
+                <div key={group.label}>
+                  <p className="px-3 mb-2 text-[10px] uppercase tracking-wider font-semibold text-slate-400 dark:text-slate-500">
+                    {group.label}
+                  </p>
+                  <nav className="space-y-0.5">
+                    {groupItems.map((item) => {
+                      const isActive = location.pathname === item.path;
+                      const Icon = item.icon;
+                      return (
+                        <Link
+                          key={item.path}
+                          to={item.path}
+                          onClick={() => setIsSheetOpen(false)}
+                          className={cn(
+                            'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group',
+                            isActive
+                              ? 'bg-primary/10 text-primary shadow-sm'
+                              : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                          )}
+                        >
+                          {/* Colored icon badge */}
+                          <span
+                            className={cn(
+                              'flex items-center justify-center w-9 h-9 rounded-lg transition-transform duration-200 group-hover:scale-110',
+                              `bg-gradient-to-br ${item.iconGradient}`,
+                              isActive && 'shadow-sm ring-1 ring-primary/20'
+                            )}
+                          >
+                            <Icon
+                              size={18}
+                              className={cn(
+                                item.iconColor,
+                                'transition-colors duration-200',
+                                isActive && 'drop-shadow-sm'
+                              )}
+                              strokeWidth={isActive ? 2.5 : 2}
+                            />
+                          </span>
+                          <span>{item.name}</span>
+                        </Link>
+                      );
+                    })}
+                  </nav>
+                </div>
+              );
+            })}
 
-      {/* Mobile menu */}
-      {isMenuOpen && (
-        <div className="md:hidden bg-background shadow-md py-4 border-t border-border animate-fade-in">
-          <div className="container mx-auto px-4">
-            <NavigationItems orientation="vertical" onItemClick={() => setIsMenuOpen(false)} />
+            {/* ── Admin Section (only for admin users) ── */}
+            {isAdmin && (
+              <div>
+                <p className="px-3 mb-2 text-[10px] uppercase tracking-wider font-semibold text-red-400 dark:text-red-500">
+                  Admin
+                </p>
+                <nav className="space-y-0.5">
+                  <Link
+                    to="/admin"
+                    onClick={() => setIsSheetOpen(false)}
+                    className={cn(
+                      'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group',
+                      location.pathname === '/admin'
+                        ? 'bg-red-50 dark:bg-red-900/20 text-red-600 shadow-sm'
+                        : 'text-slate-700 dark:text-slate-300 hover:bg-red-50 dark:hover:bg-red-900/20'
+                    )}
+                  >
+                    <span className={cn(
+                      'flex items-center justify-center w-9 h-9 rounded-lg transition-transform duration-200 group-hover:scale-110',
+                      'bg-gradient-to-br from-red-500/20 to-rose-500/20',
+                      location.pathname === '/admin' && 'shadow-sm ring-1 ring-red-400/30'
+                    )}>
+                      <ShieldAlert size={18} className="text-red-500" strokeWidth={location.pathname === '/admin' ? 2.5 : 2} />
+                    </span>
+                    <span>Admin Dashboard</span>
+                  </Link>
+                  <Link
+                    to="/admin/users"
+                    onClick={() => setIsSheetOpen(false)}
+                    className={cn(
+                      'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group',
+                      location.pathname === '/admin/users'
+                        ? 'bg-red-50 dark:bg-red-900/20 text-red-600 shadow-sm'
+                        : 'text-slate-700 dark:text-slate-300 hover:bg-red-50 dark:hover:bg-red-900/20'
+                    )}
+                  >
+                    <span className={cn(
+                      'flex items-center justify-center w-9 h-9 rounded-lg transition-transform duration-200 group-hover:scale-110',
+                      'bg-gradient-to-br from-red-500/20 to-orange-500/20',
+                      location.pathname === '/admin/users' && 'shadow-sm ring-1 ring-red-400/30'
+                    )}>
+                      <UsersIcon size={18} className="text-red-500" strokeWidth={location.pathname === '/admin/users' ? 2.5 : 2} />
+                    </span>
+                    <span>User Management</span>
+                  </Link>
+                </nav>
+              </div>
+            )}
           </div>
-        </div>
-      )}
-    </nav>
+
+          {/* Bottom actions */}
+          <div className="mt-auto border-t px-4 py-4 space-y-2">
+            <button
+              onClick={() => { toggleFullscreen(); setIsSheetOpen(false); }}
+              className="w-full py-2.5 px-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-3 text-sm group transition-all duration-200"
+            >
+              <span className={cn(
+                'flex items-center justify-center w-9 h-9 rounded-lg transition-transform duration-200 group-hover:scale-110',
+                isFullscreen
+                  ? 'bg-gradient-to-br from-rose-500/20 to-orange-500/20'
+                  : 'bg-gradient-to-br from-emerald-500/20 to-teal-500/20'
+              )}>
+                {isFullscreen
+                  ? <Minimize className="w-[18px] h-[18px] text-rose-500" />
+                  : <Maximize className="w-[18px] h-[18px] text-emerald-500" />}
+              </span>
+              <span className="text-slate-700 dark:text-slate-300">{isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}</span>
+            </button>
+
+            <button onClick={toggleTheme} className="w-full py-2.5 px-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-3 text-sm group transition-all duration-200">
+              <span className={cn(
+                'flex items-center justify-center w-9 h-9 rounded-lg transition-transform duration-200 group-hover:scale-110',
+                theme === 'dark'
+                  ? 'bg-gradient-to-br from-yellow-500/20 to-orange-500/20'
+                  : 'bg-gradient-to-br from-indigo-500/20 to-violet-500/20'
+              )}>
+                {theme === 'dark'
+                  ? <Sun className="w-[18px] h-[18px] text-yellow-500" />
+                  : <Moon className="w-[18px] h-[18px] text-indigo-500" />}
+              </span>
+              <span className="text-slate-700 dark:text-slate-300">{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
+            </button>
+            <div className="md:hidden">
+              <UserMenu />
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* ─── Search Command Palette ─── */}
+      <SearchCommandPalette open={isSearchOpen} onOpenChange={setIsSearchOpen} />
+    </header>
   );
 }

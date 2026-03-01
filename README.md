@@ -1,4 +1,4 @@
-# Welcome to 2KÈI Ledgery software project
+# Welcome to 2KÈI Ledgery Software project
 
 ## About
 

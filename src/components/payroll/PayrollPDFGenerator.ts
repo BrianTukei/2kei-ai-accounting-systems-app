@@ -20,7 +20,7 @@ export const generatePayrollPDF = (payrollData: PayrollData[], summary: PayrollS
   
   // Add a company logo or name
   doc.setFontSize(16);
-  doc.text('2KÉI Ledgery', 14, 45);
+  doc.text('2K AI Accounting Systems', 14, 45);
   
   // Get the common currency if all entries use the same one
   const commonCurrency = payrollData.length > 0 && 
@@ -114,7 +114,7 @@ export const generatePayrollPDF = (payrollData: PayrollData[], summary: PayrollS
     doc.setPage(i);
     doc.setFontSize(8);
     doc.text(
-      '2KÉI Ledgery - This report contains confidential payroll information.',
+      '2K AI Accounting Systems - This report contains confidential payroll information.',
       14,
       doc.internal.pageSize.height - 10
     );
@@ -149,7 +149,7 @@ export const generatePayslipPDF = (payrollData: PayrollData) => {
   
   // Add a company logo or name
   doc.setFontSize(16);
-  doc.text('2KÉI Ledgery', 140, 22);
+  doc.text('2K AI Accounting Systems', 140, 22);
   
   // Add employee information section
   doc.setFontSize(12);
@@ -394,7 +394,7 @@ export const generatePayslipPDF = (payrollData: PayrollData) => {
     doc.setPage(i);
     doc.setFontSize(8);
     doc.text(
-      '2KÉI Ledgery - This document contains confidential payroll information.',
+      '2K AI Accounting Systems - This document contains confidential payroll information.',
       14,
       doc.internal.pageSize.height - 10
     );

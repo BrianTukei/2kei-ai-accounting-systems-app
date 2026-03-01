@@ -2,6 +2,7 @@
   "name": "vite_react_shadcn_ts",
   "public": true,
   "version": "0.0.0",
+  "license": "MIT",
   "type": "module",
   "overrides": {
     "minimatch": "^10.2.2"
@@ -12,6 +13,7 @@
     "build:dev": "node ./node_modules/vite/bin/vite.js build --mode development",
     "lint": "eslint .",
     "preview": "node ./node_modules/vite/bin/vite.js preview",
+    "start": "node ./node_modules/vite/bin/vite.js preview --host 0.0.0.0 --port $PORT",
     "test": "vitest"
   },
   "dependencies": {

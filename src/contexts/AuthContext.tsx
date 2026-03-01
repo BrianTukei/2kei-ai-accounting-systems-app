@@ -20,9 +20,9 @@ const APP_STORAGE_KEYS = [
   '2k_onboarding_complete',
   '2k_onboarding_state',
   '2k_pending_invites',
-  'ledgerly-demo-subscription',
-  'ledgerly-demo-payments',
-  'ledgerly-subscription-activated',
+  '2kai-demo-subscription',
+  '2kai-demo-payments',
+  '2kai-subscription-activated',
 ] as const;
 
 /**

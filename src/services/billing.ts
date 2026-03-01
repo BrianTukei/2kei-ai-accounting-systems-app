@@ -26,8 +26,8 @@ import { PLANS, type PlanId, type BillingCycle, type SubStatus } from '@/lib/pla
 // Demo mode helpers
 // ─────────────────────────────────────────
 
-const DEMO_MODE_KEY = 'ledgerly-demo-subscription';
-const DEMO_BILLING_HISTORY_KEY = 'ledgerly-billing-history';
+const DEMO_MODE_KEY = '2kai-demo-subscription';
+const DEMO_BILLING_HISTORY_KEY = '2kai-billing-history';
 
 interface DemoSubscription {
   planId: PlanId;

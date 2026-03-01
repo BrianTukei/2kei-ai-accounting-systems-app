@@ -1,59 +1,58 @@
-# Welcome to 2KÈI Ledgery Software project
+# 2K AI Accounting Systems
 
-## About
+A modern, AI-powered accounting platform built for small and medium businesses. Manage transactions, invoices, payroll, financial statements, and more — all from one intuitive dashboard.
 
-This project is an accounting software created by Tukei Brian.
+## Features
 
-## How can I edit this code?
+- **Dashboard** — Real-time financial overview with charts and stat cards
+- **Transactions** — Track income & expenses with smart categorization
+- **Invoices** — Create, send, and manage professional invoices
+- **Payroll** — Streamlined employee payment management
+- **Financial Statements** — Income Statement, Balance Sheet, Cash Flow, Trial Balance, Cash Book
+- **AI Assistant** — AI-powered financial insights and chat
+- **Bank Import** — Import bank statements (CSV/OFX) and auto-reconcile
+- **Recurring Transactions** — Set up and automate recurring entries
+- **Forecasting** — AI-driven cash flow predictions and trend analysis
+- **Reports** — Comprehensive visual reports and analytics
+- **Multi-tenant SaaS** — Organizations, team roles, and subscription plans (Free / Pro / Enterprise)
+- **Admin Dashboard** — Developer admin console with user management, audit logs, and system monitoring
+- **Mobile Responsive** — Fully responsive design for all devices
 
-There are several ways of editing your application.
+## Tech Stack
 
-**Use your preferred IDE**
+- **Frontend:** React, TypeScript, Vite, Tailwind CSS, shadcn/ui
+- **Backend:** Supabase (Auth, Database, Edge Functions)
+- **Payments:** Paystack, Flutterwave, Mobile Money
+- **AI:** Integrated AI assistant for financial guidance
 
-If you want to work locally using your own IDE, you can clone this repo and push changes.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+## Getting Started
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+# Clone the repository
+git clone https://github.com/BrianTukei/ledgerly-accounting-app.git
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# Navigate to the project directory
+cd ledgerly-accounting-app
 
-# Step 3: Install the necessary dependencies.
-npm i
+# Install dependencies
+npm install
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Start the development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## Environment Variables
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Copy `.env.example` to `.env.local` and fill in your Supabase and payment provider keys. See `.env.example` for all required variables.
 
-**Use GitHub Codespaces**
+## Deployment
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Deploy to any modern hosting provider that supports Node.js — Vercel, Netlify, or AWS.
 
-## What technologies are used for this project?
+## Author
 
-This project is built with .
+Built by **Tukei Brian** — [tukeibrian5@gmail.com](mailto:tukeibrian5@gmail.com)
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## License
 
-## How can I deploy this project?
-
-You can deploy this project using any modern hosting provider that supports Node.js applications, such as Netlify, Vercel, or AWS.
+All rights reserved © 2K AI Accounting Systems

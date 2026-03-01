@@ -195,7 +195,7 @@ export function generateJournalEntry(
 // 5. Journal persistence
 // ─────────────────────────────────────────
 
-const LS_KEY = 'ledgerly-journal';
+const LS_KEY = '2kai-journal';
 
 export function loadJournal(): JournalEntry[] {
   try {
@@ -271,7 +271,7 @@ function generateInvoiceJournalEntry(invoice: Invoice): JournalEntry {
 function generateBankImportEntries(): JournalEntry[] {
   let sessions: Array<{ rows: StoredImportRow[] }> = [];
   try {
-    sessions = JSON.parse(localStorage.getItem('ledgerly-bank-imports') ?? '[]');
+    sessions = JSON.parse(localStorage.getItem('2kai-bank-imports') ?? '[]');
   } catch { /* empty store */ }
 
   const entries: JournalEntry[] = [];

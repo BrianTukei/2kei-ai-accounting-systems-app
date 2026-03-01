@@ -18,7 +18,7 @@ const ADMIN_PASSWORD = 'Tukei@1000$';
 
 async function main() {
   console.log('╔══════════════════════════════════════════════════╗');
-  console.log('║   2KEI AI Accounting - Developer Admin Setup     ║');
+  console.log('║   2K AI Accounting Systems - Admin Setup          ║');
   console.log('╚══════════════════════════════════════════════════╝\n');
 
   // Step 1: Sign in

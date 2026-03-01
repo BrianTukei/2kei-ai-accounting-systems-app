@@ -98,7 +98,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         to: email,
-        from: 'noreply@2keiledgerly.com',
+        from: 'noreply@2kai-accounting.com',
         subject: 'Verify Your Email - 2K AI Accounting Systems',
         html: emailHtml,
       }),

@@ -151,12 +151,12 @@ async function settleToOwnerMoMo(
         account_number: settlePhone,
         amount: settleAmount,
         currency: SETTLEMENT_CURRENCY,
-        narration: `Ledgerly subscription — ${reference}`,
+        narration: `2K AI Accounting subscription — ${reference}`,
         beneficiary_name: OWNER_MOMO_NAME,
         reference: `settle_ps_${reference}`,
         debit_currency: paidCurrency.toUpperCase(),
         meta: [
-          { sender: 'Ledgerly', sender_country: 'UG', mobile_number: settlePhone },
+          { sender: '2K AI Accounting', sender_country: 'UG', mobile_number: settlePhone },
         ],
       }),
     });
@@ -348,11 +348,11 @@ serve(async (req) => {
       const interval = billingCycle === 'annual' ? 'annually' : 'monthly';
 
       const planResult = await paystackFetch('/plan', paystackKey, 'POST', {
-        name: `Ledgerly ${planId.charAt(0).toUpperCase() + planId.slice(1)} - ${billingCycle}`,
+        name: `2K AI Accounting ${planId.charAt(0).toUpperCase() + planId.slice(1)} - ${billingCycle}`,
         amount,
         interval,
         currency: currency || 'NGN',
-        description: `Ledgerly ${planId} plan, billed ${billingCycle}`,
+        description: `2K AI Accounting ${planId} plan, billed ${billingCycle}`,
       });
 
       if (!planResult.status) {

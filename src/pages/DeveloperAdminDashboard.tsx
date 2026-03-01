@@ -169,7 +169,7 @@ function DeveloperAdminDashboardContent() {
                 <Shield className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className="font-bold text-sm">2KEI Admin</h1>
+                <h1 className="font-bold text-sm">2K AI Admin</h1>
                 <p className="text-[10px] text-slate-400">Developer Console</p>
               </div>
             </div>

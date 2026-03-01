@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════════════════════════
--- 2KEI AI Accounting - Admin Bootstrap Fix
+-- 2K AI Accounting Systems - Admin Bootstrap Fix
 -- Allows platform owners to self-register as admins
 -- ═══════════════════════════════════════════════════════════════════════════
 

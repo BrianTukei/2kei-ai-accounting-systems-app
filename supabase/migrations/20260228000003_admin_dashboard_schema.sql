@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════════════════════════
--- 2KEI AI Accounting - Developer Admin Dashboard Schema
+-- 2K AI Accounting Systems - Developer Admin Dashboard Schema
 -- Complete database schema for enterprise admin system
 -- ═══════════════════════════════════════════════════════════════════════════
 

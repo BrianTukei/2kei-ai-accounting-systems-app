@@ -316,7 +316,7 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
       // 5. Count invoices this month from local storage
       const invoiceList: Array<{ createdAt?: string }> =
-        orgStorage.getJSON(membership.organization_id, 'ledgerly-invoices', []);
+        orgStorage.getJSON(membership.organization_id, '2kai-invoices', []);
       const now = new Date();
       const invoicesThisMonth = invoiceList.filter((inv) => {
         if (!inv.createdAt) return false;

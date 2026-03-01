@@ -1,4 +1,4 @@
-# Google OAuth Setup Instructions for 2KEI Ledgerly
+# Google OAuth Setup Instructions for 2K AI Accounting Systems
 
 ## ⚠️ IMMEDIATE FIX for "Client missing a project id" Error
 
@@ -10,7 +10,7 @@ You're getting this error because your Google OAuth client is not properly confi
 2. **Create or select a project:**
    - Click the project dropdown at the top
    - If no project exists, click "New Project"
-   - Name it "2KEI-Ledgerly" or similar
+   - Name it "2K-AI-Accounting" or similar
    - **Important: Note the Project ID that gets generated**
 
 3. **Enable required APIs:**
@@ -22,7 +22,7 @@ You're getting this error because your Google OAuth client is not properly confi
    - Choose "External" user type
    - Fill required fields:
      ```
-     App name: 2KEI Ledgerly
+     App name: 2K AI Accounting Systems
      User support email: tukeibrian5@gmail.com
      Developer contact: tukeibrian5@gmail.com
      ```
@@ -33,7 +33,7 @@ You're getting this error because your Google OAuth client is not properly confi
    - Go to "APIs & Services" → "Credentials"
    - Click "Create Credentials" → "OAuth 2.0 Client IDs"
    - Application type: "Web application"
-   - Name: "2KEI Ledgerly Web Client"
+   - Name: "2K AI Accounting Systems Web Client"
    
    **Authorized JavaScript origins:**
    ```

@@ -5,8 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, BarChart, LineChart as LineChartIcon } from 'lucide-react';
-import Navbar from '@/components/Navbar';
-import AuthCheck from '@/components/auth/AuthCheck';
+import PageLayout from '@/components/layout/PageLayout';
 import { useForecast } from '@/hooks/useForecast';
 import ForecastChart from '@/components/forecast/ForecastChart';
 import ForecastSummary from '@/components/forecast/ForecastSummary';
@@ -20,57 +19,47 @@ export default function Forecast() {
   const { forecastData, isLoading } = useForecast(forecastMonths);
   
   return (
-    <AuthCheck>
-      <div className="min-h-screen bg-gradient-subtle">
-        <Navbar />
-      
-      <main className="container mx-auto px-4 py-8">
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 animate-fade-up">
-          <div>
-            <h1 className="text-4xl font-bold tracking-tight gradient-text flex items-center">
-              <TrendingUp className="mr-3 h-10 w-10 text-primary" />
-              Financial Forecast
-            </h1>
-            <p className="text-muted-foreground mt-2 text-lg">
-              Advanced analytics and predictions for your financial future
-            </p>
-          </div>
+    <PageLayout 
+      title="Financial Forecast" 
+      subtitle="Advanced analytics and predictions for your financial future"
+      showSidebar={false}
+    >
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 animate-fade-up">
+        <div className="mt-4 md:mt-0 flex flex-col sm:flex-row gap-3 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+          <Select 
+            value={forecastMonths.toString()} 
+            onValueChange={(value) => setForecastMonths(parseInt(value))}
+          >
+            <SelectTrigger className="w-[180px] glass-card">
+              <SelectValue placeholder="Forecast Period" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="3">3 Months</SelectItem>
+              <SelectItem value="6">6 Months</SelectItem>
+              <SelectItem value="12">12 Months</SelectItem>
+            </SelectContent>
+          </Select>
           
-          <div className="mt-4 md:mt-0 flex flex-col sm:flex-row gap-3 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-            <Select 
-              value={forecastMonths.toString()} 
-              onValueChange={(value) => setForecastMonths(parseInt(value))}
+          <div className="flex space-x-2">
+            <Button 
+              variant={chartType === 'bar' ? 'default' : 'outline'} 
+              size="icon" 
+              onClick={() => setChartType('bar')}
+              className="glass-card glass-card-hover"
             >
-              <SelectTrigger className="w-[180px] glass-card">
-                <SelectValue placeholder="Forecast Period" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="3">3 Months</SelectItem>
-                <SelectItem value="6">6 Months</SelectItem>
-                <SelectItem value="12">12 Months</SelectItem>
-              </SelectContent>
-            </Select>
-            
-            <div className="flex space-x-2">
-              <Button 
-                variant={chartType === 'bar' ? 'default' : 'outline'} 
-                size="icon" 
-                onClick={() => setChartType('bar')}
-                className="glass-card glass-card-hover"
-              >
-                <BarChart className="h-4 w-4" />
-              </Button>
-              <Button 
-                variant={chartType === 'line' ? 'default' : 'outline'} 
-                size="icon" 
-                onClick={() => setChartType('line')}
-                className="glass-card glass-card-hover"
-              >
-                <LineChartIcon className="h-4 w-4" />
-              </Button>
-            </div>
+              <BarChart className="h-4 w-4" />
+            </Button>
+            <Button 
+              variant={chartType === 'line' ? 'default' : 'outline'} 
+              size="icon" 
+              onClick={() => setChartType('line')}
+              className="glass-card glass-card-hover"
+            >
+              <LineChartIcon className="h-4 w-4" />
+            </Button>
           </div>
         </div>
+      </div>
         
         {isLoading ? (
           <Card className="glass-card glass-card-hover">
@@ -181,8 +170,6 @@ export default function Forecast() {
             </CardContent>
           </Card>
         )}
-      </main>
-    </div>
-    </AuthCheck>
+    </PageLayout>
   );
 }

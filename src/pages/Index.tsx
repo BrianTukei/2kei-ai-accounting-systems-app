@@ -2,7 +2,9 @@
 import { useRef } from 'react';
 import Navbar from '@/components/Navbar';
 import HeroSection from '@/components/home/HeroSection';
-import FeaturesSection from '@/components/home/FeaturesSection';
+import FeaturesCarousel from '@/components/home/FeaturesCarousel';
+import PricingSection from '@/components/home/PricingSection';
+import TestimonialsSection from '@/components/home/TestimonialsSection';
 import CTASection from '@/components/home/CTASection';
 import Footer from '@/components/home/Footer';
 import useScrollAnimation from '@/hooks/useScrollAnimation';
@@ -16,10 +18,14 @@ export default function Index() {
   return (
     <div className="min-h-screen">
       <Navbar />
-      <HeroSection featuresRef={featuresRef} />
-      <FeaturesSection ref={featuresRef} />
-      <CTASection />
-      <Footer />
+      <div>
+        <HeroSection featuresRef={featuresRef} />
+        <FeaturesCarousel ref={featuresRef} />
+        <PricingSection />
+        <TestimonialsSection />
+        <CTASection />
+        <Footer />
+      </div>
     </div>
   );
 }

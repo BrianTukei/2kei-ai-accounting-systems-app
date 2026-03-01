@@ -5,6 +5,7 @@ import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import NavigationItems from './NavigationItems';
 import UserActions from './UserActions';
+import BrandLogo from '@/components/BrandLogo';
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -33,10 +34,8 @@ export default function MobileMenu({ isOpen, onClose, user }: MobileMenuProps) {
       <nav className="relative h-full w-4/5 max-w-sm ml-auto bg-white flex flex-col shadow-lg animate-slide-in">
         <div className="flex items-center justify-between p-6 border-b">
           <Link to="/" className="flex items-center space-x-2" onClick={onClose}>
-            <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-              <span className="text-white font-bold">2K</span>
-            </div>
-            <span className="font-semibold text-xl">2KÉI Ledgerly</span>
+            <BrandLogo size="md" />
+            <span className="font-semibold text-xl">2K AI Accounting Systems</span>
           </Link>
           <button className="focus:outline-none" onClick={onClose}>
             <X size={24} className="text-slate-800" />

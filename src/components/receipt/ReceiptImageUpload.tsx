@@ -3,7 +3,8 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { FileX, Loader2 } from 'lucide-react';
+import { FileX, Loader2, Camera, Upload } from 'lucide-react';
+import CameraCapture from './CameraCapture';
 
 interface ReceiptImageUploadProps {
   onScan: () => void;
@@ -12,6 +13,8 @@ interface ReceiptImageUploadProps {
   previewUrl: string | null;
   onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onClearFile: () => void;
+  /** Accept a raw File (e.g. from the camera) */
+  onFileSet?: (file: File) => void;
 }
 
 export default function ReceiptImageUpload({
@@ -20,21 +23,52 @@ export default function ReceiptImageUpload({
   file,
   previewUrl,
   onFileChange,
-  onClearFile
+  onClearFile,
+  onFileSet,
 }: ReceiptImageUploadProps) {
+  const [showCamera, setShowCamera] = useState(false);
+
+  const handleCameraCapture = (capturedFile: File) => {
+    setShowCamera(false);
+    onFileSet?.(capturedFile);
+  };
+
+  // While the camera is open, render only the camera view
+  if (showCamera) {
+    return <CameraCapture onCapture={handleCameraCapture} onClose={() => setShowCamera(false)} />;
+  }
+
   return (
     <>
-      <div className="space-y-2">
-        <Label htmlFor="receipt">Upload Receipt Image</Label>
-        <Input
-          id="receipt"
-          type="file"
-          accept="image/*"
-          onChange={onFileChange}
-          className="cursor-pointer"
-        />
+      {/* Source selection buttons */}
+      <div className="grid grid-cols-2 gap-3">
+        <Button
+          type="button"
+          variant="outline"
+          className="flex flex-col items-center gap-1.5 h-auto py-4"
+          onClick={() => setShowCamera(true)}
+          disabled={isScanning}
+        >
+          <Camera className="h-6 w-6" />
+          <span className="text-xs">Open Camera</span>
+        </Button>
+
+        <Label
+          htmlFor="receipt-file"
+          className="flex flex-col items-center gap-1.5 h-auto py-4 border rounded-md cursor-pointer hover:bg-accent transition-colors text-sm font-medium"
+        >
+          <Upload className="h-6 w-6" />
+          <span className="text-xs">Upload File</span>
+          <Input
+            id="receipt-file"
+            type="file"
+            accept="image/*"
+            onChange={onFileChange}
+            className="hidden"
+          />
+        </Label>
       </div>
-      
+
       {previewUrl && (
         <div className="relative">
           <div className="border rounded-md overflow-hidden">

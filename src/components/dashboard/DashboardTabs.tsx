@@ -11,6 +11,7 @@ import ReportsTabContent from './ReportsTabContent';
 import ReceiptScanner from '@/components/ReceiptScanner';
 import { Transaction } from '@/components/TransactionCard';
 import AddTransactionModal from '@/components/AddTransactionModal';
+import { generateJournalEntry, saveJournal, loadJournal } from '@/services/bookkeeping';
 
 interface DashboardTabsProps {
   activeTab: string;
@@ -53,30 +54,48 @@ export default function DashboardTabs({
     items?: Array<{ name: string; price: number; quantity?: number }>;
     taxAmount?: number;
     subtotal?: number;
+    transactionType?: 'income' | 'expense';
+    suggestedAccount?: string;
   }) => {
     setReceiptData(data);
     
     if (onAddTransaction) {
-      // Convert scan data to a transaction
-      const tempId = `temp-${Date.now()}`;
+      const tempId = `receipt-${Date.now()}`;
       const description = data.vendor 
         ? `${data.vendor}: ${data.description}` 
         : data.description;
-        
-      onAddTransaction({
+
+      // Use the AI-detected transaction type instead of hardcoding 'expense'
+      const txType = data.transactionType || 'expense';
+
+      const transaction: Transaction = {
         id: tempId,
         amount: data.amount,
-        type: 'expense', // Assume receipts are for expenses
+        type: txType,
         date: data.date,
-        description: description,
-        category: data.category,
+        description,
+        category: data.suggestedAccount || data.category,
         metadata: {
           vendor: data.vendor,
           items: data.items,
           taxAmount: data.taxAmount,
-          subtotal: data.subtotal
-        }
-      });
+          subtotal: data.subtotal,
+          source: 'receipt-scan',
+        },
+      };
+
+      onAddTransaction(transaction);
+
+      // Auto-create a double-entry journal entry via the bookkeeping engine
+      try {
+        const journalEntry = generateJournalEntry(transaction, 'transaction');
+        const journal = loadJournal();
+        journal.push(journalEntry);
+        saveJournal(journal);
+        console.log('[ReceiptScan] Journal entry created:', journalEntry);
+      } catch (err) {
+        console.error('[ReceiptScan] Failed to create journal entry:', err);
+      }
     }
   };
 

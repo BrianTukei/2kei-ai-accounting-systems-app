@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, CalendarClock } from 'lucide-react';
-import Navbar from '@/components/Navbar';
+import PageLayout from '@/components/layout/PageLayout';
 import RecurringTransactionList from '@/components/transactions/RecurringTransactionList';
 import RecurringTransactionModal from '@/components/RecurringTransactionModal';
 import { useRecurringTransactions } from '@/hooks/useRecurringTransactions';
@@ -25,43 +25,33 @@ export default function RecurringTransactions() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <Navbar />
+    <PageLayout 
+      title="Recurring Transactions" 
+      subtitle="Automate your regular income and expenses"
+      showSidebar={false}
+    >
+      <div className="flex items-center justify-end mb-8">    
+        <Button 
+          className="rounded-full animate-fade-in"
+          onClick={() => setIsAddModalOpen(true)}
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          New Recurring Transaction
+        </Button>
+      </div>
       
-      <main className="container mx-auto px-4 py-8">
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight animate-fade-in flex items-center">
-              <CalendarClock className="mr-2 h-8 w-8" />
-              Recurring Transactions
-            </h1>
-            <p className="text-slate-500 animate-fade-in">
-              Automate your regular income and expenses
-            </p>
-          </div>
-          
-          <Button 
-            className="mt-4 md:mt-0 rounded-full animate-fade-in"
-            onClick={() => setIsAddModalOpen(true)}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            New Recurring Transaction
-          </Button>
-        </div>
-        
-        <RecurringTransactionList 
-          transactions={recurringTransactions}
-          onUpdateTransaction={updateRecurringTransaction}
-          onDeleteTransaction={handleDeleteTransaction}
-          onToggleActive={toggleActiveState}
-        />
-      </main>
+      <RecurringTransactionList 
+        transactions={recurringTransactions}
+        onUpdateTransaction={updateRecurringTransaction}
+        onDeleteTransaction={handleDeleteTransaction}
+        onToggleActive={toggleActiveState}
+      />
       
       <RecurringTransactionModal 
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onAddRecurringTransaction={addRecurringTransaction}
       />
-    </div>
+    </PageLayout>
   );
 }

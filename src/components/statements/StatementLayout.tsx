@@ -1,9 +1,10 @@
 
 import { ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Download, FileText } from 'lucide-react';
+import { Download, FileText, ArrowLeft } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { toast } from 'sonner';
@@ -16,36 +17,54 @@ interface StatementLayoutProps {
 }
 
 export default function StatementLayout({ title, description, children, generatePDF }: StatementLayoutProps) {
+  const navigate = useNavigate();
+
+  const handleBackClick = () => {
+    navigate(-1); // Go back to the previous page
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="compact-container bg-slate-50">
       <Navbar />
       
-      <main className="container mx-auto px-4 py-8">
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
+      <main className="compact-main px-2 sm:px-4">
+        <div className="flex items-center mb-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleBackClick}
+            className="mr-3 hover:bg-slate-100"
+          >
+            <ArrowLeft className="h-3 w-3 mr-1" />
+            Back
+          </Button>
+        </div>
+        
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight animate-fade-in">
+            <h1 className="compact-text-2xl font-bold tracking-tight animate-fade-in">
               {title}
             </h1>
-            <p className="text-slate-500 animate-fade-in">
+            <p className="text-slate-500 text-sm animate-fade-in">
               {description}
             </p>
           </div>
           
           <Button 
-            className="mt-4 md:mt-0"
+            className="mt-2 md:mt-0"
             onClick={generatePDF}
           >
-            <Download className="h-4 w-4 mr-2" />
-            Download PDF
+            <Download className="h-3 w-3 mr-1" />
+            PDF
           </Button>
         </div>
         
-        <Card className="glass-card glass-card-hover">
-          <CardHeader>
-            <CardTitle>{title}</CardTitle>
-            <CardDescription>{description}</CardDescription>
+        <Card className="glass-card compact-card">
+          <CardHeader className="pb-3">
+            <CardTitle className="compact-text-lg">{title}</CardTitle>
+            <CardDescription className="text-sm">{description}</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="compact-spacing">
             {children}
           </CardContent>
         </Card>
@@ -68,7 +87,7 @@ export const generateBasePDF = (title: string, content: any[][], summary: any[][
   
   // Add a company logo or name
   doc.setFontSize(16);
-  doc.text('2KÉI Ledgerly', 14, 45);
+  doc.text('2K AI Accounting Systems', 14, 45);
   
   // Add report data as a table
   autoTable(doc, {
@@ -101,7 +120,7 @@ export const generateBasePDF = (title: string, content: any[][], summary: any[][
     doc.setPage(i);
     doc.setFontSize(8);
     doc.text(
-      '2KÉI Ledgerly - This report contains confidential financial information.',
+      '2K AI Accounting Systems - This report contains confidential financial information.',
       14,
       doc.internal.pageSize.height - 10
     );
@@ -115,4 +134,12 @@ export const generateBasePDF = (title: string, content: any[][], summary: any[][
   // Save the PDF
   doc.save(`${title.toLowerCase().replace(/\s+/g, '_')}.pdf`);
   toast.success(`${title} has been downloaded`);
+};
+
+export const formatCurrency = (value: number, currency = 'USD') => {
+  try {
+    return new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(value);
+  } catch (e) {
+    return `$${value.toFixed(2)}`;
+  }
 };

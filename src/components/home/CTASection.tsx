@@ -2,11 +2,13 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
-import ctaIllustration from '@/assets/cta-illustration.jpg';
+
+// High-quality Unsplash image - Professional team analyzing financial data
+const ctaIllustration = 'https://images.unsplash.com/photo-1553877522-43269d4ea984?w=800&q=80&auto=format&fit=crop';
 
 const CTASection = () => {
   return (
-    <section className="py-20 relative overflow-hidden">
+    <section className="py-10 relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-accent/5 to-primary/10" />
       
       <div className="container mx-auto px-4 relative z-10">
@@ -17,7 +19,7 @@ const CTASection = () => {
               Don't Let Poor <span className="gradient-text">Financial Management</span> Kill Your Business
             </h2>
             <p className="text-lg text-muted-foreground mb-8 animate-on-scroll opacity-0">
-              Every day you delay is money lost. While competitors struggle with outdated tools, smart business owners choose 2KÉI Ledgerly. <span className="font-semibold text-primary">Your future self will thank you.</span>
+              Every day you delay is money lost. While competitors struggle with outdated tools, smart business owners choose 2K AI Accounting Systems. <span className="font-semibold text-primary">Your future self will thank you.</span>
             </p>
             <Button asChild size="lg" className="rounded-full px-8 py-6 text-base animate-on-scroll opacity-0 hero-glow bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 border-0 shadow-elegant">
               <Link to="/auth?action=signup">

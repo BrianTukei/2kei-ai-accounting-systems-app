@@ -8,6 +8,7 @@ const LOCAL_STORAGE_KEY = 'finance-app-recurring-transactions';
 
 export const useRecurringTransactions = () => {
   const [recurringTransactions, setRecurringTransactions] = useState<RecurringTransaction[]>([]);
+  const [loaded, setLoaded] = useState(false);
 
   // Load recurring transactions from localStorage on initial render
   useEffect(() => {
@@ -15,14 +16,15 @@ export const useRecurringTransactions = () => {
     if (storedTransactions) {
       setRecurringTransactions(JSON.parse(storedTransactions));
     }
+    setLoaded(true);
   }, []);
 
   // Save recurring transactions to localStorage whenever they change
   useEffect(() => {
-    if (recurringTransactions.length > 0) {
+    if (loaded) {
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(recurringTransactions));
     }
-  }, [recurringTransactions]);
+  }, [recurringTransactions, loaded]);
 
   // Get next date based on frequency and start date
   const getNextDate = (startDate: string, frequency: RecurringTransaction['frequency']): string => {

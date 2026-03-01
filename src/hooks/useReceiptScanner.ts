@@ -16,6 +16,8 @@ export interface ReceiptData {
   subtotal?: number;
   receiptNumber?: string;
   paymentMethod?: string;
+  transactionType?: 'income' | 'expense';
+  suggestedAccount?: string;
 }
 
 interface UseReceiptScannerProps {
@@ -58,6 +60,14 @@ export const useReceiptScanner = ({ onScanComplete }: UseReceiptScannerProps) =>
     setPreviewUrl(null);
     setScanResults(null);
     setConfidence(0);
+  };
+
+  /** Accept a raw File (e.g. from CameraCapture) without a change-event */
+  const setFileDirectly = (newFile: File) => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setFile(newFile);
+    setPreviewUrl(URL.createObjectURL(newFile));
+    setScanResults(null);
   };
 
   const uploadImageToSupabase = async (file: File): Promise<string> => {
@@ -153,6 +163,7 @@ export const useReceiptScanner = ({ onScanComplete }: UseReceiptScannerProps) =>
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         toast.error('Please sign in to scan receipts');
+        setIsScanning(false);
         return;
       }
 
@@ -179,7 +190,9 @@ export const useReceiptScanner = ({ onScanComplete }: UseReceiptScannerProps) =>
         items: ocrResult.items,
         receiptNumber: ocrResult.receiptNumber,
         paymentMethod: ocrResult.paymentMethod,
-        currency: ocrResult.currency
+        currency: ocrResult.currency,
+        transactionType: ocrResult.transactionType,
+        suggestedAccount: ocrResult.suggestedAccount,
       });
       
       setConfidence(ocrResult.confidence);
@@ -196,7 +209,9 @@ export const useReceiptScanner = ({ onScanComplete }: UseReceiptScannerProps) =>
         taxAmount: ocrResult.taxAmount,
         subtotal: ocrResult.subtotal,
         receiptNumber: ocrResult.receiptNumber,
-        paymentMethod: ocrResult.paymentMethod
+        paymentMethod: ocrResult.paymentMethod,
+        transactionType: ocrResult.transactionType,
+        suggestedAccount: ocrResult.suggestedAccount,
       });
 
       toast.success('Receipt scanned successfully!');
@@ -216,6 +231,7 @@ export const useReceiptScanner = ({ onScanComplete }: UseReceiptScannerProps) =>
     confidence,
     handleFileChange,
     clearFile,
+    setFileDirectly,
     simulateScanning,
     setScanResults
   };

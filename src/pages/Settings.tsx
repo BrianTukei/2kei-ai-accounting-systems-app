@@ -8,17 +8,24 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BellRing, Lock, User, Moon, Bell, ArrowLeft, LayoutDashboard, CreditCard, BarChart, DollarSign } from 'lucide-react';
+import { BellRing, Lock, User, Moon, Bell, LayoutDashboard, CreditCard, BarChart, DollarSign } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from "sonner";
-import AuthCheck from '@/components/auth/AuthCheck';
+import PageLayout from '@/components/layout/PageLayout';
 import { useCurrency, CURRENCIES } from '@/contexts/CurrencyContext';
 
 export default function Settings() {
   const [name, setName] = useState("John Doe");
   const [email, setEmail] = useState("john.doe@example.com");
   const [notifications, setNotifications] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
+
+  const handleDarkModeChange = (enabled: boolean) => {
+    setDarkMode(enabled);
+    const newTheme = enabled ? 'dark' : 'light';
+    localStorage.setItem('theme', newTheme);
+    document.documentElement.classList.toggle('dark', enabled);
+  };
   const { selectedCurrency, setCurrency: setAppCurrency, formatCurrency } = useCurrency();
 
   const handleSaveProfile = () => {
@@ -38,26 +45,24 @@ export default function Settings() {
   };
 
   return (
-    <AuthCheck>
-      <div className="container mx-auto py-10 px-4">
-      <div className="flex flex-col gap-6">
-        <div>
-          <h1 className="text-3xl font-bold">Settings</h1>
-          <p className="text-slate-500">Manage your account settings and preferences</p>
-        </div>
-
+    <PageLayout 
+      title="Settings" 
+      subtitle="Manage your account settings and preferences"
+      showSidebar={false}
+    >
+      <div className="flex flex-col gap-6 max-w-3xl mx-auto px-4 sm:px-6 lg:px-0">
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="mb-6">
-            <TabsTrigger value="profile" className="flex items-center gap-2">
-              <User size={16} />
+          <TabsList className="grid grid-cols-3 w-full mb-6 h-auto">
+            <TabsTrigger value="profile" className="flex items-center gap-1.5 py-2 text-xs sm:text-sm">
+              <User size={15} />
               <span>Profile</span>
             </TabsTrigger>
-            <TabsTrigger value="preferences" className="flex items-center gap-2">
-              <DollarSign size={16} />
+            <TabsTrigger value="preferences" className="flex items-center gap-1.5 py-2 text-xs sm:text-sm">
+              <DollarSign size={15} />
               <span>Preferences</span>
             </TabsTrigger>
-            <TabsTrigger value="security" className="flex items-center gap-2">
-              <Lock size={16} />
+            <TabsTrigger value="security" className="flex items-center gap-1.5 py-2 text-xs sm:text-sm">
+              <Lock size={15} />
               <span>Security</span>
             </TabsTrigger>
           </TabsList>
@@ -97,8 +102,8 @@ export default function Settings() {
                   />
                 </div>
               </CardContent>
-              <CardFooter className="flex justify-end">
-                <Button onClick={handleSaveProfile}>Save Changes</Button>
+              <CardFooter className="flex flex-col sm:flex-row justify-end gap-2">
+                <Button onClick={handleSaveProfile} className="w-full sm:w-auto">Save Changes</Button>
               </CardFooter>
             </Card>
           </TabsContent>
@@ -113,7 +118,7 @@ export default function Settings() {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div className="space-y-0.5">
                       <Label htmlFor="notifications" className="text-base">Notifications</Label>
                       <p className="text-sm text-muted-foreground">
@@ -129,7 +134,7 @@ export default function Settings() {
                   
                   <Separator />
                   
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div className="space-y-0.5">
                       <Label htmlFor="darkMode" className="text-base">Dark Mode</Label>
                       <p className="text-sm text-muted-foreground">
@@ -139,7 +144,7 @@ export default function Settings() {
                     <Switch 
                       id="darkMode" 
                       checked={darkMode} 
-                      onCheckedChange={setDarkMode} 
+                      onCheckedChange={handleDarkModeChange} 
                     />
                   </div>
                   
@@ -172,8 +177,8 @@ export default function Settings() {
                   </div>
                 </div>
               </CardContent>
-              <CardFooter className="flex justify-end">
-                <Button onClick={handleSavePreferences}>Save Preferences</Button>
+              <CardFooter className="flex flex-col sm:flex-row justify-end gap-2">
+                <Button onClick={handleSavePreferences} className="w-full sm:w-auto">Save Preferences</Button>
               </CardFooter>
             </Card>
           </TabsContent>
@@ -200,14 +205,13 @@ export default function Settings() {
                   <Input id="confirmPassword" type="password" />
                 </div>
               </CardContent>
-              <CardFooter className="flex justify-end">
-                <Button>Update Password</Button>
+              <CardFooter className="flex flex-col sm:flex-row justify-end gap-2">
+                <Button className="w-full sm:w-auto">Update Password</Button>
               </CardFooter>
             </Card>
           </TabsContent>
         </Tabs>
       </div>
-    </div>
-    </AuthCheck>
+    </PageLayout>
   );
 }

@@ -1,27 +1,22 @@
 
 import { Link } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import PageLayout from '@/components/layout/PageLayout';
 import { Button } from '@/components/ui/button';
 
 export default function Privacy() {
   return (
-    <div className="container mx-auto px-4 py-12 max-w-4xl">
-      <div className="mb-8">
-        <Button variant="ghost" asChild className="mb-4">
-          <Link to="/" className="flex items-center gap-2">
-            <ArrowLeft size={16} />
-            Back to Home
-          </Link>
-        </Button>
-        <h1 className="text-3xl font-bold mb-2">Privacy Policy</h1>
-        <p className="text-slate-500">Last updated: {new Date().toLocaleDateString()}</p>
-      </div>
+    <PageLayout 
+      title="Privacy Policy" 
+      subtitle={`Last updated: ${new Date().toLocaleDateString()}`}
+      showSidebar={false}
+      requireAuth={false}
+    >
       
       <div className="space-y-6 text-slate-700">
         <section>
           <h2 className="text-xl font-semibold mb-3">1. Information We Collect</h2>
           <p>
-            When you use 2KÉI Ledgerly, we collect information that you provide directly to us, such as personal 
+            When you use 2K AI Accounting Systems, we collect information that you provide directly to us, such as personal 
             details, financial data, and account credentials. We also automatically collect certain information 
             about your device and how you interact with our services.
           </p>
@@ -81,6 +76,6 @@ export default function Privacy() {
           </p>
         </section>
       </div>
-    </div>
+    </PageLayout>
   );
 }

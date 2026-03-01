@@ -1,6 +1,7 @@
 
 import { Link } from 'react-router-dom';
 import { FileText, Lock } from 'lucide-react';
+import BrandLogo from '@/components/BrandLogo';
 
 const Footer = () => {
   return (
@@ -9,13 +10,11 @@ const Footer = () => {
         <div className="flex flex-col md:flex-row justify-between items-center">
           <div className="mb-6 md:mb-0">
             <Link to="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-sm">L</span>
-              </div>
-              <span className="font-semibold text-lg text-foreground">Ledgerly</span>
+              <BrandLogo size="sm" />
+              <span className="font-semibold text-lg text-foreground">2K AI Accounting Systems</span>
             </Link>
             <p className="text-sm text-muted-foreground mt-2">
-              © {new Date().getFullYear()} 2KÉI Ledgerly. All rights reserved.
+              © {new Date().getFullYear()} 2K AI Accounting Systems. All rights reserved.
             </p>
           </div>
           

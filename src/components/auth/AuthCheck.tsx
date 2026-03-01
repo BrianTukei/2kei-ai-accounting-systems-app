@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { User } from '@supabase/supabase-js';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -15,7 +15,7 @@ interface AuthCheckProps {
 }
 
 export default function AuthCheck({ children, fallback }: AuthCheckProps) {
-  const [user, setUser] = useState<User | null>(null);
+  const { user, authResolved, signOut } = useAuth();
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,20 +23,9 @@ export default function AuthCheck({ children, fallback }: AuthCheckProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+    // Wait for AuthProvider to resolve
+    if (authResolved) setLoading(false);
+  }, [authResolved]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,13 +55,7 @@ export default function AuthCheck({ children, fallback }: AuthCheckProps) {
   };
 
   const handleSignOut = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      toast.success('Signed out successfully');
-    } catch (error) {
-      toast.error('Error signing out');
-    }
+    await signOut();
   };
 
   if (loading) {

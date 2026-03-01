@@ -23,7 +23,7 @@ export default function TransactionList({
       </CardHeader>
       <CardContent>
         {transactions.length > 0 ? (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {transactions.map((transaction) => (
               <TransactionCard 
                 key={transaction.id} 

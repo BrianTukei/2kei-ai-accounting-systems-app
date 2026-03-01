@@ -1,0 +1,33 @@
+import React from 'react';
+import NavigationItems from './navigation/NavigationItems';
+import { Link } from 'react-router-dom';
+
+export default function Sidebar() {
+  return (
+    <aside className="hidden lg:flex lg:flex-col lg:w-64 xl:w-72 lg:fixed lg:inset-y-0 lg:left-0 lg:pt-6 lg:pb-6 lg:bg-white/60 dark:lg:bg-slate-900/60 lg:backdrop-blur-md lg:border-r lg:border-slate-100 dark:lg:border-slate-800 lg:shadow-sm">
+      <div className="h-full flex flex-col px-4">
+        <div className="mb-6 px-2">
+          <Link to="/dashboard" className="flex items-center space-x-3">
+            <div className="w-10 h-10 flex items-center justify-center rounded-lg bg-gradient-to-br from-primary/80 to-primary/60 text-white font-bold shadow-md">2K</div>
+            <div className="hidden xl:block">
+              <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">2KÉI Ledgerly</div>
+              <div className="text-xs text-slate-500 dark:text-slate-400">Accounting</div>
+            </div>
+          </Link>
+        </div>
+
+        <nav className="flex-1 overflow-y-auto">
+          <div className="px-1">
+            <NavigationItems orientation="vertical" />
+          </div>
+        </nav>
+
+        <div className="mt-4 px-2">
+          <Link to="/settings" className="flex items-center justify-between p-2 rounded-md text-sm text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">
+            <span>Settings</span>
+          </Link>
+        </div>
+      </div>
+    </aside>
+  );
+}

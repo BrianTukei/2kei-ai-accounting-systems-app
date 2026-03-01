@@ -5,34 +5,24 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { LogOut, Settings, User as UserIcon, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import type { User } from '@supabase/supabase-js';
+import { useAuth } from '@/contexts/AuthContext';
+
+/** Platform owner emails that always get admin access */
+const OWNER_EMAILS = ['briantukei1000@gmail.com', 'tukeibrian5@gmail.com'];
 
 export default function UserMenu() {
-  const [user, setUser] = useState<User | null>(null);
+  const { user, signOut } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        checkAdminRole(session.user.id);
-      }
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        setTimeout(() => checkAdminRole(session.user.id), 0);
-      } else {
-        setIsAdmin(false);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+    if (user) {
+      checkAdminRole(user.id);
+    } else {
+      setIsAdmin(false);
+    }
+  }, [user]);
 
   const checkAdminRole = async (userId: string) => {
     const { data } = await supabase
@@ -42,13 +32,12 @@ export default function UserMenu() {
       .eq('role', 'admin')
       .maybeSingle();
     
-    setIsAdmin(!!data);
+    const isOwner = OWNER_EMAILS.map(e => e.toLowerCase()).includes(user?.email?.toLowerCase() || '');
+    setIsAdmin(!!data || isOwner);
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    toast.success('You have been logged out');
-    navigate('/');
+    await signOut();
   };
 
   if (!user) {

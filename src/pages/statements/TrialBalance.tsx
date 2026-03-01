@@ -2,7 +2,7 @@
 import { useMemo } from 'react';
 import { useTransactions } from '@/hooks/useTransactions';
 import AuthCheck from '@/components/auth/AuthCheck';
-import StatementLayout, { generateBasePDF } from '@/components/statements/StatementLayout';
+import StatementLayout, { generateBasePDF, formatCurrency } from '@/components/statements/StatementLayout';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 export default function TrialBalance() {
@@ -42,13 +42,13 @@ export default function TrialBalance() {
   
   const generatePDF = () => {
     const tableData = [
-      ['Account', 'Debit ($)', 'Credit ($)'],
+      ['Account', 'Debit', 'Credit'],
       ...trialBalanceData.map(({ account, debit, credit }) => [
-        account, 
-        debit > 0 ? debit.toFixed(2) : '',
-        credit > 0 ? credit.toFixed(2) : ''
+        account,
+        debit > 0 ? formatCurrency(debit) : '',
+        credit > 0 ? formatCurrency(credit) : ''
       ]),
-      ['Total', totalDebits.toFixed(2), totalCredits.toFixed(2)],
+      ['Total', formatCurrency(totalDebits), formatCurrency(totalCredits)],
     ];
     
     const summary = [
@@ -66,40 +66,40 @@ export default function TrialBalance() {
       description="Accounting verification of debits and credits"
       generatePDF={generatePDF}
     >
-      <div className="space-y-6">
-        <Table>
+      <div className="max-w-3xl mx-auto px-2 sm:px-0">
+        <Table className="compact-table">
           <TableHeader>
-            <TableRow>
-              <TableHead>Account</TableHead>
-              <TableHead className="text-right">Debit</TableHead>
-              <TableHead className="text-right">Credit</TableHead>
+            <TableRow className="h-8">
+              <TableHead className="px-1 sm:px-2 py-1 text-xs sm:text-sm">Account</TableHead>
+              <TableHead className="text-right px-1 sm:px-2 py-1 text-xs sm:text-sm">Debit</TableHead>
+              <TableHead className="text-right px-1 sm:px-2 py-1 text-xs sm:text-sm">Credit</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {trialBalanceData.map((item, index) => (
-              <TableRow key={index}>
-                <TableCell>{item.account}</TableCell>
-                <TableCell className="text-right font-medium">
-                  {item.debit > 0 ? `$${item.debit.toFixed(2)}` : ''}
+              <TableRow key={index} className="h-8">
+                <TableCell className="px-1 sm:px-2 py-1 text-xs sm:text-sm truncate max-w-0">{item.account}</TableCell>
+                <TableCell className="text-right font-medium px-1 sm:px-2 py-1 text-xs sm:text-sm">
+                  {item.debit > 0 ? formatCurrency(item.debit) : ''}
                 </TableCell>
-                <TableCell className="text-right font-medium">
-                  {item.credit > 0 ? `$${item.credit.toFixed(2)}` : ''}
+                <TableCell className="text-right font-medium px-1 sm:px-2 py-1 text-xs sm:text-sm">
+                  {item.credit > 0 ? formatCurrency(item.credit) : ''}
                 </TableCell>
               </TableRow>
             ))}
-            <TableRow className="border-t-2">
-              <TableCell className="font-bold">Total</TableCell>
-              <TableCell className="text-right font-bold">
-                ${totalDebits.toFixed(2)}
+            <TableRow className="border-t-2 h-8">
+              <TableCell className="font-bold px-1 sm:px-2 py-1 text-xs sm:text-sm">Total</TableCell>
+              <TableCell className="text-right font-bold px-1 sm:px-2 py-1 text-xs sm:text-sm">
+                {formatCurrency(totalDebits)}
               </TableCell>
-              <TableCell className="text-right font-bold">
-                ${totalCredits.toFixed(2)}
+              <TableCell className="text-right font-bold px-1 sm:px-2 py-1 text-xs sm:text-sm">
+                {formatCurrency(totalCredits)}
               </TableCell>
             </TableRow>
           </TableBody>
         </Table>
         
-        <div className={`p-4 border rounded-md ${isBalanced ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+        <div className={`p-3 border rounded-md ${isBalanced ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
           <p className={`font-medium ${isBalanced ? 'text-green-700' : 'text-red-700'}`}>
             {isBalanced 
               ? 'The trial balance is balanced. Debits equal credits.' 

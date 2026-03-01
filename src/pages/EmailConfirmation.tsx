@@ -19,8 +19,9 @@ const EmailConfirmation = () => {
   const [resendCooldown, setResendCooldown] = useState(0);
   const [userEmail, setUserEmail] = useState('');
 
-  // OTP digit input state (6 digits)
-  const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '', '', '']);
+  // OTP digit input state (8 digits — matches Supabase mailer OTP length)
+  const OTP_LENGTH = 8;
+  const [otpDigits, setOtpDigits] = useState<string[]>(Array(8).fill(''));
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -42,16 +43,22 @@ const EmailConfirmation = () => {
       if (codeParam) {
         console.log('[EmailConfirmation] PKCE code detected — waiting for Supabase auto-exchange...');
         // The Supabase client handles this automatically via detectSessionInUrl.
-        // Wait a moment for onAuthStateChange to fire, then check status.
-        await new Promise(r => setTimeout(r, 2000));
-        
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user?.email_confirmed_at) {
+        // Poll briefly for the session to appear.
+        let verified = false;
+        for (let i = 0; i < 5; i++) {
+          await new Promise(r => setTimeout(r, 1000));
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user?.email_confirmed_at) {
+            verified = true;
+            break;
+          }
+        }
+        if (verified) {
           setStatus('success');
-          setMessage('Your email has been verified successfully! Welcome to 2K AI Accounting Systems.');
-          toast.success("Email verified! Your account is now active.");
+          setMessage('Email verified! Signing you in...');
+          toast.success("Email verified! You're now signed in.");
           window.history.replaceState(null, '', window.location.pathname);
-          setTimeout(() => navigate('/onboarding'), 2500);
+          setTimeout(() => { window.location.href = '/onboarding'; }, 1500);
           return;
         }
         // If still not confirmed, fall through to manual verification
@@ -85,14 +92,10 @@ const EmailConfirmation = () => {
           if (data.user) {
             const isSignup = finalType === 'signup' || finalType === 'email';
             setStatus('success');
-            setMessage(
-              isSignup
-                ? 'Your email has been verified successfully! Welcome to 2K AI Accounting Systems.'
-                : 'Successfully signed in! Welcome back.'
-            );
-            toast.success(isSignup ? "Email verified! Your account is now active." : "Successfully signed in!");
+            setMessage('Email verified! Signing you in...');
+            toast.success("Email verified! You're now signed in.");
             window.history.replaceState(null, '', window.location.pathname);
-            setTimeout(() => navigate(isSignup ? '/onboarding' : '/dashboard'), 2500);
+            setTimeout(() => { window.location.href = isSignup ? '/onboarding' : '/dashboard'; }, 1500);
           }
         } catch (error: any) {
           console.error('Session setup error:', error);
@@ -117,9 +120,9 @@ const EmailConfirmation = () => {
 
           if (data.user) {
             setStatus('success');
-            setMessage('Your email has been verified successfully! Welcome to 2K AI Accounting Systems.');
-            toast.success("Email verified! Your account is now active.");
-            setTimeout(() => navigate('/onboarding'), 2500);
+            setMessage('Email verified! Signing you in...');
+            toast.success("Email verified! You're now signed in.");
+            setTimeout(() => { window.location.href = '/onboarding'; }, 1500);
           }
         } catch (error: any) {
           console.error('OTP verification error:', error);
@@ -140,23 +143,23 @@ const EmailConfirmation = () => {
         } else if (user && !user.email_confirmed_at) {
           setUserEmail(user.email || '');
           setStatus('otp');
-          setMessage(`We've sent a verification code to ${user.email}. Enter the 6-digit code from your email.`);
+          setMessage(`We've sent a verification code to ${user.email}. Enter the 8-digit code from your email.`);
         } else if (emailParam) {
           setUserEmail(emailParam);
           setStatus('otp');
-          setMessage(`We've sent a verification code to ${emailParam}. Enter the 6-digit code from your email.`);
+          setMessage(`We've sent a verification code to ${emailParam}. Enter the 8-digit code from your email.`);
         } else {
           setStatus('otp');
-          setMessage('Please check your inbox for the verification email. Enter the 6-digit code below.');
+          setMessage('Please check your inbox for the verification email. Enter the 8-digit code below.');
         }
       } catch {
         if (emailParam) {
           setUserEmail(emailParam);
           setStatus('otp');
-          setMessage(`We've sent a verification code to ${emailParam}. Enter the 6-digit code from your email.`);
+          setMessage(`We've sent a verification code to ${emailParam}. Enter the 8-digit code from your email.`);
         } else {
           setStatus('otp');
-          setMessage('Please check your inbox for the verification email. Enter the 6-digit code below.');
+          setMessage('Please check your inbox for the verification email. Enter the 8-digit code below.');
         }
       }
     };
@@ -168,11 +171,11 @@ const EmailConfirmation = () => {
   useEffect(() => {
     if (authResolved && session && isEmailVerified && status !== 'success') {
       setStatus('success');
-      setMessage('Your email has been verified successfully!');
-      toast.success("Email verified!");
-      setTimeout(() => navigate('/onboarding'), 2500);
+      setMessage('Email verified! Signing you in...');
+      toast.success("Email verified! You're now signed in.");
+      setTimeout(() => { window.location.href = '/onboarding'; }, 1500);
     }
-  }, [authResolved, session, isEmailVerified, status, navigate]);
+  }, [authResolved, session, isEmailVerified, status]);
 
   // ── Cooldown timer ──
   useEffect(() => {
@@ -191,14 +194,14 @@ const EmailConfirmation = () => {
     setOtpDigits(newDigits);
 
     // Auto-focus next input
-    if (digit && index < 5) {
+    if (digit && index < OTP_LENGTH - 1) {
       inputRefs.current[index + 1]?.focus();
     }
 
-    // Auto-submit when all 6 digits entered
-    if (digit && index === 5) {
+    // Auto-submit when all digits entered
+    if (digit && index === OTP_LENGTH - 1) {
       const code = newDigits.join('');
-      if (code.length === 6) {
+      if (code.length === OTP_LENGTH) {
         handleVerifyOtp(code);
       }
     }
@@ -212,25 +215,25 @@ const EmailConfirmation = () => {
 
   const handleOtpPaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
-    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, OTP_LENGTH);
     if (pasted.length > 0) {
-      const newDigits = [...otpDigits];
-      for (let i = 0; i < pasted.length && i < 6; i++) {
+      const newDigits = Array(OTP_LENGTH).fill('');
+      for (let i = 0; i < pasted.length && i < OTP_LENGTH; i++) {
         newDigits[i] = pasted[i];
       }
       setOtpDigits(newDigits);
-      if (pasted.length === 6) {
+      if (pasted.length === OTP_LENGTH) {
         handleVerifyOtp(pasted);
       } else {
-        inputRefs.current[Math.min(pasted.length, 5)]?.focus();
+        inputRefs.current[Math.min(pasted.length, OTP_LENGTH - 1)]?.focus();
       }
     }
   };
 
   const handleVerifyOtp = async (code?: string) => {
     const otp = code || otpDigits.join('');
-    if (otp.length !== 6) {
-      toast.error('Please enter all 6 digits');
+    if (otp.length !== OTP_LENGTH) {
+      toast.error(`Please enter all ${OTP_LENGTH} digits`);
       return;
     }
 
@@ -290,7 +293,7 @@ const EmailConfirmation = () => {
           ? 'Invalid code. Please check and try again.'
           : error.message || 'Verification failed. Please try again.';
       toast.error(msg);
-      setOtpDigits(['', '', '', '', '', '']);
+      setOtpDigits(Array(OTP_LENGTH).fill(''));
       inputRefs.current[0]?.focus();
     } finally {
       setIsVerifyingOtp(false);
@@ -331,8 +334,8 @@ const EmailConfirmation = () => {
       toast.success('Verification email sent! Please check your inbox and spam folder.');
       setResendCooldown(60);
       setUserEmail(email);
-      setMessage(`A new verification email has been sent to ${email}. Enter the 6-digit code or click the link in the email.`);
-      setOtpDigits(['', '', '', '', '', '']);
+      setMessage(`A new verification email has been sent to ${email}. Enter the ${OTP_LENGTH}-digit code or click the link in the email.`);
+      setOtpDigits(Array(OTP_LENGTH).fill(''));
     } catch (error: any) {
       toast.error(error?.message || 'Failed to resend email. Please try signing up again.');
     } finally {
@@ -357,7 +360,7 @@ const EmailConfirmation = () => {
             {status === 'loading' && 'Please wait while we verify your email address'}
             {status === 'success' && '2K AI Accounting Systems'}
             {status === 'error' && 'Something went wrong'}
-            {status === 'otp' && 'Enter the 6-digit code sent to your email'}
+            {status === 'otp' && 'Enter the verification code sent to your email'}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -372,10 +375,10 @@ const EmailConfirmation = () => {
             <p className="text-sm text-gray-600 dark:text-gray-400">{message}</p>
           </div>
 
-          {/* ── OTP 6-digit input ── */}
+          {/* ── OTP digit input ── */}
           {status === 'otp' && (
             <div className="space-y-4">
-              <div className="flex justify-center gap-2" onPaste={handleOtpPaste}>
+              <div className="flex justify-center gap-1.5" onPaste={handleOtpPaste}>
                 {otpDigits.map((digit, i) => (
                   <Input
                     key={i}
@@ -386,7 +389,7 @@ const EmailConfirmation = () => {
                     value={digit}
                     onChange={(e) => handleOtpChange(i, e.target.value)}
                     onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                    className="w-12 h-14 text-center text-2xl font-bold border-2 focus:border-blue-500 focus:ring-blue-500"
+                    className="w-10 h-12 text-center text-xl font-bold border-2 focus:border-blue-500 focus:ring-blue-500"
                     disabled={isVerifyingOtp}
                     autoFocus={i === 0}
                   />
@@ -394,7 +397,7 @@ const EmailConfirmation = () => {
               </div>
               <Button
                 onClick={() => handleVerifyOtp()}
-                disabled={isVerifyingOtp || otpDigits.join('').length !== 6}
+                disabled={isVerifyingOtp || otpDigits.join('').length !== OTP_LENGTH}
                 className="w-full bg-blue-600 hover:bg-blue-700"
               >
                 {isVerifyingOtp ? (
@@ -423,7 +426,7 @@ const EmailConfirmation = () => {
                 <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3 text-sm text-blue-700 dark:text-blue-300">
                   <div className="flex items-start gap-2">
                     <CheckCircle className="h-4 w-4 mt-0.5 shrink-0" />
-                    <span>Enter the 6-digit code from your email, or click the verification link directly.</span>
+                    <span>Enter the {OTP_LENGTH}-digit code from your email, or click the verification link directly.</span>
                   </div>
                 </div>
                 <Button

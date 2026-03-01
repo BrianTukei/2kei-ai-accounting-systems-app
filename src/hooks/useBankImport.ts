@@ -173,7 +173,7 @@ async function parseExcel(file: File): Promise<RawRow[]> {
 // Hook
 // ─────────────────────────────────────────
 
-const LS_KEY = 'ledgerly-bank-imports';
+const LS_KEY = '2kai-bank-imports';
 
 export function useBankImport() {
   const [step,       setStep]       = useState<ImportStep>('upload');

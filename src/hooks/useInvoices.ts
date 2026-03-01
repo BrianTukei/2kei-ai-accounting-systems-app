@@ -51,8 +51,8 @@ export type InvoiceInput = Omit<Invoice, 'id' | 'invoiceNumber' | 'subtotal' | '
 // Helpers
 // ─────────────────────────────────────────
 
-const LS_KEY = 'ledgerly-invoices';
-const COUNTER_KEY = 'ledgerly-invoice-counter';
+const LS_KEY = '2kai-invoices';
+const COUNTER_KEY = '2kai-invoice-counter';
 
 function getNextInvoiceNumber(): string {
   const raw = localStorage.getItem(COUNTER_KEY);

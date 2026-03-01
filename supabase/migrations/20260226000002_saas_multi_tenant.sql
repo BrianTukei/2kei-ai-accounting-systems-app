@@ -1,5 +1,5 @@
 -- ============================================================
--- Ledgerly SaaS — Multi-Tenant Schema
+-- 2K AI Accounting Systems SaaS — Multi-Tenant Schema
 -- Migration: 20260226000002
 -- ============================================================
 

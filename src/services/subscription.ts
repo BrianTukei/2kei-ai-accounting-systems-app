@@ -57,9 +57,9 @@ export interface SubscriptionResult {
 // Local storage keys
 // ─────────────────────────────────────────
 
-const DEMO_SUBSCRIPTION_KEY = 'ledgerly-demo-subscription';
-const DEMO_PAYMENT_KEY = 'ledgerly-demo-payments';
-const SUBSCRIPTION_ACTIVATED_KEY = 'ledgerly-subscription-activated';
+const DEMO_SUBSCRIPTION_KEY = '2kai-demo-subscription';
+const DEMO_PAYMENT_KEY = '2kai-demo-payments';
+const SUBSCRIPTION_ACTIVATED_KEY = '2kai-subscription-activated';
 
 // ─────────────────────────────────────────
 // Demo mode check

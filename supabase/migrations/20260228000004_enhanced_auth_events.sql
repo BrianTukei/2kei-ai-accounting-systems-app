@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════════════════════════
--- 2KEI AI Accounting - Enhanced Auth Events for Admin Dashboard
+-- 2K AI Accounting Systems - Enhanced Auth Events for Admin Dashboard
 -- Adds additional fields for comprehensive login audit tracking
 -- ═══════════════════════════════════════════════════════════════════════════
 

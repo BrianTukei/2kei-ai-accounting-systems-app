@@ -104,12 +104,12 @@ async function settleToOwnerMoMo(
         account_number: settlePhone,
         amount: settleAmount,
         currency: SETTLEMENT_CURRENCY,
-        narration: `Ledgerly subscription — ${txRef}`,
+        narration: `2K AI Accounting subscription — ${txRef}`,
         beneficiary_name: OWNER_MOMO_NAME,
         reference: `settle_${txRef}`,
         debit_currency: currency.toUpperCase(),
         meta: [
-          { sender: 'Ledgerly', sender_country: 'UG', mobile_number: settlePhone },
+          { sender: '2K AI Accounting', sender_country: 'UG', mobile_number: settlePhone },
         ],
       }),
     });

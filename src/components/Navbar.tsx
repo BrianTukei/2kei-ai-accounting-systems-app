@@ -136,12 +136,6 @@ export default function Navbar() {
                     {section}
                   </button>
                 ))}
-                <Link
-                  to="/auth"
-                  className="px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-primary transition-colors"
-                >
-                  Login
-                </Link>
                 <Button asChild size="sm" className="rounded-full ml-1 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 border-0">
                   <Link to="/auth?action=signup">Sign Up</Link>
                 </Button>

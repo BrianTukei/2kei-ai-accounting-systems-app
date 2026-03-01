@@ -29,10 +29,10 @@ A modern, AI-powered accounting platform built for small and medium businesses. 
 
 ```sh
 # Clone the repository
-git clone https://github.com/BrianTukei/ledgerly-accounting-app.git
+git clone https://github.com/BrianTukei/2kei ai-accounting-systems-app.git
 
 # Navigate to the project directory
-cd ledgerly-accounting-app
+cd 2kei-ai-accounting-systems-app
 
 # Install dependencies
 npm install

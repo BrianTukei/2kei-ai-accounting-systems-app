@@ -108,7 +108,7 @@ export default function SignUp() {
           navigate('/dashboard');
         } else if (data.user) {
           toast.success('Account created! Please check your email to verify.');
-          navigate('/email-confirmation');
+          navigate(`/email-confirmation?email=${encodeURIComponent(email)}`);
         }
       } catch (err: any) {
         console.error('Unexpected signup error', err);

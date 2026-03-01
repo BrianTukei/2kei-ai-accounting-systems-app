@@ -127,7 +127,7 @@ export default function Auth() {
           setEmailSent(true);
           setUserEmail(formData.email);
           toast.success('Account created! Please check your email to verify your account.');
-          navigate('/email-confirmation');
+          navigate(`/email-confirmation?email=${encodeURIComponent(formData.email)}`);
         } else if (data.session) {
           // Auto-confirm is enabled, user is logged in immediately
           toast.success('Account created successfully! Redirecting...');

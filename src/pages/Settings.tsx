@@ -17,7 +17,10 @@ import { useCurrency, CURRENCIES } from '@/contexts/CurrencyContext';
 export default function Settings() {
   const [name, setName] = useState("John Doe");
   const [email, setEmail] = useState("john.doe@example.com");
-  const [notifications, setNotifications] = useState(true);
+  const [notifications, setNotifications] = useState(() => {
+    const stored = localStorage.getItem('app-notifications');
+    return stored !== null ? JSON.parse(stored) : true;
+  });
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
 
   const handleDarkModeChange = (enabled: boolean) => {
@@ -33,7 +36,12 @@ export default function Settings() {
   };
 
   const handleSavePreferences = () => {
-    toast.success("Preferences saved successfully!");
+    // Persist all preferences to localStorage
+    localStorage.setItem('app-notifications', JSON.stringify(notifications));
+    localStorage.setItem('theme', darkMode ? 'dark' : 'light');
+    // Currency is already saved via CurrencyContext, but confirm it's persisted
+    localStorage.setItem('selected-currency', JSON.stringify(selectedCurrency));
+    toast.success(`Preferences saved! Currency: ${selectedCurrency.name} (${selectedCurrency.symbol})`);
   };
 
   const handleCurrencyChange = (currencyCode: string) => {

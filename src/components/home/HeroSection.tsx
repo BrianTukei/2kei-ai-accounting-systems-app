@@ -53,9 +53,9 @@ const HeroSection = ({ featuresRef }: HeroSectionProps) => {
   ];
 
   const trustBadges = [
-    { icon: Shield, label: 'Bank-Level Security' },
-    { icon: TrendingUp, label: '50,000+ Businesses' },
-    { icon: Sparkles, label: 'AI-Powered Insights' },
+    { icon: Shield, label: 'Bank-Level 256-bit Security' },
+    { icon: TrendingUp, label: '50,000+ Businesses & Growing' },
+    { icon: Sparkles, label: 'AI That Never Sleeps' },
   ];
 
   return (
@@ -81,30 +81,29 @@ const HeroSection = ({ featuresRef }: HeroSectionProps) => {
           {/* Badge */}
           <div className="inline-flex items-center gap-2 rounded-full bg-primary/5 dark:bg-primary/10 backdrop-blur-sm border border-primary/15 px-5 py-2.5 text-sm font-medium text-primary mb-8 animate-fade-up">
             <Sparkles className="w-4 h-4" />
-            <span>#1 AI-Powered Accounting Platform</span>
+            <span>🔥 Trusted by 50,000+ Businesses — Join Them Today</span>
             <TrendingUp className="w-4 h-4" />
           </div>
           
           {/* Headline */}
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 tracking-tight leading-[1.1] animate-fade-up" style={{ animationDelay: '0.05s' }}>
-            The <span className="gradient-text-hero">Only</span> Accounting{" "}
+            Stop <span className="gradient-text-hero">Losing Money</span> to{" "}
             <br className="hidden sm:block" />
-            Solution <span className="gradient-text-hero">Your Business</span>
+            Bad Accounting.{" "}
             <br className="hidden sm:block" />
-            Will Ever Need
+            <span className="gradient-text-hero">Start Growing</span> Today.
           </h1>
           
           {/* Subhead */}
           <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto leading-relaxed animate-fade-up" style={{ animationDelay: '0.1s' }}>
-            AI-driven financial management that turns complex accounting into actionable insights. 
-            Join <span className="font-semibold text-foreground">50,000+</span> businesses making smarter decisions.
+            2K AI Accounting Systems turns chaos into clarity — AI that does your bookkeeping, forecasts your cash flow, and saves you <span className="font-semibold text-foreground">40+ hours every month</span>. Your competitors are already using it.
           </p>
           
           {/* CTAs */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-up" style={{ animationDelay: '0.15s' }}>
             <Button asChild size="lg" className="rounded-full px-8 py-6 text-base font-semibold hero-glow bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 border-0 shadow-elegant transition-all duration-400 hover:shadow-float hover:scale-[1.02]">
               <Link to="/auth?action=signup">
-                Start Free — No Credit Card
+                🚀 Subscribe Now — It's Free to Start
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>

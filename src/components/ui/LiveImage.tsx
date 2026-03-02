@@ -26,7 +26,7 @@ export const LIVE_IMAGES = {
   // Auth & Onboarding
   authTeam: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1200&q=80&auto=format&fit=crop',
   authOffice: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200&q=80&auto=format&fit=crop',
-  authFintech: 'https://images.unsplash.com/photo-1563986768609-322da13575f2?w=1200&q=80&auto=format&fit=crop',
+  authFintech: 'https://images.unsplash.com/photo-1553028826-f4804a6dba3b?w=1200&q=80&auto=format&fit=crop',
   
   // Business & Accounting
   businessMeeting: 'https://images.unsplash.com/photo-1553877522-43269d4ea984?w=1200&q=80&auto=format&fit=crop',

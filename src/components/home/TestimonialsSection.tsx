@@ -59,10 +59,10 @@ export default function TestimonialsSection() {
       <div className="container mx-auto px-4 relative z-10">
         <div className="max-w-3xl mx-auto text-center mb-14">
           <h2 className="text-3xl md:text-4xl font-bold mb-4 animate-on-scroll opacity-0">
-            Trusted by <span className="gradient-text">Thousands</span> of Business Owners
+            <span className="gradient-text">Real Results</span> from Real Business Owners
           </h2>
           <p className="text-lg text-muted-foreground animate-on-scroll opacity-0">
-            Don't just take our word for it — hear from people who run their businesses on 2K AI Accounting Systems every day.
+            These business owners made the switch to 2K AI Accounting Systems — and they'll never go back. <span className="font-semibold text-foreground">Will you be next?</span>
           </p>
         </div>
 

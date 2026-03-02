@@ -370,7 +370,7 @@ export default function Auth() {
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
         <div className="absolute inset-0">
           <img
-            src="https://images.unsplash.com/photo-1563986768609-322da13575f2?w=1200&q=80&auto=format&fit=crop"
+            src="https://images.unsplash.com/photo-1553028826-f4804a6dba3b?w=1200&q=80&auto=format&fit=crop"
             alt="Modern financial analytics"
             className="w-full h-full object-cover"
           />
@@ -387,10 +387,10 @@ export default function Auth() {
 
           <div className="max-w-md">
             <h2 className="text-3xl font-bold mb-4 leading-tight">
-              Smarter accounting starts here
+              Your money deserves better than spreadsheets
             </h2>
             <p className="text-white/80 text-base leading-relaxed mb-8">
-              AI-powered insights, real-time dashboards, and effortless financial management — all in one platform.
+              50,000+ businesses trust 2K AI to automate their accounting, forecast cash flow, and save 40+ hours every month. Subscribe now and see the difference from day one.
             </p>
             
             {/* Social proof */}

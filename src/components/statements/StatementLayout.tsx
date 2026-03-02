@@ -174,8 +174,8 @@ export const getStoredCurrencySymbol = (): string => {
     const stored = localStorage.getItem('selected-currency');
     if (stored) {
       const parsed = JSON.parse(stored);
-      return parsed.symbol || '$';
+      return parsed.symbol || parsed.code || 'USD';
     }
   } catch { /* ignore */ }
-  return '$';
+  return 'USD';
 };

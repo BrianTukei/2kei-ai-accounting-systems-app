@@ -430,7 +430,7 @@ export class AIAssistantService {
    */
   static async categorizeExpense(description: string, amount: number, vendor?: string): Promise<ChatResponse> {
     return this.sendMessage({
-      message: `How should I categorize this expense: "${description}" for $${amount}${vendor ? ` from ${vendor}` : ''}? What's the best expense category?`,
+      message: `How should I categorize this expense: "${description}" for ${amount}${vendor ? ` from ${vendor}` : ''}? What's the best expense category?`,
       contextType: 'transaction',
       contextData: {
         type: 'expense_categorization',

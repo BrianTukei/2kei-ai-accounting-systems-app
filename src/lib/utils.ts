@@ -40,7 +40,7 @@ export function formatCurrency(amount: number, currencyCode?: string, locale?: s
       JOD: 'د.ا', LBP: '£', THB: '฿', VND: '₫', IDR: 'Rp',
       MYR: 'RM', PHP: '₱', PKR: '₨', BDT: '৳', LKR: '₨', NPR: '₨'
     };
-    const symbol = symbols[currencyCode] || '$';
+    const symbol = symbols[currencyCode] || currencyCode || '$';
     return `${symbol}${amount.toFixed(2)}`;
   }
 }

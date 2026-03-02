@@ -71,7 +71,7 @@ export default function TransactionCard({
                 "font-semibold",
                 isIncome ? "text-green-600" : "text-red-600"
               )}>
-                {isIncome ? '+' : '-'}{formatCurrency(Math.abs(amount)).replace(/^[^\d]*/, '')}
+                {isIncome ? '+' : '-'}{formatCurrency(Math.abs(amount))}
               </p>
               <p className="text-xs text-muted-foreground">{date}</p>
             </div>

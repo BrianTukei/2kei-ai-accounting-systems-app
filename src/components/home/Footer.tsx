@@ -51,13 +51,23 @@ const Footer = () => {
           <div>
             <h4 className="text-xs font-semibold uppercase tracking-wider text-foreground mb-4">Contact</h4>
             <ul className="space-y-3">
-              <li className="text-sm text-muted-foreground flex items-center gap-2">
-                <Phone size={13} className="text-primary/70" />
-                +256753634290
+              <li>
+                <a
+                  href="tel:+256753634290"
+                  className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-lg bg-primary/5 hover:bg-primary/10 border border-primary/15 hover:border-primary/30 text-sm font-medium text-muted-foreground hover:text-primary transition-all duration-300 group"
+                >
+                  <Phone size={14} className="text-primary/70 group-hover:text-primary transition-colors" />
+                  +256753634290
+                </a>
               </li>
-              <li className="text-sm text-muted-foreground flex items-center gap-2">
-                <Mail size={13} className="text-primary/70" />
-                tukeibrian5@gmail.com
+              <li>
+                <a
+                  href="mailto:tukeibrian5@gmail.com"
+                  className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-lg bg-primary/5 hover:bg-primary/10 border border-primary/15 hover:border-primary/30 text-sm font-medium text-muted-foreground hover:text-primary transition-all duration-300 group"
+                >
+                  <Mail size={14} className="text-primary/70 group-hover:text-primary transition-colors" />
+                  tukeibrian5@gmail.com
+                </a>
               </li>
             </ul>
           </div>

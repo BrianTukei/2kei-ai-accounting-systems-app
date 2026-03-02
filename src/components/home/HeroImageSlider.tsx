@@ -30,8 +30,8 @@ const SLIDES: SlideData[] = [
     statLabel: 'Prediction accuracy',
   },
   {
-    src: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=1600&q=80&auto=format&fit=crop',
-    alt: 'Professional accountant working with automated bookkeeping',
+    src: 'https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=1600&q=80&auto=format&fit=crop',
+    alt: 'Happy business team celebrating time savings with automated accounting',
     caption: 'Automated Bookkeeping',
     description: 'Stop wasting hours on manual data entry',
     stat: '40+ hrs',

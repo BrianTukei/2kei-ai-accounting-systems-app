@@ -6,12 +6,7 @@ import { Button } from '@/components/ui/button';
 import { AlertTriangle, Shield, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-
-/** Platform owner emails that always have admin access */
-const OWNER_EMAILS = [
-  'briantukei1000@gmail.com',
-  'tukeibrian5@gmail.com',
-];
+import { OWNER_EMAILS, isOwnerEmail } from '@/lib/adminEmails';
 
 interface AdminAccessCheckProps {
   children: React.ReactNode;
@@ -23,26 +18,28 @@ export default function AdminAccessCheck({ children }: AdminAccessCheckProps) {
   const navigate = useNavigate();
   const { user, authResolved } = useAuth();
   const [accessState, setAccessState] = useState<AccessState>('checking');
-  const checkStarted = useRef(false);
+  const lastUserId = useRef<string | null>(null);
 
   useEffect(() => {
     // Wait for auth to resolve first
     if (!authResolved) return;
     
-    // Prevent multiple checks
-    if (checkStarted.current) return;
-    checkStarted.current = true;
-
     // No user - redirect to auth
     if (!user) {
+      lastUserId.current = null;
       setAccessState('no-auth');
       return;
     }
 
+    // Re-check if user changed (prevents stale access state on account switch)
+    if (lastUserId.current === user.id) return;
+    lastUserId.current = user.id;
+    setAccessState('checking');
+
     const userEmail = user.email?.toLowerCase() || '';
     
     // Owner email = instant access (no database check needed)
-    if (OWNER_EMAILS.some(e => e.toLowerCase() === userEmail)) {
+    if (isOwnerEmail(userEmail)) {
       console.log('[AdminAccessCheck] Owner email detected:', userEmail);
       setAccessState('granted');
       

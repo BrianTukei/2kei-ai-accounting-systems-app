@@ -289,69 +289,6 @@ export default function Auth() {
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    setIsLoading(true);
-    
-    try {
-      // First check if we're in development mode
-      const isDevelopment = window.location.hostname === 'localhost';
-      
-      // In development mode, use demo login as fallback since Google OAuth typically isn't configured
-      if (isDevelopment) {
-        toast.info('Google Sign-in requires OAuth configuration. Using demo mode instead...');
-        createDemoSession('Google User', 'google-user@demo.com');
-        localStorage.setItem('2k_onboarding_complete', 'true');
-        localStorage.setItem('2k_onboarding_org', JSON.stringify({
-          id: `demo-org-${Date.now()}`,
-          name: 'Demo Company',
-          slug: 'demo-company',
-          currency: 'USD',
-          timezone: 'UTC',
-          owner_id: `demo-user-${Date.now()}`,
-          onboardingComplete: true,
-          plan: 'free'
-        }));
-        setTimeout(() => { window.location.href = '/dashboard'; }, 500);
-        return;
-      }
-      
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/email-confirmation`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
-          skipBrowserRedirect: false,
-        }
-      });
-
-      if (error) {
-        console.error('Google OAuth Error:', error);
-        
-        // Handle specific OAuth errors with detailed messages
-        if (error.message?.includes('invalid_client') || error.message?.includes('401')) {
-          toast.error(
-            isDevelopment 
-              ? 'Google OAuth not configured. Check GOOGLE_OAUTH_SETUP.md for setup instructions.'
-              : 'Google sign-in is currently unavailable. Please use email/password or contact support.'
-          );
-        } else if (error.message?.includes('redirect_uri_mismatch')) {
-          toast.error('OAuth configuration error. Please contact system administrator.');
-        } else if (error.message?.includes('project id')) {
-          toast.error('Google OAuth project configuration missing. Please contact system administrator.');
-        } else {
-          toast.error(error.message || 'Google sign in failed. Please try email/password login.');
-        }
-        throw error;
-      }
-    } catch (error: any) {
-      console.error('Google sign in error:', error);
-      setIsLoading(false);
-    }
-  };
-
   const handleForgotPassword = () => {
     setResetEmail(formData.email);
     setShowResetDialog(true);
@@ -390,7 +327,34 @@ export default function Auth() {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        const code = (error as any)?.code || '';
+        const isRateLimit = code === 'over_email_send_rate_limit'
+          || code === 'over_request_rate_limit'
+          || error.message?.includes('rate limit')
+          || error.message?.includes('too many')
+          || error.message?.includes('security purposes');
+
+        if (isRateLimit) {
+          // Fallback: try signInWithOtp
+          try {
+            const { error: otpError } = await supabase.auth.signInWithOtp({
+              email: userEmail,
+              options: { shouldCreateUser: false },
+            });
+            if (!otpError) {
+              toast.success('Verification email resent! Check your inbox and spam folder.');
+              setIsLoading(false);
+              return;
+            }
+          } catch { /* fallback failed */ }
+
+          toast.info('Please wait a few minutes before requesting another email. Check your inbox and spam folder — the original code is still valid.', { duration: 8000 });
+          setIsLoading(false);
+          return;
+        }
+        throw error;
+      }
 
       toast.success('Confirmation email has been resent. Please check your inbox and spam folder.');
     } catch (error: any) {
@@ -570,7 +534,6 @@ export default function Auth() {
                     isLoading={isLoading}
                     handleChange={handleChange}
                     handleSubmit={handleSubmit}
-                    handleGoogleSignIn={handleGoogleSignIn}
                     onForgotPassword={handleForgotPassword}
                   />
             </TabsContent>
@@ -581,7 +544,6 @@ export default function Auth() {
                 isLoading={isLoading}
                 handleChange={handleChange}
                 handleSubmit={handleSubmit}
-                handleGoogleSignIn={handleGoogleSignIn}
               />
             </TabsContent>
           </Tabs>

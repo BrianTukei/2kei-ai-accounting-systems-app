@@ -1,12 +1,13 @@
 
 // Utility functions for authentication
+import { isOwnerEmail } from '@/lib/adminEmails';
 
 export const generateId = () => {
   return Date.now().toString(36) + Math.random().toString(36).substring(2);
 };
 
 export const sendSignupNotification = async (userData: { name: string; email: string }) => {
-  console.log(`Email notification would be sent to tukeibrian5@gmail.com for new signup: ${userData.email}`);
+  console.log(`Email notification for new signup: ${userData.email}`);
   return true;
 };
 
@@ -56,8 +57,7 @@ export const trackSignup = (userData: { name: string; email: string }) => {
 
 // Admin access control functions
 export const isAdminUser = (email: string) => {
-  // This function checks if the user is an admin
-  return email === 'tukeibrian5@gmail.com';
+  return isOwnerEmail(email);
 };
 
 export const trackUnauthorizedAdminAccess = (email: string) => {

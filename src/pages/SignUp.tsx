@@ -172,21 +172,6 @@ export default function SignUp() {
     })();
   };
 
-  const handleGoogleSignIn = async () => {
-    setIsLoading(true);
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: { redirectTo: `${window.location.origin}/dashboard` }
-      });
-      if (error) throw error;
-    } catch (err: any) {
-      console.error('Google sign in error', err);
-      toast.error(err?.message || 'Google sign in failed');
-      setIsLoading(false);
-    }
-  };
-
   // Resize image to a DataURL (thumbnail) using canvas to keep size small
   const resizeImageToDataUrl = (file: File, maxSize = 256): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -247,28 +232,6 @@ export default function SignUp() {
           </div>
 
           <div className="space-y-5">
-            <button
-              type="button"
-              onClick={handleGoogleSignIn}
-              disabled={isLoading}
-              className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl border border-border bg-background hover:bg-muted/50 text-foreground transition-all duration-300 disabled:opacity-60 hover:shadow-card"
-            >
-              <svg width="18" height="18" viewBox="0 0 533.5 544.3" aria-hidden="true">
-                <defs />
-                <path fill="#4285f4" d="M533.5 278.4c0-17.7-1.6-35-4.6-51.6H272v97.8h147.1c-6.3 34.1-25.3 62.9-54 82.2v68.2h87.1c51-47 80.3-116.3 80.3-196.6z"/>
-                <path fill="#34a853" d="M272 544.3c73.6 0 135.5-24.4 180.7-66.2l-87.1-68.2c-24.3 16.3-55.4 26-93.6 26-71.9 0-132.9-48.6-154.8-114.1H26.9v71.6C72.2 492.3 165.5 544.3 272 544.3z"/>
-                <path fill="#fbbc04" d="M117.2 319.8c-10.9-32.6-10.9-67.8 0-100.4V147.8H26.9c-40.6 79.1-40.6 172.6 0 251.7l90.3-79.7z"/>
-                <path fill="#ea4335" d="M272 109.3c39.9-.6 78.1 14.3 107.3 41.8l80.5-80.5C407.3 25 345.4.6 272 .6 165.5.6 72.2 52.6 26.9 147.8l90.3 71.6c22-65.5 82.9-114.1 154.8-110.7z"/>
-              </svg>
-              <span className="text-sm font-medium">Sign Up with Google</span>
-            </button>
-
-            <div className="flex items-center gap-3">
-              <div className="flex-1 h-px bg-border/60" />
-              <div className="text-xs text-muted-foreground">OR</div>
-              <div className="flex-1 h-px bg-border/60" />
-            </div>
-
             <form onSubmit={handleCreate} className="space-y-4">
               <div className="relative">
                 <Label htmlFor="fullName" className="sr-only">Full Name</Label>

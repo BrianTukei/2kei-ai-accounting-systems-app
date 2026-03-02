@@ -8,9 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { AdminDashboardAPI, adminApiCallSoft } from '@/services/adminService';
 import { useCurrency } from '@/contexts/CurrencyContext';
-
-/** Platform owner emails that always get admin access */
-const OWNER_EMAILS = ['briantukei1000@gmail.com', 'tukeibrian5@gmail.com'];
+import { isOwnerEmail } from '@/lib/adminEmails';
 
 export default function AdminAccessCard() {
   const navigate = useNavigate();
@@ -38,8 +36,7 @@ export default function AdminAccessCard() {
           fetchPlatformStats();
         } else {
           // Fallback: check if owner email
-          const isOwner = OWNER_EMAILS.map(e => e.toLowerCase()).includes(user.email?.toLowerCase() || '');
-          if (isOwner) {
+          if (isOwnerEmail(user.email || '')) {
             setIsAdmin(true);
             fetchPlatformStats();
           }

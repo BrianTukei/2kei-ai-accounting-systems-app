@@ -91,16 +91,31 @@ serve(async (req) => {
       throw new Error("Unauthorized: Invalid or expired token");
     }
 
-    // Verify the user has admin role
-    const { data: roleData, error: roleError } = await supabaseAdmin
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id)
-      .eq("role", "admin")
-      .single();
+    // Platform owner emails — always have admin access
+    const OWNER_EMAILS = ['tukeibrian5@gmail.com', 'briantukei1000@gmail.com'];
+    const isOwner = OWNER_EMAILS.some(e => e.toLowerCase() === (user.email || '').toLowerCase());
 
-    if (roleError || !roleData) {
-      throw new Error("Forbidden: Admin access required");
+    // Verify the user has admin role (or is an owner)
+    if (!isOwner) {
+      const { data: roleData, error: roleError } = await supabaseAdmin
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "admin")
+        .single();
+
+      if (roleError || !roleData) {
+        throw new Error("Forbidden: Admin access required");
+      }
+    }
+
+    // If owner, auto-bootstrap admin role in the background (non-blocking)
+    if (isOwner) {
+      supabaseAdmin
+        .from("user_roles")
+        .upsert({ user_id: user.id, role: "admin" }, { onConflict: "user_id,role" })
+        .then(() => {})
+        .catch(() => {});
     }
 
     const body = await req.json();

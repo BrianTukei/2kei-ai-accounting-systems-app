@@ -5,7 +5,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CardContent } from '@/components/ui/card';
 import { EyeIcon, EyeOffIcon } from 'lucide-react';
-import { SocialLoginButton } from './SocialLoginButton';
 
 interface SignupFormProps {
   formData: {
@@ -16,7 +15,6 @@ interface SignupFormProps {
   isLoading: boolean;
   handleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleSubmit: (e: React.FormEvent) => void;
-  handleGoogleSignIn: () => void;
 }
 
 export function SignupForm({
@@ -24,7 +22,6 @@ export function SignupForm({
   isLoading,
   handleChange,
   handleSubmit,
-  handleGoogleSignIn
 }: SignupFormProps) {
   const [showPassword, setShowPassword] = useState(false);
 
@@ -89,24 +86,6 @@ export function SignupForm({
         <Button type="submit" className="w-full" disabled={isLoading}>
           {isLoading ? 'Creating Account...' : 'Create Account'}
         </Button>
-        
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">
-              Or continue with
-            </span>
-          </div>
-        </div>
-        
-        <SocialLoginButton 
-          onClick={handleGoogleSignIn} 
-          disabled={isLoading} 
-          type="google" 
-          text="Sign up with Google" 
-        />
       </CardContent>
     </form>
   );

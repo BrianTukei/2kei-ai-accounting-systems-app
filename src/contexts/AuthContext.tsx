@@ -2,15 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { supabase } from '@/integrations/supabase/client';
 import type { Session, User } from '@supabase/supabase-js';
 import { toast } from 'sonner';
-
-/**
- * Platform owner email(s) that are automatically granted admin role on sign-in.
- * This ensures the owner always has admin access without manual SQL.
- */
-const OWNER_EMAILS = [
-  'briantukei1000@gmail.com',
-  'tukeibrian5@gmail.com',
-];
+import { OWNER_EMAILS, isOwnerEmail } from '@/lib/adminEmails';
 
 /** All localStorage keys used by the app that must be cleared on sign-out */
 const APP_STORAGE_KEYS = [
@@ -197,7 +189,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 async function autoPromoteOwner(user: User) {
   try {
     const email = user.email?.toLowerCase();
-    if (!email || !OWNER_EMAILS.map(e => e.toLowerCase()).includes(email)) return;
+    if (!email || !isOwnerEmail(email)) return;
 
     // Check if already has admin role
     const { data: existing } = await supabase

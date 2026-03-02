@@ -29,9 +29,7 @@ import BrandLogo from '@/components/BrandLogo';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-
-/** Platform owner emails that always get admin access */
-const OWNER_EMAILS = ['briantukei1000@gmail.com', 'tukeibrian5@gmail.com'];
+import { isOwnerEmail } from '@/lib/adminEmails';
 
 export default function Navbar() {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -52,8 +50,7 @@ export default function Navbar() {
         .eq('user_id', user.id)
         .eq('role', 'admin')
         .maybeSingle();
-      const isOwner = OWNER_EMAILS.map(e => e.toLowerCase()).includes(user.email?.toLowerCase() || '');
-      setIsAdmin(!!data || isOwner);
+      setIsAdmin(!!data || isOwnerEmail(user.email || ''));
     };
     check();
   }, [user]);

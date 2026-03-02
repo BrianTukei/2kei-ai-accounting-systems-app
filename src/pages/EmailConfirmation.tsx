@@ -321,6 +321,7 @@ const EmailConfirmation = () => {
         return;
       }
 
+      // Try supabase.auth.resend first
       const { error } = await supabase.auth.resend({
         type: 'signup',
         email,
@@ -330,11 +331,57 @@ const EmailConfirmation = () => {
       });
 
       if (error) {
-        // Handle rate limit gracefully — the email was likely already sent
         const code = (error as any)?.code || '';
-        if (code === 'over_email_send_rate_limit' || error.message?.includes('rate limit') || error.message?.includes('too many') || error.message?.includes('security purposes')) {
-          toast.info('An email was recently sent. Please check your inbox and spam folder. You can try resending again in a few minutes.');
-          setResendCooldown(120); // 2 minute cooldown on rate limit
+        const isRateLimit = code === 'over_email_send_rate_limit'
+          || code === 'over_request_rate_limit'
+          || error.message?.includes('rate limit')
+          || error.message?.includes('too many')
+          || error.message?.includes('security purposes')
+          || error.message?.includes('email rate limit');
+
+        if (isRateLimit) {
+          // Fallback: try signInWithOtp which uses a different rate limit pool
+          console.log('[EmailConfirmation] resend rate-limited, trying signInWithOtp fallback');
+          try {
+            const { error: otpError } = await supabase.auth.signInWithOtp({
+              email,
+              options: {
+                shouldCreateUser: false, // don't create a new user, just send OTP
+              },
+            });
+
+            if (otpError) {
+              const otpCode = (otpError as any)?.code || '';
+              if (otpCode === 'over_email_send_rate_limit' || otpError.message?.includes('rate limit') || otpError.message?.includes('security purposes')) {
+                toast.info(
+                  'Supabase limits verification emails. Please wait a few minutes and check your inbox (including spam). The code from the original email is still valid.',
+                  { duration: 8000 }
+                );
+                setResendCooldown(180); // 3 minute cooldown
+                setIsResending(false);
+                return;
+              }
+              // signInWithOtp may fail for users who signed up with password — that's OK
+              console.log('[EmailConfirmation] signInWithOtp fallback also failed:', otpError.message);
+            } else {
+              toast.success('A new verification email has been sent! Check your inbox and spam folder.');
+              setResendCooldown(60);
+              setUserEmail(email);
+              setMessage(`A new verification email has been sent to ${email}. Enter the code from your email.`);
+              setOtpDigits(Array(OTP_LENGTH).fill(''));
+              setIsResending(false);
+              return;
+            }
+          } catch {
+            // signInWithOtp fallback failed silently
+          }
+
+          // Both methods hit rate limits
+          toast.info(
+            'Supabase limits how often verification emails can be sent. Please wait a few minutes, then try again. Check your inbox and spam folder — the original code may still be valid.',
+            { duration: 8000 }
+          );
+          setResendCooldown(180); // 3 minute cooldown
           setIsResending(false);
           return;
         }

@@ -10,7 +10,7 @@
  *   - Export helpers
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { toast } from 'sonner';
 import {
   AdminDashboardAPI,
@@ -175,14 +175,20 @@ export function useAdminData(options?: UseAdminDataOptions): UseAdminDataReturn 
     );
   }, [orgs]);
 
-  const recentSignups = [...users]
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    .slice(0, 30);
+  const recentSignups = useMemo(() => 
+    [...users]
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .slice(0, 30),
+    [users]
+  );
 
-  const recentLogins = users
-    .filter(u => u.last_sign_in_at)
-    .sort((a, b) => new Date(b.last_sign_in_at!).getTime() - new Date(a.last_sign_in_at!).getTime())
-    .slice(0, 30);
+  const recentLogins = useMemo(() => 
+    users
+      .filter(u => u.last_sign_in_at)
+      .sort((a, b) => new Date(b.last_sign_in_at!).getTime() - new Date(a.last_sign_in_at!).getTime())
+      .slice(0, 30),
+    [users]
+  );
 
   // Export
   const exportUsers = useCallback(() => {

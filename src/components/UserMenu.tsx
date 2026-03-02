@@ -7,9 +7,7 @@ import { LogOut, Settings, User as UserIcon, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-
-/** Platform owner emails that always get admin access */
-const OWNER_EMAILS = ['briantukei1000@gmail.com', 'tukeibrian5@gmail.com'];
+import { isOwnerEmail } from '@/lib/adminEmails';
 
 export default function UserMenu() {
   const { user, signOut } = useAuth();
@@ -32,8 +30,7 @@ export default function UserMenu() {
       .eq('role', 'admin')
       .maybeSingle();
     
-    const isOwner = OWNER_EMAILS.map(e => e.toLowerCase()).includes(user?.email?.toLowerCase() || '');
-    setIsAdmin(!!data || isOwner);
+    setIsAdmin(!!data || isOwnerEmail(user?.email || ''));
   };
 
   const handleLogout = async () => {

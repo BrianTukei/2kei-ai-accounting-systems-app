@@ -80,7 +80,12 @@ function PlanCard({
 }) {
   const plan = PLANS[planId];
   const Icon = PLAN_ICONS[planId];
-  const price = billingCycle === 'annual' ? plan.priceAnnual / 12 : plan.priceMonthly;
+  const { selectedCurrency } = useCurrency();
+  const displayPrice = getDisplayPrice(planId, billingCycle, selectedCurrency.code);
+  const monthlyPrice = billingCycle === 'annual'
+    ? getDisplayPrice(planId, billingCycle, selectedCurrency.code)
+    : displayPrice;
+  const annualTotal = getDisplayPrice(planId, 'annual', selectedCurrency.code);
   const isCurrent = planId === currentPlanId;
   const isProcessing = processingPlanId === planId;
   const isDowngrade = PLAN_ORDER.indexOf(planId) < PLAN_ORDER.indexOf(currentPlanId);
@@ -134,11 +139,11 @@ function PlanCard({
 
         <div className="mb-4">
           <span className="text-3xl font-extrabold text-slate-900 dark:text-slate-100">
-            {price === 0 ? 'Free' : `$${Math.round(price)}`}
+            {displayPrice.amount === 0 ? 'Free' : displayPrice.formatted}
           </span>
-          {price > 0 && <span className="text-slate-400 text-sm">/month</span>}
-          {billingCycle === 'annual' && price > 0 && (
-            <p className="text-xs text-green-600 mt-0.5">billed annually (${plan.priceAnnual}/yr)</p>
+          {displayPrice.amount > 0 && <span className="text-slate-400 text-sm">/month</span>}
+          {billingCycle === 'annual' && displayPrice.amount > 0 && (
+            <p className="text-xs text-green-600 mt-0.5">billed annually ({annualTotal.formatted}/yr)</p>
           )}
         </div>
 

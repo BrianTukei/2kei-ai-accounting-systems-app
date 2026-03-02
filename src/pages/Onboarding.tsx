@@ -16,8 +16,9 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
+import { useCurrency, CURRENCIES as CONTEXT_CURRENCIES } from '@/contexts/CurrencyContext';
 import { PLANS, PLAN_ORDER, type PlanId } from '@/lib/plans';
-import { initiateCheckout, selectProvider } from '@/services/billing';
+import { initiateCheckout, selectProvider, getDisplayPrice } from '@/services/billing';
 import { processSubscription, clearActivationFlag } from '@/services/subscription';
 import { sendTeamInvitation, sendLocalInvitation } from '@/services/teamInvitations';
 import { Button } from '@/components/ui/button';
@@ -373,7 +374,7 @@ function StepPlan({
         {PLAN_ORDER.map((planId) => {
           const plan = PLANS[planId];
           const Icon = PLAN_ICONS[planId];
-          const price = billing === 'annual' ? plan.priceAnnual : plan.priceMonthly;
+          const dp = getDisplayPrice(planId, billing, currency);
           const isSelected = selected === planId;
 
           return (
@@ -416,7 +417,7 @@ function StepPlan({
                 </div>
                 <div className="text-right">
                   <div className="font-bold text-slate-900 dark:text-slate-100">
-                    {price === 0 ? 'Free' : `$${billing === 'annual' ? Math.round(price/12) : price}/mo`}
+                    {dp.amount === 0 ? 'Free' : `${dp.formatted}/${billing === 'annual' ? 'yr' : 'mo'}`}
                   </div>
                   {plan.trialDays > 0 && <div className="text-xs text-indigo-500">{plan.trialDays}-day trial</div>}
                 </div>
@@ -989,6 +990,7 @@ function StepDone({
 export default function Onboarding() {
   const { user }   = useAuth();
   const { refresh } = useOrganization();
+  const { setCurrency: setAppCurrency } = useCurrency();
   const navigate   = useNavigate();
 
   const [step,      setStep]    = useState(1);
@@ -1065,6 +1067,11 @@ export default function Onboarding() {
     setCompanyData(data);
     setCurrency(data.currency);
     setOrgName(data.name);
+    // Also update the global CurrencyContext so the entire app reflects this choice
+    const matchedCurrency = CONTEXT_CURRENCIES.find(c => c.code === data.currency);
+    if (matchedCurrency) {
+      setAppCurrency(matchedCurrency);
+    }
     setStep(2);
   };
 

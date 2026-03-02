@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ArrowRight, Sparkles, TrendingUp, ChevronDown, BarChart, CreditCard, FileText, Calculator, PieChart, Target, Shield, Play } from 'lucide-react';
-import { LiveImage, LIVE_IMAGES } from '@/components/ui/LiveImage';
+import HeroImageSlider from '@/components/home/HeroImageSlider';
 
 interface HeroSectionProps {
   featuresRef: React.RefObject<HTMLDivElement>;
@@ -200,40 +200,10 @@ const HeroSection = ({ featuresRef }: HeroSectionProps) => {
           </div>
         </div>
         
-        {/* Hero Image with floating UI cards */}
+        {/* Hero Image Slider with floating UI cards */}
         <div className="mt-16 lg:mt-20 max-w-5xl mx-auto animate-fade-up relative" style={{ animationDelay: '0.3s' }}>
-          {/* Main hero card */}
-          <div className="relative rounded-2xl overflow-hidden border border-border/30 shadow-float">
-            <LiveImage
-              src={LIVE_IMAGES.heroAnalytics}
-              alt="2K AI Accounting Systems — Modern financial analytics dashboard"
-              aspectRatio="video"
-              overlay="gradient"
-              rounded="none"
-              className="w-full"
-            />
-            
-            {/* Overlay content */}
-            <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10">
-              <div className="flex flex-wrap gap-3">
-                <div className="bg-white/90 dark:bg-card/90 backdrop-blur-md rounded-xl px-4 py-3 shadow-card border border-white/20 animate-slide-up-fade" style={{ animationDelay: '0.5s' }}>
-                  <p className="text-xs text-muted-foreground font-medium">Monthly Revenue</p>
-                  <p className="text-lg font-bold text-foreground counter-value">$284,520</p>
-                  <p className="text-xs text-success font-medium">↑ 23.5% vs last month</p>
-                </div>
-                <div className="bg-white/90 dark:bg-card/90 backdrop-blur-md rounded-xl px-4 py-3 shadow-card border border-white/20 animate-slide-up-fade hidden sm:block" style={{ animationDelay: '0.65s' }}>
-                  <p className="text-xs text-muted-foreground font-medium">Active Invoices</p>
-                  <p className="text-lg font-bold text-foreground counter-value">1,247</p>
-                  <p className="text-xs text-info font-medium">142 pending review</p>
-                </div>
-                <div className="bg-white/90 dark:bg-card/90 backdrop-blur-md rounded-xl px-4 py-3 shadow-card border border-white/20 animate-slide-up-fade hidden md:block" style={{ animationDelay: '0.8s' }}>
-                  <p className="text-xs text-muted-foreground font-medium">AI Insights</p>
-                  <p className="text-lg font-bold gradient-text counter-value">98.7%</p>
-                  <p className="text-xs text-primary font-medium">Accuracy rate</p>
-                </div>
-              </div>
-            </div>
-          </div>
+          {/* Auto-sliding hero carousel */}
+          <HeroImageSlider />
 
           {/* Floating decoration cards */}
           <div className="absolute -top-4 -right-4 lg:-right-8 bg-white/90 dark:bg-card/90 backdrop-blur-md rounded-xl p-3 shadow-card-hover border border-border/30 floating-animation hidden lg:block" style={{ animationDelay: '1s' }}>

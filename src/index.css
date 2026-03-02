@@ -618,6 +618,11 @@
     50% { box-shadow: 0 0 0 8px hsl(var(--primary) / 0); }
   }
 
+  @keyframes progress-fill {
+    0% { width: 0%; }
+    100% { width: 100%; }
+  }
+
   /* Typography enhancements */
   .font-display {
     font-family: 'Playfair Display', serif;

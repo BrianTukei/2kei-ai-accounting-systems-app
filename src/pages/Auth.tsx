@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { Card, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -401,22 +401,76 @@ export default function Auth() {
   };
   
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-      <div className="absolute top-4 left-4">
-        <Button variant="ghost" onClick={() => navigate('/')} className="rounded-full">
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Home
-        </Button>
+    <div className="min-h-screen flex bg-background">
+      {/* Left side - Image & branding (hidden on mobile) */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
+        <div className="absolute inset-0">
+          <img
+            src="https://images.unsplash.com/photo-1563986768609-322da13575f2?w=1200&q=80&auto=format&fit=crop"
+            alt="Modern financial analytics"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/80 via-primary/60 to-accent/70" />
+        </div>
+        
+        <div className="relative z-10 flex flex-col justify-between p-12 text-white w-full">
+          <div>
+            <Link to="/" className="flex items-center space-x-2.5 group">
+              <BrandLogo size="md" />
+              <span className="font-semibold text-xl text-white">2K AI Accounting</span>
+            </Link>
+          </div>
+
+          <div className="max-w-md">
+            <h2 className="text-3xl font-bold mb-4 leading-tight">
+              Smarter accounting starts here
+            </h2>
+            <p className="text-white/80 text-base leading-relaxed mb-8">
+              AI-powered insights, real-time dashboards, and effortless financial management — all in one platform.
+            </p>
+            
+            {/* Social proof */}
+            <div className="flex items-center gap-4">
+              <div className="flex -space-x-2">
+                {[1,2,3,4].map((i) => (
+                  <div key={i} className="w-8 h-8 rounded-full bg-white/20 border-2 border-white/30 flex items-center justify-center text-xs font-medium">
+                    {String.fromCharCode(64 + i)}
+                  </div>
+                ))}
+              </div>
+              <p className="text-sm text-white/70">
+                <span className="font-semibold text-white">50,000+</span> businesses trust us
+              </p>
+            </div>
+          </div>
+
+          <p className="text-xs text-white/50">© {new Date().getFullYear()} 2K AI Accounting Systems</p>
+        </div>
       </div>
+
+      {/* Right side - Auth form */}
+      <div className="flex-1 flex items-center justify-center p-4 sm:p-8 relative">
+        <div className="absolute top-4 left-4 lg:hidden">
+          <Button variant="ghost" onClick={() => navigate('/')} className="rounded-full text-sm">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
+        </div>
+        <div className="absolute top-4 right-4 hidden lg:block">
+          <Button variant="ghost" onClick={() => navigate('/')} className="rounded-full text-sm text-muted-foreground hover:text-foreground">
+            <ArrowLeft className="h-4 w-4 mr-1.5" />
+            Home
+          </Button>
+        </div>
       
-      <div className="w-full max-w-md animate-scale-in">
-        <Card className="glass-card glass-card-hover shadow-glass-lg">
-          <CardHeader className="space-y-1 text-center">
-            <div className="flex justify-center mb-2">
+      <div className="w-full max-w-md animate-fade-up">
+        <Card className="border-border/40 shadow-card bg-card/80 backdrop-blur-sm">
+          <CardHeader className="space-y-1 text-center pb-4">
+            <div className="flex justify-center mb-2 lg:hidden">
               <BrandLogo size="lg" />
             </div>
-            <CardTitle className="text-xl font-bold tracking-tight mt-2">
-              2K AI Accounting Systems
+            <CardTitle className="text-2xl font-bold tracking-tight">
+              {actionType === 'signin' ? 'Welcome back' : 'Create your account'}
             </CardTitle>
             <CardDescription>
               {actionType === 'signin' 
@@ -533,22 +587,23 @@ export default function Auth() {
           </Tabs>
           )}
           
-          <CardFooter className="px-8 py-4 text-center text-sm text-slate-500">
+          <CardFooter className="px-8 py-4 text-center text-xs text-muted-foreground">
             By continuing, you agree to our{' '}
-            <a href="/terms" className="underline text-primary">
-              Terms of Service
+            <a href="/terms" className="underline text-primary hover:text-primary/80 transition-colors">
+              Terms
             </a>{' '}
             and{' '}
-            <a href="/privacy" className="underline text-primary">
+            <a href="/privacy" className="underline text-primary hover:text-primary/80 transition-colors">
               Privacy Policy
             </a>
             .
           </CardFooter>
         </Card>
       </div>
+      </div>
 
       <AlertDialog open={showResetDialog} onOpenChange={setShowResetDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent className="rounded-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle>Reset Password</AlertDialogTitle>
             <AlertDialogDescription className="space-y-4">
@@ -558,14 +613,15 @@ export default function Auth() {
                 placeholder="your@email.com"
                 value={resetEmail}
                 onChange={(e) => setResetEmail(e.target.value)}
+                className="rounded-xl"
               />
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <Button variant="outline" onClick={() => setShowResetDialog(false)}>
+            <Button variant="outline" onClick={() => setShowResetDialog(false)} className="rounded-full">
               Cancel
             </Button>
-            <AlertDialogAction onClick={handlePasswordReset} disabled={isLoading}>
+            <AlertDialogAction onClick={handlePasswordReset} disabled={isLoading} className="rounded-full bg-gradient-to-r from-primary to-accent">
               {isLoading ? 'Sending...' : 'Send Reset Link'}
             </AlertDialogAction>
           </AlertDialogFooter>

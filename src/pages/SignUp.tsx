@@ -233,144 +233,151 @@ export default function SignUp() {
   }, [avatarPreview]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-background/95 py-12 px-4">
-      <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-        {/* Sign-up card */}
-        <div className="bg-white/90 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl shadow-2xl p-8">
-          <div className="max-w-md mx-auto">
-            <div className="mb-6 text-center">
-              <h1 className="text-2xl md:text-3xl font-semibold">Welcome to 2K AI Accounting Systems</h1>
-              <p className="text-sm text-muted-foreground mt-2">Create Your Account</p>
+    <div className="min-h-screen flex bg-background">
+      {/* Left side - Sign-up form */}
+      <div className="flex-1 flex items-center justify-center py-12 px-4 sm:px-8">
+        <div className="w-full max-w-md animate-fade-up">
+          <div className="mb-8 text-center md:text-left">
+            <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+              Back to Home
+            </Link>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Create your account</h1>
+            <p className="text-sm text-muted-foreground mt-2">Start managing your finances with AI-powered insights</p>
+          </div>
+
+          <div className="space-y-5">
+            <button
+              type="button"
+              onClick={handleGoogleSignIn}
+              disabled={isLoading}
+              className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl border border-border bg-background hover:bg-muted/50 text-foreground transition-all duration-300 disabled:opacity-60 hover:shadow-card"
+            >
+              <svg width="18" height="18" viewBox="0 0 533.5 544.3" aria-hidden="true">
+                <defs />
+                <path fill="#4285f4" d="M533.5 278.4c0-17.7-1.6-35-4.6-51.6H272v97.8h147.1c-6.3 34.1-25.3 62.9-54 82.2v68.2h87.1c51-47 80.3-116.3 80.3-196.6z"/>
+                <path fill="#34a853" d="M272 544.3c73.6 0 135.5-24.4 180.7-66.2l-87.1-68.2c-24.3 16.3-55.4 26-93.6 26-71.9 0-132.9-48.6-154.8-114.1H26.9v71.6C72.2 492.3 165.5 544.3 272 544.3z"/>
+                <path fill="#fbbc04" d="M117.2 319.8c-10.9-32.6-10.9-67.8 0-100.4V147.8H26.9c-40.6 79.1-40.6 172.6 0 251.7l90.3-79.7z"/>
+                <path fill="#ea4335" d="M272 109.3c39.9-.6 78.1 14.3 107.3 41.8l80.5-80.5C407.3 25 345.4.6 272 .6 165.5.6 72.2 52.6 26.9 147.8l90.3 71.6c22-65.5 82.9-114.1 154.8-110.7z"/>
+              </svg>
+              <span className="text-sm font-medium">Sign Up with Google</span>
+            </button>
+
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-px bg-border/60" />
+              <div className="text-xs text-muted-foreground">OR</div>
+              <div className="flex-1 h-px bg-border/60" />
             </div>
 
-            <div className="space-y-4">
-              <button
-                type="button"
-                onClick={handleGoogleSignIn}
-                disabled={isLoading}
-                className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-lg border border-slate-200 bg-white text-slate-800 hover:shadow-md transition-shadow disabled:opacity-60"
-              >
-                <svg width="18" height="18" viewBox="0 0 533.5 544.3" aria-hidden="true">
-                  <defs />
-                  <path fill="#4285f4" d="M533.5 278.4c0-17.7-1.6-35-4.6-51.6H272v97.8h147.1c-6.3 34.1-25.3 62.9-54 82.2v68.2h87.1c51-47 80.3-116.3 80.3-196.6z"/>
-                  <path fill="#34a853" d="M272 544.3c73.6 0 135.5-24.4 180.7-66.2l-87.1-68.2c-24.3 16.3-55.4 26-93.6 26-71.9 0-132.9-48.6-154.8-114.1H26.9v71.6C72.2 492.3 165.5 544.3 272 544.3z"/>
-                  <path fill="#fbbc04" d="M117.2 319.8c-10.9-32.6-10.9-67.8 0-100.4V147.8H26.9c-40.6 79.1-40.6 172.6 0 251.7l90.3-79.7z"/>
-                  <path fill="#ea4335" d="M272 109.3c39.9-.6 78.1 14.3 107.3 41.8l80.5-80.5C407.3 25 345.4.6 272 .6 165.5.6 72.2 52.6 26.9 147.8l90.3 71.6c22-65.5 82.9-114.1 154.8-110.7z"/>
-                </svg>
-                <span className="text-sm font-medium">Sign Up with Google</span>
-              </button>
-
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-px bg-border/60" />
-                <div className="text-xs text-muted-foreground">OR</div>
-                <div className="flex-1 h-px bg-border/60" />
+            <form onSubmit={handleCreate} className="space-y-4">
+              <div className="relative">
+                <Label htmlFor="fullName" className="sr-only">Full Name</Label>
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
+                  <User className="w-4 h-4" />
+                </div>
+                <Input
+                  id="fullName"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Full name"
+                  className="pl-10 rounded-xl h-11"
+                />
               </div>
 
-              <form onSubmit={handleCreate} className="space-y-4">
-                <div className="relative">
-                  <Label htmlFor="fullName" className="sr-only">Full Name</Label>
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
-                    <User className="w-4 h-4" />
-                  </div>
-                  <Input
-                    id="fullName"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="Full name"
-                    className="pl-10"
-                  />
+              <div className="relative">
+                <Label htmlFor="email" className="sr-only">Email</Label>
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
+                  <Mail className="w-4 h-4" />
                 </div>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@company.com"
+                  className="pl-10 rounded-xl h-11"
+                />
+              </div>
 
-                <div className="relative">
-                  <Label htmlFor="email" className="sr-only">Email</Label>
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
-                    <Mail className="w-4 h-4" />
-                  </div>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@company.com"
-                    className="pl-10"
-                  />
+              <div className="relative">
+                <Label htmlFor="password" className="sr-only">Password</Label>
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
+                  <Lock className="w-4 h-4" />
                 </div>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Create password"
+                  className="pl-10 rounded-xl h-11"
+                />
+              </div>
 
-                <div className="relative">
-                  <Label htmlFor="password" className="sr-only">Password</Label>
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
-                    <Lock className="w-4 h-4" />
-                  </div>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Create password"
-                    className="pl-10"
-                  />
+              <div className="relative">
+                <Label htmlFor="confirm" className="sr-only">Confirm Password</Label>
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
+                  <Lock className="w-4 h-4" />
                 </div>
+                <Input
+                  id="confirm"
+                  type="password"
+                  value={confirm}
+                  onChange={(e) => setConfirm(e.target.value)}
+                  placeholder="Confirm password"
+                  className="pl-10 rounded-xl h-11"
+                />
+              </div>
 
-                <div className="relative">
-                  <Label htmlFor="confirm" className="sr-only">Confirm Password</Label>
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
-                    <Lock className="w-4 h-4" />
-                  </div>
-                  <Input
-                    id="confirm"
-                    type="password"
-                    value={confirm}
-                    onChange={(e) => setConfirm(e.target.value)}
-                    placeholder="Confirm password"
-                    className="pl-10"
-                  />
+              {error && (
+                <div className="text-sm text-destructive bg-destructive/5 border border-destructive/15 rounded-xl p-3">
+                  {error}
                 </div>
+              )}
 
-                {error && <div className="text-sm text-destructive">{error}</div>}
+              <Button type="submit" disabled={isLoading} className="w-full rounded-full py-3 h-12 bg-gradient-to-r from-primary to-accent text-white font-semibold hover:shadow-elegant transition-all duration-400 hover:scale-[1.01] disabled:opacity-60 disabled:cursor-not-allowed">
+                {isLoading ? 'Creating Account...' : 'Create Account'}
+              </Button>
+            </form>
 
-                <Button type="submit" disabled={isLoading} className="w-full rounded-full py-3 bg-gradient-primary text-white hover:shadow-[0_8px_24px_rgba(59,130,246,0.18)] transition-shadow disabled:opacity-60 disabled:cursor-not-allowed">
-                  {isLoading ? 'Creating Account...' : 'Create Account'}
-                </Button>
-              </form>
+            <p className="text-center text-sm text-muted-foreground">
+              Already have an account?{' '}
+              <Link to="/auth" className="text-primary font-medium hover:underline">Log In</Link>
+            </p>
 
-              <p className="text-center text-sm text-muted-foreground mt-4">
-                Already have an account?{' '}
-                <Link to="/auth" className="text-primary underline">Log In</Link>
-              </p>
-            </div>
+            <p className="text-center text-xs text-muted-foreground/70">
+              By signing up, you agree to our{' '}
+              <Link to="/terms" className="underline hover:text-primary transition-colors">Terms</Link>{' '}
+              and{' '}
+              <Link to="/privacy" className="underline hover:text-primary transition-colors">Privacy Policy</Link>
+            </p>
           </div>
         </div>
+      </div>
 
-        {/* Illustration / right side */}
-        <div className="hidden md:flex items-center justify-center">
-          <div className="max-w-lg">
-            {/* Simple illustrative SVG */}
-            <svg viewBox="0 0 800 600" className="w-full h-auto" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Finance illustration">
-              <defs>
-                <linearGradient id="g1" x1="0" x2="1">
-                  <stop offset="0%" stopColor="#60a5fa" />
-                  <stop offset="100%" stopColor="#7c3aed" />
-                </linearGradient>
-              </defs>
-              <rect x="0" y="0" width="800" height="600" rx="24" fill="url(#g1)" opacity="0.06" />
-              <g transform="translate(80,80)">
-                <rect x="0" y="0" width="320" height="160" rx="12" fill="#fff" opacity="0.9"/>
-                <rect x="20" y="20" width="280" height="12" rx="6" fill="#e6edf8"/>
-                <rect x="20" y="44" width="200" height="12" rx="6" fill="#cfe0ff"/>
-                <rect x="20" y="68" width="240" height="12" rx="6" fill="#a5d2ff"/>
-
-                <rect x="360" y="0" width="320" height="220" rx="12" fill="#fff" opacity="0.95"/>
-                <rect x="380" y="24" width="80" height="80" rx="8" fill="#7c3aed" opacity="0.12"/>
-                <rect x="470" y="40" width="160" height="12" rx="6" fill="#e9d5ff"/>
-                <rect x="470" y="64" width="100" height="12" rx="6" fill="#d8b4fe"/>
-
-                <g transform="translate(40,220)">
-                  <rect x="0" y="0" width="520" height="200" rx="12" fill="#fff" opacity="0.95"/>
-                  <rect x="32" y="28" width="120" height="120" rx="8" fill="#60a5fa" opacity="0.12"/>
-                  <rect x="168" y="36" width="320" height="92" rx="8" fill="#fff"/>
-                </g>
-              </g>
-            </svg>
+      {/* Right side - Image (hidden on mobile) */}
+      <div className="hidden lg:block lg:w-1/2 relative overflow-hidden">
+        <div className="absolute inset-0">
+          <img
+            src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1200&q=80&auto=format&fit=crop"
+            alt="Team collaborating on finances"
+            className="w-full h-full object-cover"
+            loading="lazy"
+          />
+          <div className="absolute inset-0 bg-gradient-to-br from-accent/70 via-primary/60 to-primary/80" />
+        </div>
+        
+        <div className="relative z-10 flex flex-col justify-center items-center h-full p-12 text-white text-center">
+          <div className="max-w-md">
+            <div className="w-16 h-16 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center mx-auto mb-6">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-white">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold mb-3">Get started in seconds</h2>
+            <p className="text-white/80 text-sm leading-relaxed">
+              Create your free account and start managing your finances with AI-powered insights, real-time analytics, and beautiful reports.
+            </p>
           </div>
         </div>
       </div>

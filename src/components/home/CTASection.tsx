@@ -1,42 +1,80 @@
 
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, CheckCircle2 } from 'lucide-react';
+import { LiveImage, LIVE_IMAGES } from '@/components/ui/LiveImage';
 
-// High-quality Unsplash image - Professional team analyzing financial data
-const ctaIllustration = 'https://images.unsplash.com/photo-1553877522-43269d4ea984?w=800&q=80&auto=format&fit=crop';
+const benefits = [
+  'Free plan — no credit card required',
+  'AI-powered insights from day one',
+  'Bank-level encryption & security',
+  'Unlimited team members on Pro',
+];
 
 const CTASection = () => {
   return (
-    <section className="py-10 relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-accent/5 to-primary/10" />
+    <section className="py-16 lg:py-24 relative overflow-hidden">
+      {/* Background */}
+      <div className="absolute inset-0 bg-mesh opacity-40" />
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/3 via-transparent to-accent/3" />
       
       <div className="container mx-auto px-4 relative z-10">
-        <div className="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
+        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center max-w-6xl mx-auto">
           {/* Content */}
-          <div className="text-center lg:text-left">
-            <h2 className="text-3xl md:text-4xl font-bold mb-6 animate-on-scroll opacity-0">
-              Don't Let Poor <span className="gradient-text">Financial Management</span> Kill Your Business
+          <div className="text-center lg:text-left animate-fade-up">
+            <div className="inline-flex items-center gap-2 rounded-full bg-primary/5 dark:bg-primary/10 border border-primary/10 px-4 py-1.5 text-xs font-medium text-primary mb-6">
+              GET STARTED TODAY
+            </div>
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6 tracking-tight">
+              Take Control of Your{' '}
+              <span className="gradient-text-hero">Financial Future</span>
             </h2>
-            <p className="text-lg text-muted-foreground mb-8 animate-on-scroll opacity-0">
-              Every day you delay is money lost. While competitors struggle with outdated tools, smart business owners choose 2K AI Accounting Systems. <span className="font-semibold text-primary">Your future self will thank you.</span>
+            <p className="text-base md:text-lg text-muted-foreground mb-8 leading-relaxed max-w-lg mx-auto lg:mx-0">
+              Join thousands of businesses that switched to AI-powered accounting and never looked back.
             </p>
-            <Button asChild size="lg" className="rounded-full px-8 py-6 text-base animate-on-scroll opacity-0 hero-glow bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 border-0 shadow-elegant">
-              <Link to="/auth?action=signup">
-                Secure Your Competitive Edge Now
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
-            </Button>
+            
+            {/* Benefits list */}
+            <ul className="space-y-3 mb-8 max-w-lg mx-auto lg:mx-0">
+              {benefits.map((benefit) => (
+                <li key={benefit} className="flex items-center gap-3 text-sm text-muted-foreground">
+                  <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0" />
+                  <span>{benefit}</span>
+                </li>
+              ))}
+            </ul>
+
+            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+              <Button asChild size="lg" className="rounded-full px-8 py-6 text-base font-semibold hero-glow bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 border-0 shadow-elegant transition-all duration-400 hover:shadow-float hover:scale-[1.02]">
+                <Link to="/auth?action=signup">
+                  Start Free Today
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Link>
+              </Button>
+              <Button asChild variant="outline" size="lg" className="rounded-full px-8 py-6 text-base font-medium border-border/60 hover:border-primary/30 transition-all duration-400">
+                <Link to="/auth?action=signin">
+                  Sign In
+                </Link>
+              </Button>
+            </div>
           </div>
           
           {/* Illustration */}
-          <div className="animate-on-scroll opacity-0" style={{ animationDelay: '0.2s' }}>
-            <div className="glass-card overflow-hidden floating-animation">
-              <img
-                src={ctaIllustration}
+          <div className="animate-fade-up" style={{ animationDelay: '0.15s' }}>
+            <div className="relative">
+              <LiveImage
+                src={LIVE_IMAGES.businessMeeting}
                 alt="Professional team collaborating on financial analytics"
-                className="w-full h-auto rounded-lg"
+                aspectRatio="4/3"
+                overlay="primary"
+                rounded="2xl"
+                className="shadow-float"
               />
+              
+              {/* Floating stats card */}
+              <div className="absolute -bottom-4 -left-4 lg:-left-6 bg-white/95 dark:bg-card/95 backdrop-blur-md rounded-xl p-4 shadow-card-hover border border-border/30 animate-slide-up-fade" style={{ animationDelay: '0.4s' }}>
+                <p className="text-xs text-muted-foreground font-medium mb-1">Time Saved Monthly</p>
+                <p className="text-2xl font-bold gradient-text counter-value">40+ hrs</p>
+              </div>
             </div>
           </div>
         </div>

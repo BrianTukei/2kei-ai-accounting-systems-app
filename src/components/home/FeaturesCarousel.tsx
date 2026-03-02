@@ -2,86 +2,86 @@ import { forwardRef } from 'react';
 import { CreditCard, BarChart3, DollarSign, Lock, Smartphone, Zap } from 'lucide-react';
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from '@/components/ui/carousel';
 
-// High-quality Unsplash image - Abstract data visualization
-const featuresBg = 'https://images.unsplash.com/photo-1639322537228-f710d846310a?w=1600&q=80&auto=format&fit=crop';
-
 const features = [
   {
     icon: CreditCard,
     title: "Transaction Management",
-    description: "Record and categorize income and expenses with detailed transaction tracking. Organize your finances with smart categorization and powerful search capabilities."
+    description: "Record and categorize income and expenses with detailed transaction tracking. Organize your finances with smart categorization and powerful search capabilities.",
+    color: 'from-blue-500/10 to-indigo-500/10',
+    iconColor: 'text-blue-600 dark:text-blue-400',
   },
   {
     icon: BarChart3,
     title: "Visual Reports",
-    description: "Generate beautiful charts and reports to visualize your financial health. Interactive dashboards show trends, patterns, and insights at a glance."
+    description: "Generate beautiful charts and reports to visualize your financial health. Interactive dashboards show trends, patterns, and insights at a glance.",
+    color: 'from-violet-500/10 to-purple-500/10',
+    iconColor: 'text-violet-600 dark:text-violet-400',
   },
   {
     icon: DollarSign,
     title: "Cash Flow Monitoring",
-    description: "Keep track of your cash flow with real-time updates and projections. Forecast future cash positions and identify potential issues before they arise."
+    description: "Keep track of your cash flow with real-time updates and projections. Forecast future cash positions and identify potential issues before they arise.",
+    color: 'from-emerald-500/10 to-green-500/10',
+    iconColor: 'text-emerald-600 dark:text-emerald-400',
   },
   {
     icon: Smartphone,
     title: "Mobile Friendly",
-    description: "Access your finances on any device with our responsive design. Full functionality on desktop, tablet, and mobile with seamless synchronization."
+    description: "Access your finances on any device with our responsive design. Full functionality on desktop, tablet, and mobile with seamless synchronization.",
+    color: 'from-cyan-500/10 to-sky-500/10',
+    iconColor: 'text-cyan-600 dark:text-cyan-400',
   },
   {
     icon: Lock,
     title: "Secure & Private",
-    description: "Your financial data is encrypted and secured with enterprise-grade protection. Bank-level security ensures your information stays private and safe."
+    description: "Your financial data is encrypted and secured with enterprise-grade protection. Bank-level security ensures your information stays private and safe.",
+    color: 'from-amber-500/10 to-orange-500/10',
+    iconColor: 'text-amber-600 dark:text-amber-400',
   },
   {
     icon: Zap,
     title: "Fast & Efficient",
-    description: "Optimized performance ensures quick access to your financial information. Lightning-fast loading times and smooth navigation keep you productive."
+    description: "Optimized performance ensures quick access to your financial information. Lightning-fast loading times and smooth navigation keep you productive.",
+    color: 'from-rose-500/10 to-pink-500/10',
+    iconColor: 'text-rose-600 dark:text-rose-400',
   }
 ];
 
 const FeaturesCarousel = forwardRef<HTMLDivElement>((props, ref) => {
   return (
-    <section id="features" ref={ref} className="py-10 relative overflow-hidden">
-      {/* Background with image overlay */}
-      <div className="absolute inset-0 z-0">
-        <img 
-          src={featuresBg} 
-          alt="Financial data visualization background" 
-          className="w-full h-full object-cover opacity-10"
-        />
-        <div className="absolute inset-0 bg-gradient-to-br from-background via-background/95 to-background/90" />
-      </div>
+    <section id="features" ref={ref} className="py-16 lg:py-24 relative overflow-hidden">
+      {/* Subtle background pattern */}
+      <div className="absolute inset-0 z-0 bg-mesh opacity-50" />
+      <div className="absolute inset-0 z-0 bg-gradient-to-b from-background via-transparent to-background" />
       
       <div className="container mx-auto px-4 relative z-10">
-        <div className="max-w-3xl mx-auto text-center mb-8">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4 animate-on-scroll opacity-0">
-            Why <span className="gradient-text">Smart Businesses Choose</span> 2K AI Accounting Systems
+        <div className="max-w-3xl mx-auto text-center mb-12 lg:mb-16">
+          <div className="inline-flex items-center gap-2 rounded-full bg-primary/5 dark:bg-primary/10 border border-primary/10 px-4 py-1.5 text-xs font-medium text-primary mb-6 animate-fade-up">
+            PLATFORM FEATURES
+          </div>
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-5 tracking-tight animate-fade-up" style={{ animationDelay: '0.05s' }}>
+            Why <span className="gradient-text">Smart Businesses</span> Choose Us
           </h2>
-          <p className="text-lg text-muted-foreground animate-on-scroll opacity-0 mb-8">
-            While others waste time with complicated software, you'll have everything you need in one powerful, intuitive platform. <span className="font-semibold text-primary">This is why we're the industry leader.</span>
-          </p>
-          <p className="text-sm text-muted-foreground/80 animate-on-scroll opacity-0 flex items-center justify-center gap-2">
-            <kbd className="px-2 py-1 text-xs bg-muted rounded">←</kbd>
-            <span>Use arrow keys or buttons to navigate features</span>
-            <kbd className="px-2 py-1 text-xs bg-muted rounded">→</kbd>
+          <p className="text-base md:text-lg text-muted-foreground animate-fade-up max-w-2xl mx-auto leading-relaxed" style={{ animationDelay: '0.1s' }}>
+            Everything you need in one powerful, intuitive platform — built for businesses that refuse to settle for less.
           </p>
         </div>
         
         {/* Desktop Grid Layout */}
-        <div className="hidden lg:grid lg:grid-cols-3 gap-8 mb-8">
+        <div className="hidden lg:grid lg:grid-cols-3 gap-6 mb-8 stagger-children">
           {features.map((feature, index) => {
             const Icon = feature.icon;
             
             return (
               <div 
                 key={index} 
-                className="glass-card glass-card-hover p-6 hover-lift animate-on-scroll opacity-0 group"
-                style={{ animationDelay: `${0.1 * index}s` }}
+                className="fintech-card p-7 group"
               >
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                  <Icon className="h-6 w-6 text-primary group-hover:text-accent transition-colors duration-300" />
+                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-5 group-hover:scale-110 transition-all duration-400`}>
+                  <Icon className={`h-5 w-5 ${feature.iconColor} transition-colors duration-300`} />
                 </div>
-                <h3 className="text-xl font-semibold mb-2 text-foreground">{feature.title}</h3>
-                <p className="text-muted-foreground">{feature.description}</p>
+                <h3 className="text-lg font-semibold mb-2.5 text-foreground group-hover:text-primary transition-colors duration-300">{feature.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
               </div>
             );
           })}
@@ -103,11 +103,11 @@ const FeaturesCarousel = forwardRef<HTMLDivElement>((props, ref) => {
                 return (
                   <CarouselItem key={index} className="md:basis-1/2">
                     <div className="p-2">
-                      <div className="glass-card glass-card-hover p-6 hover-lift group h-full">
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                          <Icon className="h-6 w-6 text-primary group-hover:text-accent transition-colors duration-300" />
+                      <div className="fintech-card p-6 group h-full">
+                        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-5 group-hover:scale-110 transition-all duration-400`}>
+                          <Icon className={`h-5 w-5 ${feature.iconColor} transition-colors duration-300`} />
                         </div>
-                        <h3 className="text-xl font-semibold mb-2 text-foreground">{feature.title}</h3>
+                        <h3 className="text-lg font-semibold mb-2 text-foreground">{feature.title}</h3>
                         <p className="text-muted-foreground text-sm leading-relaxed">{feature.description}</p>
                       </div>
                     </div>

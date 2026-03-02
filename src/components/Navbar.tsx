@@ -95,7 +95,7 @@ export default function Navbar() {
   return (
     <header
       role="banner"
-      className={`sticky top-0 z-40 transition-all duration-300 ${isScrolled ? 'backdrop-blur-md bg-white/50 dark:bg-slate-900/50 shadow-lg' : 'bg-transparent'} `}
+      className={`sticky top-0 z-40 transition-all duration-400 ${isScrolled ? 'backdrop-blur-xl bg-background/80 dark:bg-background/70 shadow-card border-b border-border/30' : 'bg-transparent'} `}
     >
       <nav
         role="navigation"
@@ -109,34 +109,34 @@ export default function Navbar() {
             <button
               aria-label="Open navigation menu"
               onClick={() => setIsSheetOpen(true)}
-              className="relative w-10 h-10 flex items-center justify-center rounded-lg text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800 transition-all"
+              className="relative w-10 h-10 flex items-center justify-center rounded-xl text-foreground/70 hover:text-foreground hover:bg-muted transition-all duration-300"
             >
               <Menu className="w-5 h-5" />
             </button>
 
-            <Link to="/dashboard" className="flex items-center space-x-3 focus:outline-none focus:ring-2 focus:ring-primary rounded">
+            <Link to="/dashboard" className="flex items-center space-x-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-lg p-1 -m-1">
               <BrandLogo size="md" />
               <div className="hidden sm:block">
-                <div className="text-sm font-semibold leading-4 text-slate-900 dark:text-slate-100">2K AI Accounting Systems</div>
-                <div className="text-xs text-slate-500 dark:text-slate-400">Premium Financial Suite</div>
+                <div className="text-sm font-semibold leading-4 text-foreground">2K AI Accounting Systems</div>
+                <div className="text-xs text-muted-foreground">Premium Financial Suite</div>
               </div>
             </Link>
           </div>
 
           {/* Center: primary nav items (desktop only) */}
-          <div className="hidden md:flex md:items-center md:space-x-2">
+          <div className="hidden md:flex md:items-center md:space-x-1">
             {isLandingPage ? (
               <>
                 {['features', 'pricing', 'testimonials'].map((section) => (
                   <button
                     key={section}
                     onClick={() => scrollToSection(section)}
-                    className="px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-primary transition-colors capitalize"
+                    className="px-3 py-2 text-sm font-medium text-foreground/70 hover:text-primary rounded-lg hover:bg-primary/5 transition-all duration-300 capitalize"
                   >
                     {section}
                   </button>
                 ))}
-                <Button asChild size="sm" className="rounded-full ml-1 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 border-0">
+                <Button asChild size="sm" className="rounded-full ml-2 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 border-0 shadow-sm hover:shadow-elegant transition-all duration-400">
                   <Link to="/auth?action=signup">Sign Up</Link>
                 </Button>
               </>
@@ -151,7 +151,7 @@ export default function Navbar() {
               aria-label="Search (Ctrl+K)"
               title="Search (Ctrl+K)"
               onClick={() => setIsSearchOpen(true)}
-              className="p-2 rounded-md text-slate-600 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="p-2 rounded-xl text-foreground/60 hover:text-primary hover:bg-primary/5 transition-all duration-300"
             >
               <Search className="w-5 h-5" />
             </button>
@@ -159,7 +159,7 @@ export default function Navbar() {
             <button
               onClick={toggleFullscreen}
               aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-              className="p-2 rounded-md text-slate-600 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="p-2 rounded-xl text-foreground/60 hover:text-primary hover:bg-primary/5 transition-all duration-300"
               title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
             >
               {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
@@ -169,7 +169,7 @@ export default function Navbar() {
               onClick={toggleTheme}
               aria-pressed={theme === 'dark'}
               aria-label="Toggle dark mode"
-              className="p-2 rounded-md text-slate-600 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="p-2 rounded-xl text-foreground/60 hover:text-primary hover:bg-primary/5 transition-all duration-300"
             >
               {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </button>
@@ -183,13 +183,13 @@ export default function Navbar() {
 
       {/* ─── Hamburger Sheet ─── */}
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-        <SheetContent side="left" className="w-80 p-0 overflow-y-auto">
-          <SheetHeader className="p-5 border-b">
+        <SheetContent side="left" className="w-80 p-0 overflow-y-auto border-r border-border/30">
+          <SheetHeader className="p-5 border-b border-border/30">
             <div className="flex items-center space-x-3">
               <BrandLogo size="sm" />
               <div>
-                <SheetTitle className="text-sm font-semibold text-slate-900 dark:text-slate-100">2K AI Accounting</SheetTitle>
-                <SheetDescription className="text-xs text-slate-500 dark:text-slate-400">Navigate your workspace</SheetDescription>
+                <SheetTitle className="text-sm font-semibold text-foreground">2K AI Accounting</SheetTitle>
+                <SheetDescription className="text-xs text-muted-foreground">Navigate your workspace</SheetDescription>
               </div>
             </div>
           </SheetHeader>
@@ -198,9 +198,9 @@ export default function Navbar() {
           <div className="px-4 pt-4 pb-2">
             <button
               onClick={() => { setIsSheetOpen(false); setTimeout(() => setIsSearchOpen(true), 150); }}
-              className="w-full flex items-center gap-2 pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-400 hover:border-primary/40 transition-colors text-left relative"
+              className="w-full flex items-center gap-2 pl-10 pr-4 py-2.5 rounded-xl border border-border bg-muted/50 text-sm text-muted-foreground hover:border-primary/30 transition-all duration-300 text-left relative"
             >
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
               Search pages…
               <kbd className="ml-auto text-[10px] px-1.5 py-0.5 rounded border bg-muted font-mono">Ctrl+K</kbd>
             </button>
@@ -213,7 +213,7 @@ export default function Navbar() {
               if (groupItems.length === 0) return null;
               return (
                 <div key={group.label}>
-                  <p className="px-3 mb-2 text-[10px] uppercase tracking-wider font-semibold text-slate-400 dark:text-slate-500">
+                  <p className="px-3 mb-2 text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/60">
                     {group.label}
                   </p>
                   <nav className="space-y-0.5">
@@ -228,8 +228,8 @@ export default function Navbar() {
                           className={cn(
                             'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group',
                             isActive
-                              ? 'bg-primary/10 text-primary shadow-sm'
-                              : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                              ? 'bg-primary/8 dark:bg-primary/15 text-primary shadow-sm'
+                              : 'text-foreground/70 hover:bg-muted transition-all duration-300'
                           )}
                         >
                           {/* Colored icon badge */}
@@ -273,7 +273,7 @@ export default function Navbar() {
                       'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group',
                       location.pathname === '/admin'
                         ? 'bg-red-50 dark:bg-red-900/20 text-red-600 shadow-sm'
-                        : 'text-slate-700 dark:text-slate-300 hover:bg-red-50 dark:hover:bg-red-900/20'
+                        : 'text-foreground/70 hover:bg-red-50 dark:hover:bg-red-900/20'
                     )}
                   >
                     <span className={cn(
@@ -292,7 +292,7 @@ export default function Navbar() {
                       'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group',
                       location.pathname === '/admin/users'
                         ? 'bg-red-50 dark:bg-red-900/20 text-red-600 shadow-sm'
-                        : 'text-slate-700 dark:text-slate-300 hover:bg-red-50 dark:hover:bg-red-900/20'
+                        : 'text-foreground/70 hover:bg-red-50 dark:hover:bg-red-900/20'
                     )}
                   >
                     <span className={cn(
@@ -310,10 +310,10 @@ export default function Navbar() {
           </div>
 
           {/* Bottom actions */}
-          <div className="mt-auto border-t px-4 py-4 space-y-2">
+          <div className="mt-auto border-t border-border/30 px-4 py-4 space-y-2">
             <button
               onClick={() => { toggleFullscreen(); setIsSheetOpen(false); }}
-              className="w-full py-2.5 px-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-3 text-sm group transition-all duration-200"
+              className="w-full py-2.5 px-3 rounded-xl hover:bg-muted flex items-center gap-3 text-sm group transition-all duration-300"
             >
               <span className={cn(
                 'flex items-center justify-center w-9 h-9 rounded-lg transition-transform duration-200 group-hover:scale-110',
@@ -325,10 +325,10 @@ export default function Navbar() {
                   ? <Minimize className="w-[18px] h-[18px] text-rose-500" />
                   : <Maximize className="w-[18px] h-[18px] text-emerald-500" />}
               </span>
-              <span className="text-slate-700 dark:text-slate-300">{isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}</span>
+              <span className="text-foreground/70">{isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}</span>
             </button>
 
-            <button onClick={toggleTheme} className="w-full py-2.5 px-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-3 text-sm group transition-all duration-200">
+            <button onClick={toggleTheme} className="w-full py-2.5 px-3 rounded-xl hover:bg-muted flex items-center gap-3 text-sm group transition-all duration-300">
               <span className={cn(
                 'flex items-center justify-center w-9 h-9 rounded-lg transition-transform duration-200 group-hover:scale-110',
                 theme === 'dark'
@@ -339,7 +339,7 @@ export default function Navbar() {
                   ? <Sun className="w-[18px] h-[18px] text-yellow-500" />
                   : <Moon className="w-[18px] h-[18px] text-indigo-500" />}
               </span>
-              <span className="text-slate-700 dark:text-slate-300">{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
+              <span className="text-foreground/70">{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
             </button>
             <div className="md:hidden">
               <UserMenu />

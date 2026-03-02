@@ -23,9 +23,13 @@ const CTASection = () => {
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center max-w-6xl mx-auto">
           {/* Content */}
           <div className="text-center lg:text-left animate-fade-up">
-            <div className="inline-flex items-center gap-2 rounded-full bg-primary/5 dark:bg-primary/10 border border-primary/10 px-4 py-1.5 text-xs font-medium text-primary mb-6">
-              \ud83d\udd25 LIMITED TIME — START FREE TODAY
-            </div>
+            <Link
+              to="/auth?action=signup"
+              className="inline-flex items-center gap-2 rounded-full bg-primary/10 dark:bg-primary/15 border border-primary/20 px-5 py-2 text-xs font-bold text-primary mb-6 hover:bg-primary/20 hover:scale-105 transition-all duration-300 cursor-pointer shadow-sm hover:shadow-md"
+            >
+              🔥 LIMITED TIME — START FREE TODAY
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6 tracking-tight">
               Your Business Deserves{' '}
               <span className="gradient-text-hero">Better Than Spreadsheets</span>

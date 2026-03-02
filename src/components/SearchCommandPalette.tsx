@@ -160,8 +160,16 @@ export default function SearchCommandPalette({ open, onOpenChange }: SearchComma
   }, [open, onOpenChange]);
 
   // ─── currency helper ──────────────────────────────
-  const fmt = (n: number) =>
-    new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
+  const fmt = (n: number) => {
+    try {
+      const stored = localStorage.getItem('selected-currency');
+      const cur = stored ? JSON.parse(stored) : null;
+      const code = cur?.code || 'USD';
+      return new Intl.NumberFormat(cur?.locale || undefined, { style: 'currency', currency: code, maximumFractionDigits: 0 }).format(n);
+    } catch {
+      return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
+    }
+  };
 
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>

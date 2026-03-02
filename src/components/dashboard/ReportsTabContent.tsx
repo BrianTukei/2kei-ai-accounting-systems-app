@@ -8,10 +8,14 @@ import autoTable from 'jspdf-autotable';
 import { toast } from 'sonner';
 import { Transaction } from '@/components/TransactionCard';
 import { useTransactions } from '@/hooks/useTransactions';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 export default function ReportsTabContent() {
   const [isGenerating, setIsGenerating] = useState(false);
   const { transactions } = useTransactions();
+  const { selectedCurrency, formatCurrency: fmtCurrency } = useCurrency();
+  const curCode = selectedCurrency.code;
+  const curLocale = selectedCurrency.locale;
 
   // Generate income-only PDF report
   const generateIncomePDF = () => {
@@ -36,16 +40,12 @@ export default function ReportsTabContent() {
     const incomeTransactions = transactions.filter(t => t.type === 'income');
     
     // Add report data as a table
-    const tableColumn = ["Category", "Description", "Date", "Amount ($)"];
+    const tableColumn = ["Category", "Description", "Date", `Amount (${selectedCurrency.symbol})`];
     const tableRows = incomeTransactions.map(item => [
       item.category,
       item.description,
       item.date,
-      item.amount.toLocaleString('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        minimumFractionDigits: 2
-      })
+      fmtCurrency(item.amount)
     ]);
     
     // Calculate total income
@@ -70,10 +70,7 @@ export default function ReportsTabContent() {
     // Add summary data
     doc.setFontSize(10);
     doc.setTextColor(46, 204, 113);
-    doc.text(`Total Income: ${totalIncome.toLocaleString('en-US', {
-      style: 'currency',
-      currency: 'USD' 
-    })}`, 14, finalY + 25);
+    doc.text(`Total Income: ${fmtCurrency(totalIncome)}`, 14, finalY + 25);
     
     doc.setTextColor(0, 0, 0); // Reset text color
     
@@ -124,16 +121,12 @@ export default function ReportsTabContent() {
     const expenseTransactions = transactions.filter(t => t.type === 'expense');
     
     // Add report data as a table
-    const tableColumn = ["Category", "Description", "Date", "Amount ($)"];
+    const tableColumn = ["Category", "Description", "Date", `Amount (${selectedCurrency.symbol})`];
     const tableRows = expenseTransactions.map(item => [
       item.category,
       item.description,
       item.date,
-      item.amount.toLocaleString('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        minimumFractionDigits: 2
-      })
+      fmtCurrency(item.amount)
     ]);
     
     // Calculate total expenses
@@ -158,10 +151,7 @@ export default function ReportsTabContent() {
     // Add summary data
     doc.setFontSize(10);
     doc.setTextColor(231, 76, 60);
-    doc.text(`Total Expenses: ${totalExpenses.toLocaleString('en-US', {
-      style: 'currency',
-      currency: 'USD' 
-    })}`, 14, finalY + 25);
+    doc.text(`Total Expenses: ${fmtCurrency(totalExpenses)}`, 14, finalY + 25);
     
     doc.setTextColor(0, 0, 0); // Reset text color
     
@@ -209,16 +199,12 @@ export default function ReportsTabContent() {
     doc.text('2K AI Accounting Systems', 14, 45);
     
     // Add report data as a table
-    const tableColumn = ["Category", "Description", "Type", "Amount ($)"];
+    const tableColumn = ["Category", "Description", "Type", `Amount (${selectedCurrency.symbol})`];
     const tableRows = transactions.map(item => [
       item.category,
       item.description,
       item.type === 'income' ? 'Income' : 'Expense',
-      item.amount.toLocaleString('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        minimumFractionDigits: 2
-      })
+      fmtCurrency(item.amount)
     ]);
     
     // Calculate total income and expenses
@@ -250,21 +236,12 @@ export default function ReportsTabContent() {
     
     // Add summary data
     doc.setFontSize(10);
-    doc.text(`Total Income: ${totalIncome.toLocaleString('en-US', {
-      style: 'currency',
-      currency: 'USD' 
-    })}`, 14, finalY + 25);
+    doc.text(`Total Income: ${fmtCurrency(totalIncome)}`, 14, finalY + 25);
     
-    doc.text(`Total Expenses: ${totalExpenses.toLocaleString('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    })}`, 14, finalY + 35);
+    doc.text(`Total Expenses: ${fmtCurrency(totalExpenses)}`, 14, finalY + 35);
     
     // Add net profit with color based on value
-    const netProfitText = `Net Profit: ${netProfit.toLocaleString('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    })}`;
+    const netProfitText = `Net Profit: ${fmtCurrency(netProfit)}`;
     
     if (netProfit >= 0) {
       doc.setTextColor(34, 197, 94); // Green text for profit
@@ -392,10 +369,7 @@ export default function ReportsTabContent() {
                     <td className="p-2">{item.category}</td>
                     <td className="p-2">{item.month}</td>
                     <td className={`p-2 text-right ${item.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {item.amount.toLocaleString('en-US', {
-                        style: 'currency',
-                        currency: 'USD'
-                      })}
+                      {fmtCurrency(Math.abs(item.amount))}
                     </td>
                   </tr>
                 ))}

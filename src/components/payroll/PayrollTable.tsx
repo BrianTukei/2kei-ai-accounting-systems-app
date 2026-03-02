@@ -9,6 +9,7 @@ import { PayrollData, PayrollSummary } from '@/types/PayrollData';
 import { format } from 'date-fns';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { getStoredCurrencySymbol } from '@/components/statements/StatementLayout';
 
 interface PayrollTableProps {
   payrollData: PayrollData[];
@@ -221,11 +222,11 @@ export default function PayrollTable({ payrollData, onDeleteEntry }: PayrollTabl
         <div className="flex gap-2 text-sm">
           <div className="flex items-center gap-1">
             <span className="font-bold">Total Gross:</span>
-            <span>{formatCurrency(summary.totalGrossPay, 'USD')}</span>
+            <span>{formatCurrency(summary.totalGrossPay, filteredPayroll[0]?.currency || 'USD')}</span>
           </div>
           <div className="flex items-center gap-1">
             <span className="font-bold">Total Net:</span>
-            <span>{formatCurrency(summary.totalNetPay, 'USD')}</span>
+            <span>{formatCurrency(summary.totalNetPay, filteredPayroll[0]?.currency || 'USD')}</span>
           </div>
           <div className="flex items-center gap-1">
             <span className="font-bold">Records:</span>

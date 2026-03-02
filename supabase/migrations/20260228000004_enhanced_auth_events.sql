@@ -129,8 +129,15 @@ CREATE INDEX IF NOT EXISTS idx_ai_usage_log_created ON public.ai_usage_log(creat
 ALTER TABLE public.ai_usage_log ENABLE ROW LEVEL SECURITY;
 
 -- Users can see their own AI usage
-CREATE POLICY IF NOT EXISTS "Users can view own AI usage" ON public.ai_usage_log
-  FOR SELECT USING (user_id = auth.uid());
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'ai_usage_log' AND policyname = 'Users can view own AI usage'
+  ) THEN
+    CREATE POLICY "Users can view own AI usage" ON public.ai_usage_log
+      FOR SELECT USING (user_id = auth.uid());
+  END IF;
+END $$;
 
 -- Admins can see all AI usage
 DO $$

@@ -1,5 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="12" fill="#0f172a"/>
-  <text x="50%" y="42%" dominant-baseline="middle" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="26" fill="#fff" font-weight="700">2K</text>
-  <circle cx="48" cy="16" r="6" fill="#f59e0b" />
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#6366f1"/>
+      <stop offset="1" stop-color="#3b82f6"/>
+    </linearGradient>
+    <linearGradient id="sparkle" x1="44" y1="8" x2="58" y2="28" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fbbf24"/>
+      <stop offset="1" stop-color="#f59e0b"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#bg)"/>
+  <line x1="12" y1="46" x2="36" y2="46" stroke="white" stroke-opacity="0.15" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="12" y1="50" x2="30" y2="50" stroke="white" stroke-opacity="0.1" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M50 12 L52 18 L58 20 L52 22 L50 28 L48 22 L42 20 L48 18 Z" fill="url(#sparkle)"/>
+  <circle cx="56" cy="12" r="1.5" fill="#fbbf24" opacity="0.7"/>
+  <text x="24" y="38" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-weight="800" font-size="26" fill="white" letter-spacing="-1">2K</text>
 </svg>

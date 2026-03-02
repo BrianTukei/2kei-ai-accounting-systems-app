@@ -30,8 +30,8 @@ const SLIDES: SlideData[] = [
     statLabel: 'Prediction accuracy',
   },
   {
-    src: 'https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=1600&q=80&auto=format&fit=crop',
-    alt: 'Happy business team celebrating time savings with automated accounting',
+    src: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1600&q=80&auto=format&fit=crop',
+    alt: 'Diverse team collaborating around laptop celebrating business success',
     caption: 'Automated Bookkeeping',
     description: 'Stop wasting hours on manual data entry',
     stat: '40+ hrs',
@@ -79,6 +79,10 @@ const HeroImageSlider = () => {
     });
   }, []);
 
+  // Force re-render after mount to ensure first paint
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+
   const goTo = (i: number) => setActiveIndex(i);
   const goPrev = () => setActiveIndex((prev) => (prev - 1 + SLIDES.length) % SLIDES.length);
   const goNext = () => setActiveIndex((prev) => (prev + 1) % SLIDES.length);
@@ -90,7 +94,7 @@ const HeroImageSlider = () => {
       onMouseLeave={() => setIsPaused(false)}
     >
       {/* Image stack — proper crossfade: all images layered, only active one visible */}
-      <div className="relative aspect-video overflow-hidden bg-black">
+      <div className="relative aspect-video overflow-hidden bg-black" style={{ minHeight: '300px' }}>
         {SLIDES.map((s, i) => (
           <div
             key={i}

@@ -1,5 +1,18 @@
 ﻿<svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 72 72">
-  <defs><linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#6366f1"/><stop offset="100%" stop-color="#3b82f6"/></linearGradient></defs>
-  <rect width="72" height="72" rx="13" fill="url(#bg)"/>
-  <text x="36" y="36" dominant-baseline="central" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-weight="bold" font-size="27" fill="white">2K</text>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="72" y2="72" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#6366f1"/>
+      <stop offset="1" stop-color="#3b82f6"/>
+    </linearGradient>
+    <linearGradient id="sparkle" x1="49.5" y1="9" x2="65.25" y2="31.5" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fbbf24"/>
+      <stop offset="1" stop-color="#f59e0b"/>
+    </linearGradient>
+  </defs>
+  <rect width="72" height="72" rx="15.75" fill="url(#bg)"/>
+  <line x1="13.5" y1="51.75" x2="40.5" y2="51.75" stroke="white" stroke-opacity="0.15" stroke-width="1.69" stroke-linecap="round"/>
+  <line x1="13.5" y1="56.25" x2="33.75" y2="56.25" stroke="white" stroke-opacity="0.1" stroke-width="1.69" stroke-linecap="round"/>
+  <path d="M56.25 13.5 L58.5 20.25 L65.25 22.5 L58.5 24.75 L56.25 31.5 L54 24.75 L47.25 22.5 L54 20.25 Z" fill="url(#sparkle)"/>
+  <circle cx="63" cy="13.5" r="1.69" fill="#fbbf24" opacity="0.7"/>
+  <text x="27" y="42.75" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-weight="800" font-size="29.25" fill="white" letter-spacing="-1.13">2K</text>
 </svg>

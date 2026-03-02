@@ -7,6 +7,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, LineChart, Line } from 'recharts';
 import { ForecastPoint } from "@/utils/forecastUtils";
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface ForecastChartProps {
   data: ForecastPoint[];
@@ -21,6 +22,8 @@ export default function ForecastChart({
   description, 
   chartType = 'bar' 
 }: ForecastChartProps) {
+  const { getCurrencySymbol } = useCurrency();
+  const sym = getCurrencySymbol();
   const config = {
     income: { label: "Income", color: "#16a34a" },
     expenses: { label: "Expenses", color: "#dc2626" },
@@ -35,15 +38,15 @@ export default function ForecastChart({
           <div className="space-y-1">
             <p className="flex items-center text-green-600">
               <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-              Income: ${payload[0].value?.toFixed(2)}
+              Income: {sym}{payload[0].value?.toFixed(2)}
             </p>
             <p className="flex items-center text-red-600">
               <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
-              Expenses: ${payload[1].value?.toFixed(2)}
+              Expenses: {sym}{payload[1].value?.toFixed(2)}
             </p>
             <p className="flex items-center text-blue-600">
               <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-              Balance: ${payload[2].value?.toFixed(2)}
+              Balance: {sym}{payload[2].value?.toFixed(2)}
             </p>
           </div>
         </div>
@@ -69,7 +72,7 @@ export default function ForecastChart({
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                 <XAxis dataKey="date" />
                 <YAxis 
-                  tickFormatter={(value) => `$${value}`}
+                  tickFormatter={(value) => `${sym}${value}`}
                   tick={{ fontSize: 12 }}
                 />
                 <Tooltip content={<CustomTooltip />} />
@@ -87,7 +90,7 @@ export default function ForecastChart({
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                 <XAxis dataKey="date" />
                 <YAxis 
-                  tickFormatter={(value) => `$${value}`}
+                  tickFormatter={(value) => `${sym}${value}`}
                   tick={{ fontSize: 12 }}
                 />
                 <Tooltip content={<CustomTooltip />} />

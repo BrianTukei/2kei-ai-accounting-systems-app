@@ -48,6 +48,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 // Admin subsystem imports
 import { useAdminData } from '@/hooks/useAdminData';
@@ -165,6 +166,8 @@ function StatCard({
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
+  const { getCurrencySymbol } = useCurrency();
+  const sym = getCurrencySymbol();
   const [userSearch, setUserSearch] = useState('');
   const [orgSearch, setOrgSearch] = useState('');
 
@@ -362,12 +365,12 @@ export default function AdminDashboard() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <StatCard icon={Building2} label="Organizations" value={stats.totalOrgs}
                     sub={`${stats.activeOrgs} active`} color="bg-indigo-100 text-indigo-600" />
-                  <StatCard icon={DollarSign} label="Est. MRR" value={`$${stats.mrr.toLocaleString()}`}
+                  <StatCard icon={DollarSign} label="Est. MRR" value={`${sym}${stats.mrr.toLocaleString()}`}
                     sub="monthly recurring" color="bg-emerald-100 text-emerald-600" />
                   <StatCard icon={Crown} label="Pro Plans" value={stats.planCounts.pro || 0}
-                    sub={`$${(stats.planCounts.pro || 0) * 29}/mo`} color="bg-amber-100 text-amber-600" />
+                    sub={`${sym}${(stats.planCounts.pro || 0) * 29}/mo`} color="bg-amber-100 text-amber-600" />
                   <StatCard icon={Sparkles} label="Enterprise Plans" value={stats.planCounts.enterprise || 0}
-                    sub={`$${(stats.planCounts.enterprise || 0) * 79}/mo`} color="bg-purple-100 text-purple-600" />
+                    sub={`${sym}${(stats.planCounts.enterprise || 0) * 79}/mo`} color="bg-purple-100 text-purple-600" />
                 </div>
               )}
 
@@ -984,7 +987,7 @@ export default function AdminDashboard() {
                                       </Badge>
                                     </TableCell>
                                     <TableCell className="text-sm font-medium text-emerald-400">
-                                      {o.plan_id === 'free' ? '$0' : `$${MRR_BY_PLAN[o.plan_id] ?? 0}/mo`}
+                                      {o.plan_id === 'free' ? `${sym}0` : `${sym}${MRR_BY_PLAN[o.plan_id] ?? 0}/mo`}
                                     </TableCell>
                                     <TableCell>
                                       <Badge variant="secondary" className={cn('text-xs', STATUS_CLASS[o.sub_status] ?? 'bg-slate-700')}>

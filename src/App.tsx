@@ -39,6 +39,7 @@ import SuperAdmin from './pages/SuperAdmin';
 import DeveloperAdminDashboard from './pages/DeveloperAdminDashboard';
 import AdminTest from './pages/AdminTest';
 import RecurringTransactions from './pages/RecurringTransactions';
+import { InstallPrompt } from './components/pwa/InstallPrompt';
 
 // Create a client for React Query
 const queryClient = new QueryClient({
@@ -139,6 +140,7 @@ function App() {
         <Router>
           <OrganizationProvider>
             <AppInner />
+            <InstallPrompt />
           </OrganizationProvider>
         </Router>
       </AuthProvider>

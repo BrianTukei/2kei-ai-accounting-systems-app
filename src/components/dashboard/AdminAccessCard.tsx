@@ -7,6 +7,7 @@ import { Shield, Users, Building2, DollarSign, UserCog, TrendingUp } from 'lucid
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { AdminDashboardAPI, adminApiCallSoft } from '@/services/adminService';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 /** Platform owner emails that always get admin access */
 const OWNER_EMAILS = ['briantukei1000@gmail.com', 'tukeibrian5@gmail.com'];
@@ -18,6 +19,7 @@ export default function AdminAccessCard() {
   const [totalOrgs, setTotalOrgs] = useState(0);
   const [mrr, setMrr] = useState(0);
   const [recentSignups, setRecentSignups] = useState(0);
+  const { getCurrencySymbol } = useCurrency();
 
   useEffect(() => {
     const checkAdminAccess = async () => {
@@ -109,7 +111,7 @@ export default function AdminAccessCard() {
           <div className="flex items-center gap-2">
             <DollarSign className="h-4 w-4 text-emerald-500 flex-shrink-0" />
             <div>
-              <div className="text-lg font-bold leading-tight">${mrr}</div>
+              <div className="text-lg font-bold leading-tight">{getCurrencySymbol()}{mrr}</div>
               <div className="text-xs text-muted-foreground">MRR</div>
             </div>
           </div>

@@ -262,7 +262,7 @@ export default function BalanceSheet() {
                   <TableRow key={index} className="h-8">
                     <TableCell className="px-1 sm:px-2 py-1 text-xs sm:text-sm truncate max-w-0">{category}</TableCell>
                     <TableCell className="text-right font-medium px-1 sm:px-2 py-1 text-xs sm:text-sm">
-                      ${amount.toFixed(2)}
+                      {formatCurrency(amount)}
                     </TableCell>
                   </TableRow>
                 ))
@@ -274,7 +274,7 @@ export default function BalanceSheet() {
               <TableRow className="h-8">
                 <TableCell className="font-bold px-1 sm:px-2 py-1 text-xs sm:text-sm">Total Liabilities</TableCell>
                 <TableCell className="text-right font-bold px-1 sm:px-2 py-1 text-xs sm:text-sm">
-                  ${totalLiabilities.toFixed(2)}
+                  {formatCurrency(totalLiabilities)}
                 </TableCell>
               </TableRow>
             </TableBody>
@@ -288,13 +288,13 @@ export default function BalanceSheet() {
               <TableRow className="h-8">
                 <TableCell className="px-1 sm:px-2 py-1 text-xs sm:text-sm">Retained Earnings</TableCell>
                 <TableCell className="text-right font-medium px-1 sm:px-2 py-1 text-xs sm:text-sm">
-                  ${totalEquity.toFixed(2)}
+                  {formatCurrency(totalEquity)}
                 </TableCell>
               </TableRow>
               <TableRow className="h-8">
                 <TableCell className="font-bold px-1 sm:px-2 py-1 text-xs sm:text-sm">Total Equity</TableCell>
                 <TableCell className="text-right font-bold px-1 sm:px-2 py-1 text-xs sm:text-sm">
-                  ${totalEquity.toFixed(2)}
+                  {formatCurrency(totalEquity)}
                 </TableCell>
               </TableRow>
             </TableBody>
@@ -307,7 +307,7 @@ export default function BalanceSheet() {
               <TableRow className="h-8">
                 <TableCell className="font-bold text-xs sm:text-lg px-1 sm:px-2 py-1">Total Liabilities & Equity</TableCell>
                 <TableCell className="text-right font-bold text-xs sm:text-lg px-1 sm:px-2 py-1">
-                  ${liabilitiesPlusEquity.toFixed(2)}
+                  {formatCurrency(liabilitiesPlusEquity)}
                 </TableCell>
               </TableRow>
               <TableRow className="h-8">
@@ -315,7 +315,7 @@ export default function BalanceSheet() {
                   Balance Check
                 </TableCell>
                 <TableCell className={`text-right font-medium px-1 sm:px-2 py-1 text-xs sm:text-sm ${totalAssets === liabilitiesPlusEquity ? 'text-green-600' : 'text-red-600'}`}>
-                  {totalAssets === liabilitiesPlusEquity ? 'Balanced' : `Difference: $${(totalAssets - liabilitiesPlusEquity).toFixed(2)}`}
+                  {totalAssets === liabilitiesPlusEquity ? 'Balanced' : `Difference: ${formatCurrency(totalAssets - liabilitiesPlusEquity)}`}
                 </TableCell>
               </TableRow>
             </TableBody>

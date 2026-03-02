@@ -12,6 +12,7 @@ import { useTransactions } from '@/hooks/useTransactions';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { formatCurrency } from '@/components/statements/StatementLayout';
+import { getLogo128 } from '@/utils/pdfLogo';
 import { toast } from 'sonner';
 
 export default function CashBook() {
@@ -34,17 +35,29 @@ export default function CashBook() {
   
   const netCashFlow = totalIncome - totalExpenses;
 
-  const generatePDF = () => {
+  const generatePDF = async () => {
     const doc = new jsPDF();
     
-    doc.setFontSize(20);
-    doc.text('Cash Book', 14, 22);
-    
-    doc.setFontSize(12);
-    doc.text(`Generated on ${new Date().toLocaleDateString()}`, 14, 30);
+    // Add logo
+    let startY = 22;
+    try {
+      const logoDataUrl = await getLogo128();
+      if (logoDataUrl) {
+        doc.addImage(logoDataUrl, 'PNG', 14, 10, 18, 18);
+        startY = 14;
+      }
+    } catch { /* continue without logo */ }
     
     doc.setFontSize(16);
-    doc.text('2K AI Accounting Systems', 14, 45);
+    doc.setTextColor(99, 102, 241);
+    doc.text('2K AI Accounting Systems', 36, startY + 6);
+    
+    doc.setFontSize(20);
+    doc.setTextColor(0, 0, 0);
+    doc.text('Cash Book', 14, 38);
+    
+    doc.setFontSize(12);
+    doc.text(`Generated on ${new Date().toLocaleDateString()}`, 14, 46);
     
     const tableData = filteredTransactions.map(t => [
       t.date,
@@ -57,7 +70,7 @@ export default function CashBook() {
     autoTable(doc, {
       head: [['Date', 'Description', 'Category', 'Money In', 'Money Out']],
       body: tableData,
-      startY: 55,
+      startY: 52,
       theme: 'grid',
       styles: { fontSize: 10, cellPadding: 3 },
       headStyles: { fillColor: [59, 130, 246], textColor: 255 },
@@ -65,9 +78,9 @@ export default function CashBook() {
     });
     
     const summary = [
-      ['Total Income', `$${totalIncome.toFixed(2)}`],
-      ['Total Expenses', `$${totalExpenses.toFixed(2)}`],
-      ['Net Cash Flow', `$${netCashFlow.toFixed(2)}`]
+      ['Total Income', formatCurrency(totalIncome)],
+      ['Total Expenses', formatCurrency(totalExpenses)],
+      ['Net Cash Flow', formatCurrency(netCashFlow)]
     ];
     
     const finalY = (doc as any).lastAutoTable.finalY || 150;
@@ -207,7 +220,7 @@ export default function CashBook() {
                   <div className="flex items-center justify-between relative z-10">
                     <div>
                       <p className="text-xs font-semibold text-white/90 uppercase tracking-wide">Total Income</p>
-                      <p className="compact-text-2xl font-bold text-white">${totalIncome.toFixed(2)}</p>
+                      <p className="compact-text-2xl font-bold text-white">{formatCurrency(totalIncome)}</p>
                     </div>
                     <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                       <BarChart className="h-4 w-4 text-white" />
@@ -219,7 +232,7 @@ export default function CashBook() {
                   <div className="flex items-center justify-between relative z-10">
                     <div>
                       <p className="text-xs font-semibold text-white/90 uppercase tracking-wide">Total Expenses</p>
-                      <p className="compact-text-2xl font-bold text-white">${totalExpenses.toFixed(2)}</p>
+                      <p className="compact-text-2xl font-bold text-white">{formatCurrency(totalExpenses)}</p>
                     </div>
                     <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                       <BarChart className="h-4 w-4 text-white" />
@@ -232,7 +245,7 @@ export default function CashBook() {
                     <div>
                       <p className="text-xs font-semibold text-white/90 uppercase tracking-wide">Net Cash Flow</p>
                       <p className="compact-text-2xl font-bold text-white">
-                        ${netCashFlow.toFixed(2)}
+                        {formatCurrency(netCashFlow)}
                       </p>
                     </div>
                     <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">

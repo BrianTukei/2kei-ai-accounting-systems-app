@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface ExpenseBreakdownProps {
   data: Array<{
@@ -21,17 +22,10 @@ const COLORS = [
 ];
 
 export default function ExpenseBreakdownChart({ data }: ExpenseBreakdownProps) {
+  const { formatCurrency } = useCurrency();
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0];
-      const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('en-US', {
-          style: 'currency',
-          currency: 'USD',
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0
-        }).format(amount);
-      };
       
       return (
         <div className="glass-card p-4 border border-border/50 rounded-lg shadow-elegant">

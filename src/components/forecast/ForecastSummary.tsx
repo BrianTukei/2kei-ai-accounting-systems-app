@@ -2,6 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ForecastData } from "@/utils/forecastUtils";
 import { ArrowUpRight, ArrowDownRight, TrendingUp, Wallet } from "lucide-react";
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface ForecastSummaryProps {
   data: ForecastData;
@@ -9,6 +10,7 @@ interface ForecastSummaryProps {
 
 export default function ForecastSummary({ data }: ForecastSummaryProps) {
   const { totalIncome, totalExpenses, netGain, growthRate } = data;
+  const { formatCurrency } = useCurrency();
   
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -18,7 +20,7 @@ export default function ForecastSummary({ data }: ForecastSummaryProps) {
           <ArrowUpRight className="h-4 w-4 text-green-500" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-green-600">${totalIncome.toFixed(2)}</div>
+          <div className="text-2xl font-bold text-green-600">{formatCurrency(totalIncome)}</div>
           <p className="text-xs text-muted-foreground">
             Forecasted total over the next {data.monthly.length} months
           </p>
@@ -31,7 +33,7 @@ export default function ForecastSummary({ data }: ForecastSummaryProps) {
           <ArrowDownRight className="h-4 w-4 text-red-500" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-red-600">${totalExpenses.toFixed(2)}</div>
+          <div className="text-2xl font-bold text-red-600">{formatCurrency(totalExpenses)}</div>
           <p className="text-xs text-muted-foreground">
             Forecasted total over the next {data.monthly.length} months
           </p>
@@ -45,7 +47,7 @@ export default function ForecastSummary({ data }: ForecastSummaryProps) {
         </CardHeader>
         <CardContent>
           <div className={`text-2xl font-bold ${netGain >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-            ${netGain.toFixed(2)}
+            {formatCurrency(netGain)}
           </div>
           <p className="text-xs text-muted-foreground">
             Expected net gain/loss

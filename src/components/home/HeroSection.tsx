@@ -79,11 +79,14 @@ const HeroSection = ({ featuresRef }: HeroSectionProps) => {
       <div className="container mx-auto px-4 pt-12 relative z-10">
         <div className="max-w-5xl mx-auto text-center">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 rounded-full bg-primary/5 dark:bg-primary/10 backdrop-blur-sm border border-primary/15 px-5 py-2.5 text-sm font-medium text-primary mb-8 animate-fade-up">
+          <Link
+            to="/auth?action=signup"
+            className="inline-flex items-center gap-2 rounded-full bg-primary/5 dark:bg-primary/10 backdrop-blur-sm border border-primary/15 px-5 py-2.5 text-sm font-medium text-primary mb-8 animate-fade-up hover:bg-primary/15 hover:scale-105 transition-all duration-300 cursor-pointer shadow-sm hover:shadow-md"
+          >
             <Sparkles className="w-4 h-4" />
             <span>🔥 Trusted by 50,000+ Businesses — Join Them Today</span>
-            <TrendingUp className="w-4 h-4" />
-          </div>
+            <ArrowRight className="w-4 h-4" />
+          </Link>
           
           {/* Headline */}
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 tracking-tight leading-[1.1] animate-fade-up" style={{ animationDelay: '0.05s' }}>

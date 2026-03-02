@@ -329,7 +329,17 @@ const EmailConfirmation = () => {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        // Handle rate limit gracefully — the email was likely already sent
+        const code = (error as any)?.code || '';
+        if (code === 'over_email_send_rate_limit' || error.message?.includes('rate limit') || error.message?.includes('too many') || error.message?.includes('security purposes')) {
+          toast.info('An email was recently sent. Please check your inbox and spam folder. You can try resending again in a few minutes.');
+          setResendCooldown(120); // 2 minute cooldown on rate limit
+          setIsResending(false);
+          return;
+        }
+        throw error;
+      }
 
       toast.success('Verification email sent! Please check your inbox and spam folder.');
       setResendCooldown(60);

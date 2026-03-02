@@ -144,7 +144,8 @@ export default function Auth() {
             return;
           }
           // Show user-friendly error messages for common signup errors
-          if (error.message?.includes('User already registered')) {
+          const code = (error as any)?.code || '';
+          if (error.message?.includes('User already registered') || code === 'user_already_exists') {
             const msg = 'An account with this email already exists. Please sign in instead.';
             setAuthError(msg);
             toast.error(msg);
@@ -155,10 +156,11 @@ export default function Auth() {
             const msg = 'Please enter a valid email address.';
             setAuthError(msg);
             toast.error(msg);
-          } else if (error.message?.includes('rate limit') || error.message?.includes('too many')) {
-            const msg = 'Too many signup attempts. Please try again in a few minutes.';
-            setAuthError(msg);
-            toast.error(msg);
+          } else if (code === 'over_email_send_rate_limit' || code === 'over_request_rate_limit' || error.message?.includes('rate limit') || error.message?.includes('too many') || error.message?.includes('security purposes')) {
+            // Rate limited — the account was likely already created, guide user to check email
+            toast.info('Your account may have already been created. Please check your email inbox and spam folder for a verification code.');
+            navigate(`/email-confirmation?email=${encodeURIComponent(formData.email)}`);
+            return;
           } else if (error.message?.includes('fetch') || error.message?.includes('network') || error.message?.includes('Failed to fetch')) {
             const msg = 'Network error. Please check your internet connection and try again.';
             setAuthError(msg);
@@ -172,7 +174,16 @@ export default function Auth() {
           return;
         }
 
-        console.log('Signup successful:', { session: !!data.session, user: !!data.user });
+        console.log('Signup response:', { session: !!data.session, user: !!data.user, identities: data.user?.identities?.length });
+
+        // Detect obfuscated duplicate: Supabase returns fake success with empty identities
+        // when email is already registered but not confirmed (to avoid leaking email existence)
+        if (data.user && data.user.identities && data.user.identities.length === 0) {
+          console.log('[Auth] Obfuscated duplicate detected — email already registered');
+          toast.info('This email may already be registered. Please check your inbox and spam folder for a verification email, or try signing in.');
+          navigate(`/email-confirmation?email=${encodeURIComponent(formData.email)}`);
+          return;
+        }
 
         if (data.user && !data.session) {
           // Email confirmation required — redirect to OTP input page

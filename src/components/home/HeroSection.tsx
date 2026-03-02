@@ -3,10 +3,8 @@ import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ArrowRight, Sparkles, TrendingUp, ChevronDown, BarChart, CreditCard, FileText, Calculator, PieChart, Target } from 'lucide-react';
-
-// High-quality Unsplash image - Modern financial dashboard on laptop
-const dashboardHero = 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&q=80&auto=format&fit=crop';
+import { ArrowRight, Sparkles, TrendingUp, ChevronDown, BarChart, CreditCard, FileText, Calculator, PieChart, Target, Shield, Play } from 'lucide-react';
+import { LiveImage, LIVE_IMAGES } from '@/components/ui/LiveImage';
 
 interface HeroSectionProps {
   featuresRef: React.RefObject<HTMLDivElement>;
@@ -53,41 +51,60 @@ const HeroSection = ({ featuresRef }: HeroSectionProps) => {
       link: "/forecast"
     }
   ];
+
+  const trustBadges = [
+    { icon: Shield, label: 'Bank-Level Security' },
+    { icon: TrendingUp, label: '50,000+ Businesses' },
+    { icon: Sparkles, label: 'AI-Powered Insights' },
+  ];
+
   return (
-    <section className="relative pt-20 pb-12 overflow-hidden">
-      {/* Animated background */}
+    <section className="relative pt-24 pb-16 lg:pb-24 overflow-hidden">
+      {/* Animated mesh background */}
       <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-accent/5 to-primary/10" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_40%, hsl(var(--primary)/0.1), transparent_50%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%, hsl(var(--accent)/0.1), transparent_50%)]" />
+        <div className="absolute inset-0 bg-mesh" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background/80" />
         
-        {/* Floating elements */}
-        <div className="absolute top-20 left-10 w-20 h-20 bg-primary/10 rounded-full blur-xl floating-animation" />
-        <div className="absolute top-40 right-20 w-16 h-16 bg-accent/10 rounded-full blur-xl floating-animation" style={{ animationDelay: '2s' }} />
-        <div className="absolute bottom-40 left-1/4 w-12 h-12 bg-primary/5 rounded-full blur-xl floating-animation" style={{ animationDelay: '4s' }} />
+        {/* Animated gradient orbs */}
+        <div className="absolute top-20 left-[10%] w-72 h-72 bg-primary/8 rounded-full blur-3xl floating-animation" />
+        <div className="absolute top-40 right-[15%] w-64 h-64 bg-accent/6 rounded-full blur-3xl floating-animation" style={{ animationDelay: '2s' }} />
+        <div className="absolute bottom-20 left-[30%] w-56 h-56 bg-info/5 rounded-full blur-3xl floating-animation" style={{ animationDelay: '4s' }} />
+        
+        {/* Subtle grid pattern */}
+        <div className="absolute inset-0 opacity-[0.015]" 
+          style={{ backgroundImage: 'radial-gradient(hsl(var(--foreground)) 1px, transparent 1px)', backgroundSize: '24px 24px' }} 
+        />
       </div>
       
       <div className="container mx-auto px-4 pt-12 relative z-10">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-primary/10 to-accent/10 backdrop-blur-sm border border-primary/20 px-4 py-2 text-sm font-medium text-primary mb-8 animate-fade-in">
+        <div className="max-w-5xl mx-auto text-center">
+          {/* Badge */}
+          <div className="inline-flex items-center gap-2 rounded-full bg-primary/5 dark:bg-primary/10 backdrop-blur-sm border border-primary/15 px-5 py-2.5 text-sm font-medium text-primary mb-8 animate-fade-up">
             <Sparkles className="w-4 h-4" />
-            #1 Choice for Smart Business Owners
+            <span>#1 AI-Powered Accounting Platform</span>
             <TrendingUp className="w-4 h-4" />
           </div>
           
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 tracking-tight animate-fade-up">
-            The <span className="gradient-text">Only</span> Accounting Solution{" "}
-            <span className="gradient-text">Your Business</span> Will Ever Need
+          {/* Headline */}
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 tracking-tight leading-[1.1] animate-fade-up" style={{ animationDelay: '0.05s' }}>
+            The <span className="gradient-text-hero">Only</span> Accounting{" "}
+            <br className="hidden sm:block" />
+            Solution <span className="gradient-text-hero">Your Business</span>
+            <br className="hidden sm:block" />
+            Will Ever Need
           </h1>
           
-          <p className="text-lg md:text-xl text-slate-600 mb-8 max-w-3xl mx-auto animate-fade-up" style={{ animationDelay: '0.1s' }}>
-            Why struggle with complex accounting software when 2K AI Accounting Systems makes financial management effortless? Join 50,000+ businesses who chose us over the competition. <span className="font-semibold text-primary">Stop wasting time. Start winning.</span>
+          {/* Subhead */}
+          <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto leading-relaxed animate-fade-up" style={{ animationDelay: '0.1s' }}>
+            AI-driven financial management that turns complex accounting into actionable insights. 
+            Join <span className="font-semibold text-foreground">50,000+</span> businesses making smarter decisions.
           </p>
           
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-up" style={{ animationDelay: '0.2s' }}>
-            <Button asChild size="lg" className="rounded-full px-8 py-6 text-base hero-glow bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 border-0 shadow-elegant">
+          {/* CTAs */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-up" style={{ animationDelay: '0.15s' }}>
+            <Button asChild size="lg" className="rounded-full px-8 py-6 text-base font-semibold hero-glow bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 border-0 shadow-elegant transition-all duration-400 hover:shadow-float hover:scale-[1.02]">
               <Link to="/auth?action=signup">
-                Claim Your Free Account Now
+                Start Free — No Credit Card
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>
@@ -97,47 +114,52 @@ const HeroSection = ({ featuresRef }: HeroSectionProps) => {
                 <Button
                   variant="outline"
                   size="lg"
-                  className="rounded-full px-8 py-6 text-base bg-white/10 backdrop-blur-sm border-white/20 hover:bg-white/20 hover:border-white/30 transition-all duration-300"
+                  className="rounded-full px-8 py-6 text-base font-medium bg-background/60 backdrop-blur-md border-border/60 hover:bg-background/80 hover:border-primary/30 transition-all duration-400 group"
                 >
+                  <Play className="mr-2 h-4 w-4 text-primary group-hover:scale-110 transition-transform" />
                   Explore Features
-                  <ChevronDown className={`ml-2 h-4 w-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`ml-2 h-4 w-4 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
                 </Button>
               </PopoverTrigger>
               <PopoverContent 
-                className="w-96 p-0 glass-card border-white/20 shadow-elegant animate-scale-in" 
+                className="w-[420px] p-0 bg-background/95 backdrop-blur-xl border-border/50 shadow-float animate-scale-in rounded-2xl" 
                 align="center"
                 sideOffset={12}
               >
                 <div className="p-6">
-                  <div className="flex items-center mb-4">
-                    <Target className="h-5 w-5 text-primary mr-2" />
-                    <h3 className="font-semibold text-lg gradient-text">Key Features</h3>
+                  <div className="flex items-center mb-5">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center mr-3">
+                      <Target className="h-4 w-4 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-base">Key Features</h3>
+                      <p className="text-xs text-muted-foreground">Everything you need in one platform</p>
+                    </div>
                   </div>
                   
-                  <div className="grid grid-cols-1 gap-3">
+                  <div className="grid grid-cols-1 gap-2 stagger-children">
                     {features.map((feature, index) => {
                       const Icon = feature.icon;
                       return (
                         <Link
                           key={feature.name}
                           to={feature.link}
-                          className="group p-3 rounded-lg border border-border/50 hover:border-primary/30 hover:bg-primary/5 transition-all duration-200 hover-lift"
+                          className="group p-3 rounded-xl hover:bg-primary/5 dark:hover:bg-primary/10 transition-all duration-300"
                           onClick={() => setIsOpen(false)}
-                          style={{ animationDelay: `${index * 50}ms` }}
                         >
-                          <div className="flex items-start space-x-3">
-                            <div className="p-2 rounded-md bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-9 h-9 rounded-lg bg-primary/8 dark:bg-primary/15 group-hover:bg-primary/15 dark:group-hover:bg-primary/25 flex items-center justify-center transition-colors duration-300">
                               <Icon className="h-4 w-4 text-primary" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="font-medium text-foreground group-hover:text-primary transition-colors">
+                              <p className="font-medium text-sm text-foreground group-hover:text-primary transition-colors">
                                 {feature.name}
                               </p>
-                              <p className="text-sm text-muted-foreground mt-1">
+                              <p className="text-xs text-muted-foreground">
                                 {feature.description}
                               </p>
                             </div>
-                            <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all duration-200" />
+                            <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/50 group-hover:text-primary group-hover:translate-x-1 transition-all duration-300" />
                           </div>
                         </Link>
                       );
@@ -148,7 +170,7 @@ const HeroSection = ({ featuresRef }: HeroSectionProps) => {
                     <Button
                       asChild
                       variant="ghost"
-                      className="w-full text-sm hover:bg-primary/10"
+                      className="w-full text-sm hover:bg-primary/5 rounded-xl"
                       onClick={() => {
                         setIsOpen(false);
                         featuresRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -164,19 +186,78 @@ const HeroSection = ({ featuresRef }: HeroSectionProps) => {
               </PopoverContent>
             </Popover>
           </div>
+
+          {/* Trust Badges */}
+          <div className="flex flex-wrap items-center justify-center gap-6 mt-10 animate-fade-up" style={{ animationDelay: '0.25s' }}>
+            {trustBadges.map((badge) => {
+              const Icon = badge.icon;
+              return (
+                <div key={badge.label} className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Icon className="w-4 h-4 text-primary/70" />
+                  <span>{badge.label}</span>
+                </div>
+              );
+            })}
+          </div>
         </div>
         
-        {/* Hero Image */}
-        <div className="mt-16 max-w-5xl mx-auto animate-fade-up" style={{ animationDelay: '0.3s' }}>
-          <div className="glass-card overflow-hidden hero-glow">
-            <div className="relative">
-              <img
-                src={dashboardHero}
-                alt="2K AI Accounting Systems Dashboard - Modern financial management interface"
-                className="w-full h-auto rounded-lg shadow-glass-lg"
-                style={{ objectFit: 'cover' }}
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-background/20 via-transparent to-transparent rounded-lg" />
+        {/* Hero Image with floating UI cards */}
+        <div className="mt-16 lg:mt-20 max-w-5xl mx-auto animate-fade-up relative" style={{ animationDelay: '0.3s' }}>
+          {/* Main hero card */}
+          <div className="relative rounded-2xl overflow-hidden border border-border/30 shadow-float">
+            <LiveImage
+              src={LIVE_IMAGES.heroAnalytics}
+              alt="2K AI Accounting Systems — Modern financial analytics dashboard"
+              aspectRatio="video"
+              overlay="gradient"
+              rounded="none"
+              className="w-full"
+            />
+            
+            {/* Overlay content */}
+            <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10">
+              <div className="flex flex-wrap gap-3">
+                <div className="bg-white/90 dark:bg-card/90 backdrop-blur-md rounded-xl px-4 py-3 shadow-card border border-white/20 animate-slide-up-fade" style={{ animationDelay: '0.5s' }}>
+                  <p className="text-xs text-muted-foreground font-medium">Monthly Revenue</p>
+                  <p className="text-lg font-bold text-foreground counter-value">$284,520</p>
+                  <p className="text-xs text-success font-medium">↑ 23.5% vs last month</p>
+                </div>
+                <div className="bg-white/90 dark:bg-card/90 backdrop-blur-md rounded-xl px-4 py-3 shadow-card border border-white/20 animate-slide-up-fade hidden sm:block" style={{ animationDelay: '0.65s' }}>
+                  <p className="text-xs text-muted-foreground font-medium">Active Invoices</p>
+                  <p className="text-lg font-bold text-foreground counter-value">1,247</p>
+                  <p className="text-xs text-info font-medium">142 pending review</p>
+                </div>
+                <div className="bg-white/90 dark:bg-card/90 backdrop-blur-md rounded-xl px-4 py-3 shadow-card border border-white/20 animate-slide-up-fade hidden md:block" style={{ animationDelay: '0.8s' }}>
+                  <p className="text-xs text-muted-foreground font-medium">AI Insights</p>
+                  <p className="text-lg font-bold gradient-text counter-value">98.7%</p>
+                  <p className="text-xs text-primary font-medium">Accuracy rate</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Floating decoration cards */}
+          <div className="absolute -top-4 -right-4 lg:-right-8 bg-white/90 dark:bg-card/90 backdrop-blur-md rounded-xl p-3 shadow-card-hover border border-border/30 floating-animation hidden lg:block" style={{ animationDelay: '1s' }}>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center">
+                <TrendingUp className="w-4 h-4 text-success" />
+              </div>
+              <div>
+                <p className="text-xs font-medium">Cash Flow</p>
+                <p className="text-xs text-success font-semibold">+42% ↑</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="absolute -bottom-4 -left-4 lg:-left-8 bg-white/90 dark:bg-card/90 backdrop-blur-md rounded-xl p-3 shadow-card-hover border border-border/30 floating-animation hidden lg:block" style={{ animationDelay: '1.5s' }}>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Sparkles className="w-4 h-4 text-primary" />
+              </div>
+              <div>
+                <p className="text-xs font-medium">AI Analysis</p>
+                <p className="text-xs text-primary font-semibold">Real-time</p>
+              </div>
             </div>
           </div>
         </div>

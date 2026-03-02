@@ -186,15 +186,17 @@ export const AIChat: React.FC<AIChatProps> = ({
   // ── Minimised strip (floating only) ───────────────────────────────────────
   if (!embedded && isMinimized) {
     return (
-      <Card className="w-80 shadow-lg border-primary">
+      <Card className="w-80 shadow-card-hover border-primary/30 rounded-2xl animate-scale-in">
         <CardContent className="p-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Bot className="w-5 h-5 text-primary" />
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+              <Bot className="w-4 h-4 text-white" />
+            </div>
             <span className="font-medium text-sm">AI Assistant</span>
           </div>
           <div className="flex gap-1">
-            <Button variant="ghost" size="sm" onClick={onToggleMinimize}><Maximize2 className="w-4 h-4" /></Button>
-            <Button variant="ghost" size="sm" onClick={onClose}><X className="w-4 h-4" /></Button>
+            <Button variant="ghost" size="sm" onClick={onToggleMinimize} className="h-7 w-7 p-0 rounded-lg hover:bg-primary/10"><Maximize2 className="w-3.5 h-3.5" /></Button>
+            <Button variant="ghost" size="sm" onClick={onClose} className="h-7 w-7 p-0 rounded-lg hover:bg-destructive/10"><X className="w-3.5 h-3.5" /></Button>
           </div>
         </CardContent>
       </Card>
@@ -219,16 +221,24 @@ export const AIChat: React.FC<AIChatProps> = ({
 
   // ── Floating mode: Card with fixed dimensions ──────────────────────────────
   return (
-    <Card className="w-96 h-[500px] shadow-lg border-primary flex flex-col">
-      <CardHeader className="pb-2 flex-shrink-0 border-b">
+    <Card className="w-96 h-[520px] shadow-float border-border/50 flex flex-col rounded-2xl animate-scale-in overflow-hidden">
+      <CardHeader className="pb-2 flex-shrink-0 border-b border-border/40 bg-gradient-to-r from-primary/5 to-accent/5">
         <CardTitle className="flex items-center justify-between text-base">
-          <div className="flex items-center gap-2">
-            <Bot className="w-4 h-4 text-primary" />
-            AI Accounting Assistant
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-sm">
+              <Bot className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <span className="text-sm font-semibold">AI Accounting Assistant</span>
+              <div className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+                <span className="text-[10px] text-muted-foreground font-normal">Online</span>
+              </div>
+            </div>
           </div>
           <div className="flex gap-1">
-            {onToggleMinimize && <Button variant="ghost" size="sm" onClick={onToggleMinimize}><Minimize2 className="w-4 h-4" /></Button>}
-            {onClose && <Button variant="ghost" size="sm" onClick={onClose}><X className="w-4 h-4" /></Button>}
+            {onToggleMinimize && <Button variant="ghost" size="sm" onClick={onToggleMinimize} className="h-7 w-7 p-0 rounded-lg hover:bg-primary/10"><Minimize2 className="w-3.5 h-3.5" /></Button>}
+            {onClose && <Button variant="ghost" size="sm" onClick={onClose} className="h-7 w-7 p-0 rounded-lg hover:bg-destructive/10"><X className="w-3.5 h-3.5" /></Button>}
           </div>
         </CardTitle>
       </CardHeader>

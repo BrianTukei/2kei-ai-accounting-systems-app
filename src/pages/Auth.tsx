@@ -29,6 +29,7 @@ export default function Auth() {
 
   const [actionType, setActionType] = useState<string>('signin');
   const [isLoading, setIsLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [emailSent, setEmailSent] = useState(false);
@@ -78,25 +79,32 @@ export default function Auth() {
     e.preventDefault();
     console.log('[Auth] handleSubmit called, actionType:', actionType);
     setIsLoading(true);
+    setAuthError(null);
     
     // Check Supabase configuration
     if (!isSupabaseConfigured && !import.meta.env.DEV) {
       console.error('[Auth] Supabase is not configured');
-      toast.error('Service temporarily unavailable. Please try again later or contact support.');
+      const msg = 'Service temporarily unavailable. Please try again later or contact support.';
+      setAuthError(msg);
+      toast.error(msg);
       setIsLoading(false);
       return;
     }
     
     if (!formData.email || !formData.password) {
       console.log('[Auth] Missing email or password');
-      toast.error("Please fill in all required fields");
+      const msg = 'Please fill in all required fields';
+      setAuthError(msg);
+      toast.error(msg);
       setIsLoading(false);
       return;
     }
 
     if (actionType === 'signup' && !formData.name) {
       console.log('[Auth] Missing name for signup');
-      toast.error("Please enter your name");
+      const msg = 'Please enter your name';
+      setAuthError(msg);
+      toast.error(msg);
       setIsLoading(false);
       return;
     }
@@ -105,7 +113,9 @@ export default function Auth() {
       if (actionType === 'signup') {
         // Client-side password validation
         if (formData.password.length < 6) {
-          toast.error('Password must be at least 6 characters long');
+          const msg = 'Password must be at least 6 characters long';
+          setAuthError(msg);
+          toast.error(msg);
           setIsLoading(false);
           return;
         }
@@ -135,17 +145,28 @@ export default function Auth() {
           }
           // Show user-friendly error messages for common signup errors
           if (error.message?.includes('User already registered')) {
-            toast.error('An account with this email already exists. Please sign in instead.');
+            const msg = 'An account with this email already exists. Please sign in instead.';
+            setAuthError(msg);
+            toast.error(msg);
           } else if (error.message?.includes('Password')) {
+            setAuthError(error.message);
             toast.error(error.message);
           } else if (error.message?.includes('valid email')) {
-            toast.error('Please enter a valid email address.');
+            const msg = 'Please enter a valid email address.';
+            setAuthError(msg);
+            toast.error(msg);
           } else if (error.message?.includes('rate limit') || error.message?.includes('too many')) {
-            toast.error('Too many signup attempts. Please try again in a few minutes.');
+            const msg = 'Too many signup attempts. Please try again in a few minutes.';
+            setAuthError(msg);
+            toast.error(msg);
           } else if (error.message?.includes('fetch') || error.message?.includes('network') || error.message?.includes('Failed to fetch')) {
-            toast.error('Network error. Please check your internet connection and try again.');
+            const msg = 'Network error. Please check your internet connection and try again.';
+            setAuthError(msg);
+            toast.error(msg);
           } else {
-            toast.error(error.message || 'Sign up failed. Please try again.');
+            const msg = error.message || 'Sign up failed. Please try again.';
+            setAuthError(msg);
+            toast.error(msg);
           }
           setIsLoading(false);
           return;
@@ -213,10 +234,15 @@ export default function Auth() {
           }
           
           if (error.message.includes('Invalid login credentials')) {
-            toast.error('Invalid email or password. Please check your credentials or sign up for a new account.');
+            const msg = 'Invalid email or password. Please check your credentials or sign up for a new account.';
+            setAuthError(msg);
+            toast.error(msg);
           } else if (error.message.includes('Email not confirmed')) {
-            toast.error('Please verify your email address before signing in. Check your inbox for the verification link.');
+            const msg = 'Please verify your email address before signing in. Check your inbox for the verification link.';
+            setAuthError(msg);
+            toast.error(msg);
           } else {
+            setAuthError(error.message);
             toast.error(error.message);
           }
           throw error;
@@ -237,11 +263,15 @@ export default function Auth() {
       }
     } catch (error: any) {
       console.error('Auth error:', error);
-      // Show a generic error toast if no specific message was shown above
+      // Show a generic error if no specific message was shown above
       if (error?.message?.includes('fetch') || error?.message?.includes('network') || error?.message?.includes('Failed to fetch')) {
-        toast.error('Network error. Please check your internet connection and try again.');
-      } else if (error?.message && !error.message.includes('Invalid login credentials') && !error.message.includes('Email not confirmed')) {
-        toast.error(error.message || 'An error occurred. Please try again.');
+        const msg = 'Network error. Please check your internet connection and try again.';
+        setAuthError(msg);
+        toast.error(msg);
+      } else if (!authError && error?.message) {
+        // Only set if we haven't already set an error above
+        setAuthError(error.message);
+        toast.error(error.message);
       }
     } finally {
       setIsLoading(false);
@@ -457,11 +487,17 @@ export default function Auth() {
               </div>
             </div>
           ) : (
-          <Tabs value={actionType} onValueChange={setActionType} className="w-full">
+          <Tabs value={actionType} onValueChange={(v) => { setActionType(v); setAuthError(null); }} className="w-full">
             <TabsList className="grid grid-cols-2 mx-6">
               <TabsTrigger value="signin">Login</TabsTrigger>
               <TabsTrigger value="signup">Sign Up</TabsTrigger>
             </TabsList>
+
+            {authError && (
+              <div className="mx-6 mt-3 p-3 rounded-md bg-destructive/10 border border-destructive/20 text-sm text-destructive">
+                {authError}
+              </div>
+            )}
             
             <TabsContent value="signin">
                   <LoginForm

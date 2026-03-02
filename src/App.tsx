@@ -2,6 +2,7 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from 'sonner';
 import { AuthProvider } from './contexts/AuthContext';
 import { OrganizationProvider } from './contexts/OrganizationContext';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -144,6 +145,7 @@ function App() {
           </OrganizationProvider>
         </Router>
       </AuthProvider>
+      <Toaster position="top-right" richColors closeButton />
     </QueryClientProvider>
   );
 }

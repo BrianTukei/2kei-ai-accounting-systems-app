@@ -214,7 +214,7 @@ export async function adminApiCall<T = any>(
 }
 
 /**
- * Soft admin call — returns null on ANY failure (network, auth, HTTP).
+ * Soft admin call — returns null on ANY failure (network, auth, HTTP error responses).
  * Used for optional data loading with graceful fallback.
  */
 export async function adminApiCallSoft<T = any>(
@@ -222,7 +222,12 @@ export async function adminApiCallSoft<T = any>(
   body: Record<string, any> = {},
 ): Promise<T | null> {
   try {
-    return await adminApiCall<T>(action, body, { throwOnError: false, retries: 1 });
+    const result = await adminApiCall<T>(action, body, { throwOnError: false, retries: 1 });
+    // If adminApiCall returned the raw error response ({error: "..."}), treat as null
+    if (result && typeof result === 'object' && 'error' in (result as any)) {
+      return null;
+    }
+    return result;
   } catch {
     return null;
   }
@@ -368,21 +373,22 @@ export const AdminDashboardAPI = {
       return { users: mapped, source: 'edge' };
     }
 
-    // Fallback: profiles table
+    // Fallback: profiles table (with admin RLS bypass policy)
     const fallbackUsers: PlatformUser[] = [];
     try {
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, email, created_at, updated_at');
+        .select('id, full_name, email, avatar_url, created_at, updated_at');
       if (profiles && profiles.length > 0) {
         profiles.forEach((p: any) => {
+          const nameParts = (p.full_name || '').split(' ');
           fallbackUsers.push({
             id: p.id,
             email: p.email || '',
             created_at: p.created_at || new Date().toISOString(),
             last_sign_in_at: p.updated_at || null,
-            first_name: p.first_name || '',
-            last_name: p.last_name || '',
+            first_name: nameParts[0] || '',
+            last_name: nameParts.slice(1).join(' ') || '',
             confirmed: true,
             roles: [],
           });
@@ -390,7 +396,7 @@ export const AdminDashboardAPI = {
       }
     } catch { /* ignore */ }
 
-    // Fallback: organization_users
+    // Fallback: organization_users (admin can see all with RLS bypass)
     if (fallbackUsers.length === 0) {
       try {
         const { data: orgUsers } = await supabase

@@ -8,6 +8,7 @@ import { RecurringTransaction } from '@/types/RecurringTransaction';
 import { format, parseISO } from 'date-fns';
 import RecurringTransactionModal from '../RecurringTransactionModal';
 import { cn } from '@/lib/utils';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface RecurringTransactionListProps {
   transactions: RecurringTransaction[];
@@ -21,8 +22,7 @@ export default function RecurringTransactionList({
   onUpdateTransaction,
   onDeleteTransaction,
   onToggleActive
-}: RecurringTransactionListProps) {
-  const [editModalOpen, setEditModalOpen] = useState(false);
+}: RecurringTransactionListProps) {  const { formatCurrency } = useCurrency();  const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<RecurringTransaction | undefined>();
 
   const handleEdit = (transaction: RecurringTransaction) => {
@@ -94,7 +94,7 @@ export default function RecurringTransactionList({
                           "font-semibold",
                           transaction.type === 'income' ? "text-green-600" : "text-red-600"
                         )}>
-                          {transaction.type === 'income' ? '+' : '-'}${Math.abs(transaction.amount).toFixed(2)}
+                          {transaction.type === 'income' ? '+' : '-'}{formatCurrency(Math.abs(transaction.amount))}
                         </p>
                       </div>
                       

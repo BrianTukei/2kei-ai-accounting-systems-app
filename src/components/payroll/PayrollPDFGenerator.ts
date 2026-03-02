@@ -3,24 +3,37 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { PayrollData, PayrollSummary } from '@/types/PayrollData';
 import { toast } from 'sonner';
+import { getLogo128 } from '@/utils/pdfLogo';
+import { getStoredCurrencySymbol } from '@/components/statements/StatementLayout';
 
-export const generatePayrollPDF = (payrollData: PayrollData[], summary: PayrollSummary) => {
+export const generatePayrollPDF = async (payrollData: PayrollData[], summary: PayrollSummary) => {
   // Create a new PDF document
   const doc = new jsPDF();
   
-  // Add a title
-  doc.setFontSize(20);
-  doc.setTextColor(85, 74, 179); // Purple color
-  doc.text('Payroll Statement', 14, 22);
+  // Add logo
+  let startY = 22;
+  try {
+    const logoDataUrl = await getLogo128();
+    if (logoDataUrl) {
+      doc.addImage(logoDataUrl, 'PNG', 14, 10, 18, 18);
+      startY = 14;
+    }
+  } catch { /* continue without logo */ }
   
-  // Add a subtitle with current date
+  // Add company name beside logo
+  doc.setFontSize(16);
+  doc.setTextColor(85, 74, 179);
+  doc.text('2K AI Accounting Systems', 36, startY + 6);
+  
+  // Add title
+  doc.setFontSize(20);
+  doc.setTextColor(85, 74, 179);
+  doc.text('Payroll Statement', 14, 38);
+  
+  // Add date
   doc.setFontSize(12);
   doc.setTextColor(0, 0, 0);
-  doc.text(`Generated on ${new Date().toLocaleDateString()}`, 14, 30);
-  
-  // Add a company logo or name
-  doc.setFontSize(16);
-  doc.text('2K AI Accounting Systems', 14, 45);
+  doc.text(`Generated on ${new Date().toLocaleDateString()}`, 14, 46);
   
   // Get the common currency if all entries use the same one
   const commonCurrency = payrollData.length > 0 && 
@@ -34,7 +47,7 @@ export const generatePayrollPDF = (payrollData: PayrollData[], summary: PayrollS
     entry.payPeriodEnd === payrollData[0].payPeriodEnd
   )) {
     doc.setFontSize(11);
-    doc.text(`Pay Period: ${payrollData[0].payPeriodStart} to ${payrollData[0].payPeriodEnd}`, 14, 52);
+    doc.text(`Pay Period: ${payrollData[0].payPeriodStart} to ${payrollData[0].payPeriodEnd}`, 14, 54);
   }
   
   // Add report data as a table
@@ -90,11 +103,12 @@ export const generatePayrollPDF = (payrollData: PayrollData[], summary: PayrollS
   doc.setFontSize(10);
   
   // Add summary as a small table
+  const fallbackSymbol = commonCurrency || getStoredCurrencySymbol();
   const summaryData = [
     ['Total Employees:', summary.employeeCount.toString()],
-    ['Total Gross Pay:', `${commonCurrency || '$'}${summary.totalGrossPay.toFixed(2)}`],
-    ['Total Deductions:', `${commonCurrency || '$'}${summary.totalDeductions.toFixed(2)}`],
-    ['Total Net Pay:', `${commonCurrency || '$'}${summary.totalNetPay.toFixed(2)}`]
+    ['Total Gross Pay:', `${fallbackSymbol}${summary.totalGrossPay.toFixed(2)}`],
+    ['Total Deductions:', `${fallbackSymbol}${summary.totalDeductions.toFixed(2)}`],
+    ['Total Net Pay:', `${fallbackSymbol}${summary.totalNetPay.toFixed(2)}`]
   ];
   
   autoTable(doc, {
@@ -131,14 +145,24 @@ export const generatePayrollPDF = (payrollData: PayrollData[], summary: PayrollS
 };
 
 // Function to generate individual employee payslip
-export const generatePayslipPDF = (payrollData: PayrollData) => {
+export const generatePayslipPDF = async (payrollData: PayrollData) => {
   // Create a new PDF document
   const doc = new jsPDF();
   const employee = payrollData.employee;
   
-  // Add a title
+  // Add logo
+  let headerStartY = 22;
+  try {
+    const logoDataUrl = await getLogo128();
+    if (logoDataUrl) {
+      doc.addImage(logoDataUrl, 'PNG', 140, 10, 16, 16);
+      headerStartY = 14;
+    }
+  } catch { /* continue without logo */ }
+  
+  // Add title
   doc.setFontSize(20);
-  doc.setTextColor(85, 74, 179); // Purple color
+  doc.setTextColor(85, 74, 179);
   doc.text('Employee Payslip', 14, 22);
   
   // Add a subtitle with current date

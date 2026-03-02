@@ -2,12 +2,14 @@
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowDownLeft, ArrowUpRight } from 'lucide-react';
 import { Transaction } from '@/components/TransactionCard';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface TransactionSummaryProps {
   transactions: Transaction[];
 }
 
 export default function TransactionSummary({ transactions }: TransactionSummaryProps) {
+  const { formatCurrency } = useCurrency();
   const totalIncome = transactions
     .filter(t => t.type === 'income')
     .reduce((sum, t) => sum + t.amount, 0);
@@ -25,7 +27,7 @@ export default function TransactionSummary({ transactions }: TransactionSummaryP
             Income
           </CardTitle>
           <div className="text-2xl font-bold text-green-600">
-            +${totalIncome.toFixed(2)}
+            +{formatCurrency(totalIncome)}
           </div>
         </CardHeader>
       </Card>
@@ -37,7 +39,7 @@ export default function TransactionSummary({ transactions }: TransactionSummaryP
             Expenses
           </CardTitle>
           <div className="text-2xl font-bold text-red-600">
-            -${totalExpenses.toFixed(2)}
+            -{formatCurrency(totalExpenses)}
           </div>
         </CardHeader>
       </Card>

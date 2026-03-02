@@ -1,12 +1,15 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { ForecastPoint } from "@/utils/forecastUtils";
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface CashFlowChartProps {
   data: ForecastPoint[];
 }
 
 export default function CashFlowChart({ data }: CashFlowChartProps) {
+  const { getCurrencySymbol } = useCurrency();
+  const sym = getCurrencySymbol();
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
@@ -15,7 +18,7 @@ export default function CashFlowChart({ data }: CashFlowChartProps) {
           <div className="space-y-1">
             <p className="flex items-center text-success">
               <span className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: 'hsl(var(--success))' }}></span>
-              Cumulative Balance: ${payload[0]?.value?.toFixed(2)}
+              Cumulative Balance: {sym}{payload[0]?.value?.toFixed(2)}
             </p>
           </div>
         </div>
@@ -58,7 +61,7 @@ export default function CashFlowChart({ data }: CashFlowChartProps) {
               fontSize={12}
             />
             <YAxis 
-              tickFormatter={(value) => `$${value}`}
+              tickFormatter={(value) => `${sym}${value}`}
               stroke="hsl(var(--muted-foreground))"
               fontSize={12}
             />

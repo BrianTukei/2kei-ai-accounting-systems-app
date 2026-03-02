@@ -12,6 +12,7 @@ import ReceiptScanner from '@/components/ReceiptScanner';
 import { Transaction } from '@/components/TransactionCard';
 import AddTransactionModal from '@/components/AddTransactionModal';
 import { generateJournalEntry, saveJournal, loadJournal } from '@/services/bookkeeping';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface DashboardTabsProps {
   activeTab: string;
@@ -31,6 +32,7 @@ export default function DashboardTabs({
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [transactionType, setTransactionType] = useState<'income' | 'expense'>('income');
   const [receiptData, setReceiptData] = useState<any | null>(null);
+  const { formatCurrency } = useCurrency();
 
   const handleOpenAddModal = (type: 'income' | 'expense') => {
     setTransactionType(type);
@@ -151,7 +153,7 @@ export default function DashboardTabs({
               <ReceiptScanner onScanComplete={handleScanComplete} />
               {receiptData && (
                 <div className="text-xs text-slate-600 p-2 bg-slate-50 rounded border">
-                  Last scan: {receiptData.vendor || 'Unknown vendor'} - ${receiptData.amount.toFixed(2)}
+                  Last scan: {receiptData.vendor || 'Unknown vendor'} - {formatCurrency(receiptData.amount)}
                 </div>
               )}
             </div>

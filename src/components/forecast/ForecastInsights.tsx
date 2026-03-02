@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { ForecastData } from "@/utils/forecastUtils";
 import { AlertTriangle, TrendingUp, Target, Lightbulb } from "lucide-react";
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface ForecastInsightsProps {
   data: ForecastData;
@@ -10,6 +11,7 @@ interface ForecastInsightsProps {
 
 export default function ForecastInsights({ data, months }: ForecastInsightsProps) {
   const { totalIncome, totalExpenses, netGain, growthRate, monthly } = data;
+  const { formatCurrency } = useCurrency();
   
   const insights = [];
   const recommendations = [];
@@ -19,7 +21,7 @@ export default function ForecastInsights({ data, months }: ForecastInsightsProps
     insights.push({
       type: 'warning',
       title: 'Projected Deficit',
-      description: `Your forecast shows a potential deficit of $${Math.abs(netGain).toFixed(2)} over ${months} months.`
+      description: `Your forecast shows a potential deficit of ${formatCurrency(Math.abs(netGain))} over ${months} months.`
     });
     recommendations.push('Review and reduce non-essential expenses');
     recommendations.push('Consider additional income sources');
@@ -27,7 +29,7 @@ export default function ForecastInsights({ data, months }: ForecastInsightsProps
     insights.push({
       type: 'success',
       title: 'Positive Trajectory',
-      description: `Your forecast shows a positive net gain of $${netGain.toFixed(2)} over ${months} months.`
+      description: `Your forecast shows a positive net gain of ${formatCurrency(netGain)} over ${months} months.`
     });
   }
   

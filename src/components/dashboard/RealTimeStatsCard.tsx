@@ -1,6 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useFinancialStats } from '@/hooks/useFinancialStats';
 import { TrendingUp, TrendingDown, DollarSign, Activity } from 'lucide-react';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 export default function RealTimeStatsCard() {
   const {
@@ -13,14 +14,7 @@ export default function RealTimeStatsCard() {
     categoryBreakdown
   } = useFinancialStats();
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(amount);
-  };
+  const { formatCurrency } = useCurrency();
 
   const topExpenseCategory = categoryBreakdown[0];
   const savingsRate = monthlyIncome > 0 ? ((monthlyIncome - monthlyExpenses) / monthlyIncome) * 100 : 0;

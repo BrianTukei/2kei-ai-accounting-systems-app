@@ -284,7 +284,7 @@ export default function IncomeStatement() {
               <TableRow className="h-8">
                 <TableCell className="font-bold text-xs sm:text-lg px-1 sm:px-2 py-1">Net Income</TableCell>
                 <TableCell className={`text-right font-bold text-xs sm:text-lg px-1 sm:px-2 py-1 ${netIncome >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  ${netIncome.toFixed(2)}
+                  {formatCurrency(netIncome)}
                 </TableCell>
               </TableRow>
             </TableBody>

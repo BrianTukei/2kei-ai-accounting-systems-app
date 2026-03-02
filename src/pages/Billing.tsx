@@ -54,6 +54,7 @@ import {
   Loader2, Globe, Smartphone, Building, CheckCircle2, Phone, XCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 // ─────────────────────────────────────────
 // Plan card for pricing grid

@@ -5,8 +5,20 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-// Currency formatting utility
-export function formatCurrency(amount: number, currencyCode: string = 'USD', locale: string = 'en-US'): string {
+// Currency formatting utility – reads user preference from localStorage when no code given
+export function formatCurrency(amount: number, currencyCode?: string, locale?: string): string {
+  if (!currencyCode) {
+    try {
+      const stored = localStorage.getItem('selected-currency');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        currencyCode = parsed.code || 'USD';
+        locale = locale || parsed.locale || 'en-US';
+      }
+    } catch { /* ignore */ }
+  }
+  currencyCode = currencyCode || 'USD';
+  locale = locale || 'en-US';
   try {
     return new Intl.NumberFormat(locale, {
       style: 'currency',

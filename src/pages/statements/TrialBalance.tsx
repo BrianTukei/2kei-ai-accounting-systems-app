@@ -103,7 +103,7 @@ export default function TrialBalance() {
           <p className={`font-medium ${isBalanced ? 'text-green-700' : 'text-red-700'}`}>
             {isBalanced 
               ? 'The trial balance is balanced. Debits equal credits.' 
-              : `The trial balance is not balanced. Difference: $${Math.abs(totalDebits - totalCredits).toFixed(2)}`
+              : `The trial balance is not balanced. Difference: ${formatCurrency(Math.abs(totalDebits - totalCredits))}`
             }
           </p>
         </div>

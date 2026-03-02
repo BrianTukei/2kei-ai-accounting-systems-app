@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useTransactions } from '@/hooks/useTransactions';
 import AuthCheck from '@/components/auth/AuthCheck';
-import StatementLayout, { generateBasePDF, formatCurrency } from '@/components/statements/StatementLayout';
+import StatementLayout, { generateBasePDF, formatCurrency, getStoredCurrencySymbol } from '@/components/statements/StatementLayout';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 // Define cash flow categories
@@ -56,7 +56,8 @@ export default function CashFlow() {
   const netCashFlow = operatingTotal + investingTotal + financingTotal + otherTotal;
   
   const formatCashFlow = (value: number) => {
-    return value >= 0 ? `+$${value.toFixed(2)}` : `-$${Math.abs(value).toFixed(2)}`;
+    const sym = getStoredCurrencySymbol();
+    return value >= 0 ? `+${sym}${value.toFixed(2)}` : `-${sym}${Math.abs(value).toFixed(2)}`;
   };
   
   const generatePDF = () => {
@@ -143,7 +144,7 @@ export default function CashFlow() {
                     <TableRow key={index} className="h-8">
                       <TableCell className="px-1 sm:px-2 py-1 text-xs sm:text-sm truncate max-w-0">{t.category} - {t.description}</TableCell>
                       <TableCell className={`text-right font-medium px-1 sm:px-2 py-1 text-xs sm:text-sm ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                        {t.type === 'income' ? '+' : '-'}${t.amount.toFixed(2)}
+                        {t.type === 'income' ? '+' : '-'}{formatCurrency(t.amount)}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -179,7 +180,7 @@ export default function CashFlow() {
                     <TableRow key={index} className="h-8">
                       <TableCell className="px-1 sm:px-2 py-1 text-xs sm:text-sm truncate max-w-0">{t.category} - {t.description}</TableCell>
                       <TableCell className={`text-right font-medium px-1 sm:px-2 py-1 text-xs sm:text-sm ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                        {t.type === 'income' ? '+' : '-'}${t.amount.toFixed(2)}
+                        {t.type === 'income' ? '+' : '-'}{formatCurrency(t.amount)}
                       </TableCell>
                     </TableRow>
                   ))}

@@ -8,6 +8,7 @@ import { Download, FileText, ArrowLeft } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { toast } from 'sonner';
+import { getLogo128 } from '@/utils/pdfLogo';
 
 interface StatementLayoutProps {
   title: string;
@@ -73,27 +74,39 @@ export default function StatementLayout({ title, description, children, generate
   );
 }
 
-export const generateBasePDF = (title: string, content: any[][], summary: any[][]) => {
+export const generateBasePDF = async (title: string, content: any[][], summary: any[][]) => {
   // Create a new PDF document
   const doc = new jsPDF();
   
-  // Add a title
+  // Add the logo
+  let startY = 22;
+  try {
+    const logoDataUrl = await getLogo128();
+    if (logoDataUrl) {
+      doc.addImage(logoDataUrl, 'PNG', 14, 10, 18, 18);
+      startY = 14; // text starts beside logo
+    }
+  } catch { /* continue without logo */ }
+  
+  // Add company name beside logo
+  doc.setFontSize(16);
+  doc.setTextColor(99, 102, 241); // indigo-500
+  doc.text('2K AI Accounting Systems', 36, startY + 6);
+
+  // Add title
   doc.setFontSize(20);
-  doc.text(`${title}`, 14, 22);
+  doc.setTextColor(0, 0, 0);
+  doc.text(title, 14, 38);
   
   // Add a subtitle with current date
   doc.setFontSize(12);
-  doc.text(`Generated on ${new Date().toLocaleDateString()}`, 14, 30);
-  
-  // Add a company logo or name
-  doc.setFontSize(16);
-  doc.text('2K AI Accounting Systems', 14, 45);
+  doc.text(`Generated on ${new Date().toLocaleDateString()}`, 14, 46);
   
   // Add report data as a table
   autoTable(doc, {
     head: [content[0]],
     body: content.slice(1),
-    startY: 55,
+    startY: 52,
     theme: 'grid',
     styles: { fontSize: 10, cellPadding: 3 },
     headStyles: { fillColor: [59, 130, 246], textColor: 255 },
@@ -114,7 +127,7 @@ export const generateBasePDF = (title: string, content: any[][], summary: any[][
     });
   }
   
-  // Add footer
+  // Add footer with logo text
   const pageCount = doc.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
@@ -136,10 +149,33 @@ export const generateBasePDF = (title: string, content: any[][], summary: any[][
   toast.success(`${title} has been downloaded`);
 };
 
-export const formatCurrency = (value: number, currency = 'USD') => {
+/** Format a value using the user's selected currency (from localStorage). */
+export const formatCurrency = (value: number, currency?: string) => {
+  if (!currency) {
+    try {
+      const stored = localStorage.getItem('selected-currency');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        currency = parsed.code || 'USD';
+      }
+    } catch { /* ignore */ }
+  }
+  currency = currency || 'USD';
   try {
     return new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(value);
   } catch (e) {
-    return `$${value.toFixed(2)}`;
+    return `${currency} ${value.toFixed(2)}`;
   }
+};
+
+/** Get the user's selected currency symbol from localStorage. */
+export const getStoredCurrencySymbol = (): string => {
+  try {
+    const stored = localStorage.getItem('selected-currency');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      return parsed.symbol || '$';
+    }
+  } catch { /* ignore */ }
+  return '$';
 };

@@ -37,6 +37,7 @@ import { cn } from '@/lib/utils';
 import { PLANS } from '@/lib/plans';
 import { AdminDashboardAPI, AdminExportAPI, type OrgRow as ServiceOrgRow } from '@/services/adminService';
 import SystemHealthMonitor from '@/components/admin/SystemHealthMonitor';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 // ─────────────────────────────────────────
 // Types
@@ -252,6 +253,8 @@ function AIUsageTab({ orgs }: { orgs: OrgRow[] }) {
 export default function SuperAdmin() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { getCurrencySymbol } = useCurrency();
+  const sym = getCurrencySymbol();
 
   const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [stats,      setStats]      = useState<PlatformStats | null>(null);
@@ -409,7 +412,7 @@ export default function SuperAdmin() {
               color="bg-blue-100" />
             <StatCard icon={Activity} label="AI Calls (month)" value={stats.totalAiCalls}
               color="bg-purple-100" />
-            <StatCard icon={DollarSign} label="Estimated MRR" value={`$${stats.mrr.toLocaleString()}`}
+            <StatCard icon={DollarSign} label="Estimated MRR" value={`${sym}${stats.mrr.toLocaleString()}`}
               sub="excl. annual" color="bg-emerald-100" />
           </div>
         )}

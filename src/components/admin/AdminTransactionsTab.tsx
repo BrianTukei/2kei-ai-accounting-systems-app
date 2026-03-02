@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { Transaction } from "@/components/TransactionCard";
 import { format, parseISO } from "date-fns";
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface AdminTransactionsTabProps {
   transactions: Transaction[];
@@ -14,6 +15,7 @@ interface AdminTransactionsTabProps {
 
 export default function AdminTransactionsTab({ transactions }: AdminTransactionsTabProps) {
   const [searchTerm, setSearchTerm] = useState("");
+  const { formatCurrency } = useCurrency();
   
   const filteredTransactions = transactions.filter(transaction => {
     if (!searchTerm) return true;
@@ -60,7 +62,7 @@ export default function AdminTransactionsTab({ transactions }: AdminTransactions
               <div className="flex justify-between items-center">
                 <div>
                   <p className="text-sm text-muted-foreground">Total Income</p>
-                  <p className="text-2xl font-bold text-green-600">${totalIncome.toFixed(2)}</p>
+                  <p className="text-2xl font-bold text-green-600">{formatCurrency(totalIncome)}</p>
                 </div>
                 <ArrowUp className="h-8 w-8 text-green-600" />
               </div>
@@ -71,7 +73,7 @@ export default function AdminTransactionsTab({ transactions }: AdminTransactions
               <div className="flex justify-between items-center">
                 <div>
                   <p className="text-sm text-muted-foreground">Total Expenses</p>
-                  <p className="text-2xl font-bold text-red-600">${totalExpense.toFixed(2)}</p>
+                  <p className="text-2xl font-bold text-red-600">{formatCurrency(totalExpense)}</p>
                 </div>
                 <ArrowDown className="h-8 w-8 text-red-600" />
               </div>
@@ -83,7 +85,7 @@ export default function AdminTransactionsTab({ transactions }: AdminTransactions
                 <div>
                   <p className="text-sm text-muted-foreground">Balance</p>
                   <p className={`text-2xl font-bold ${balance >= 0 ? "text-blue-600" : "text-orange-600"}`}>
-                    ${balance.toFixed(2)}
+                    {formatCurrency(balance)}
                   </p>
                 </div>
               </div>
@@ -126,7 +128,7 @@ export default function AdminTransactionsTab({ transactions }: AdminTransactions
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right font-medium">
-                      ${transaction.amount.toFixed(2)}
+                      {formatCurrency(transaction.amount)}
                     </TableCell>
                   </TableRow>
                 ))

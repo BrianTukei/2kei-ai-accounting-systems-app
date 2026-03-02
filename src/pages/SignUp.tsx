@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { User, Mail, Lock } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 export default function SignUp() {
@@ -25,12 +25,25 @@ export default function SignUp() {
       setError('Please fill in all fields');
       return;
     }
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters long');
+      return;
+    }
     if (password !== confirm) {
       setError('Passwords do not match');
       return;
     }
 
     setIsLoading(true);
+    
+    // Check Supabase configuration
+    if (!isSupabaseConfigured) {
+      setError('Service temporarily unavailable. Please try again later or contact support.');
+      toast.error('Service temporarily unavailable. Please try again later.');
+      setIsLoading(false);
+      return;
+    }
+
     (async () => {
       try {
         // If an avatar file is provided, resize it to a small thumbnail data URL
@@ -54,7 +67,26 @@ export default function SignUp() {
 
         if (error) {
           console.error('Signup error:', error);
-          toast.error(error.message || 'Sign up failed');
+          // Show user-friendly error messages
+          if (error.message?.includes('User already registered')) {
+            setError('An account with this email already exists. Please log in instead.');
+            toast.error('An account with this email already exists.');
+          } else if (error.message?.includes('Password')) {
+            setError(error.message);
+            toast.error(error.message);
+          } else if (error.message?.includes('valid email')) {
+            setError('Please enter a valid email address.');
+            toast.error('Please enter a valid email address.');
+          } else if (error.message?.includes('rate limit') || error.message?.includes('too many')) {
+            setError('Too many signup attempts. Please try again in a few minutes.');
+            toast.error('Too many signup attempts. Please wait and try again.');
+          } else if (error.message?.includes('fetch') || error.message?.includes('network') || error.message?.includes('Failed to fetch')) {
+            setError('Network error. Please check your internet connection.');
+            toast.error('Network error. Please check your internet connection and try again.');
+          } else {
+            setError(error.message || 'Sign up failed. Please try again.');
+            toast.error(error.message || 'Sign up failed');
+          }
           setIsLoading(false);
           return;
         }
@@ -112,7 +144,14 @@ export default function SignUp() {
         }
       } catch (err: any) {
         console.error('Unexpected signup error', err);
-        toast.error(err?.message || 'An error occurred');
+        const message = err?.message || 'An error occurred. Please try again.';
+        if (err?.message?.includes('fetch') || err?.message?.includes('Failed to fetch')) {
+          setError('Unable to connect to the server. Please check your internet connection.');
+          toast.error('Unable to connect. Please check your internet connection.');
+        } else {
+          setError(message);
+          toast.error(message);
+        }
       } finally {
         setIsLoading(false);
       }
@@ -275,8 +314,8 @@ export default function SignUp() {
 
                 {error && <div className="text-sm text-destructive">{error}</div>}
 
-                <Button type="submit" className="w-full rounded-full py-3 bg-gradient-primary text-white hover:shadow-[0_8px_24px_rgba(59,130,246,0.18)] transition-shadow">
-                  Create Account
+                <Button type="submit" disabled={isLoading} className="w-full rounded-full py-3 bg-gradient-primary text-white hover:shadow-[0_8px_24px_rgba(59,130,246,0.18)] transition-shadow disabled:opacity-60 disabled:cursor-not-allowed">
+                  {isLoading ? 'Creating Account...' : 'Create Account'}
                 </Button>
               </form>
 

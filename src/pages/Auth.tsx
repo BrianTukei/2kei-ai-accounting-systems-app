@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import BrandLogo from '@/components/BrandLogo';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { SignupForm } from '@/components/auth/SignupForm';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
@@ -79,6 +79,14 @@ export default function Auth() {
     console.log('[Auth] handleSubmit called, actionType:', actionType);
     setIsLoading(true);
     
+    // Check Supabase configuration
+    if (!isSupabaseConfigured && !import.meta.env.DEV) {
+      console.error('[Auth] Supabase is not configured');
+      toast.error('Service temporarily unavailable. Please try again later or contact support.');
+      setIsLoading(false);
+      return;
+    }
+    
     if (!formData.email || !formData.password) {
       console.log('[Auth] Missing email or password');
       toast.error("Please fill in all required fields");
@@ -95,7 +103,15 @@ export default function Auth() {
     
     try {
       if (actionType === 'signup') {
+        // Client-side password validation
+        if (formData.password.length < 6) {
+          toast.error('Password must be at least 6 characters long');
+          setIsLoading(false);
+          return;
+        }
+
         // Sign up with Supabase
+        console.log('[Auth] Attempting signup for:', formData.email);
         const { data, error } = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,
@@ -117,7 +133,22 @@ export default function Auth() {
             setTimeout(() => { window.location.href = '/onboarding'; }, 500);
             return;
           }
-          throw error;
+          // Show user-friendly error messages for common signup errors
+          if (error.message?.includes('User already registered')) {
+            toast.error('An account with this email already exists. Please sign in instead.');
+          } else if (error.message?.includes('Password')) {
+            toast.error(error.message);
+          } else if (error.message?.includes('valid email')) {
+            toast.error('Please enter a valid email address.');
+          } else if (error.message?.includes('rate limit') || error.message?.includes('too many')) {
+            toast.error('Too many signup attempts. Please try again in a few minutes.');
+          } else if (error.message?.includes('fetch') || error.message?.includes('network') || error.message?.includes('Failed to fetch')) {
+            toast.error('Network error. Please check your internet connection and try again.');
+          } else {
+            toast.error(error.message || 'Sign up failed. Please try again.');
+          }
+          setIsLoading(false);
+          return;
         }
 
         console.log('Signup successful:', { session: !!data.session, user: !!data.user });
@@ -205,8 +236,13 @@ export default function Auth() {
         // Navigation will be handled by onAuthStateChange
       }
     } catch (error: any) {
-      // Error already handled above with specific messages
       console.error('Auth error:', error);
+      // Show a generic error toast if no specific message was shown above
+      if (error?.message?.includes('fetch') || error?.message?.includes('network') || error?.message?.includes('Failed to fetch')) {
+        toast.error('Network error. Please check your internet connection and try again.');
+      } else if (error?.message && !error.message.includes('Invalid login credentials') && !error.message.includes('Email not confirmed')) {
+        toast.error(error.message || 'An error occurred. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }

@@ -5,13 +5,18 @@ import type { Database } from './types';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-// Validate environment variables
+// Validate environment variables — log clearly if missing so deployment issues are easy to spot
 if (!SUPABASE_URL) {
-  console.error('Missing VITE_SUPABASE_URL environment variable');
+  console.error('[Supabase] CRITICAL: Missing VITE_SUPABASE_URL environment variable. Auth and data operations will fail.');
 }
 if (!SUPABASE_PUBLISHABLE_KEY) {
-  console.error('Missing VITE_SUPABASE_PUBLISHABLE_KEY environment variable');
+  console.error('[Supabase] CRITICAL: Missing VITE_SUPABASE_PUBLISHABLE_KEY environment variable. Auth and data operations will fail.');
 }
+
+const isConfigured = !!SUPABASE_URL && !!SUPABASE_PUBLISHABLE_KEY;
+
+// Export a flag so other parts of the app can check if Supabase is properly configured
+export const isSupabaseConfigured = isConfigured;
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";

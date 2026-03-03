@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { User, Mail, Lock } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import BrandLogo from '@/components/BrandLogo';
 
 export default function SignUp() {
   const [fullName, setFullName] = useState('');
@@ -227,6 +228,10 @@ export default function SignUp() {
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
               Back to Home
             </Link>
+            <div className="flex items-center gap-3 mb-4">
+              <BrandLogo size="lg" />
+              <span className="text-xl font-bold text-foreground">2K AI Accounting</span>
+            </div>
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Create your account</h1>
             <p className="text-sm text-muted-foreground mt-2">Start managing your finances with AI-powered insights</p>
           </div>

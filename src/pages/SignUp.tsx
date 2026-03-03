@@ -224,12 +224,12 @@ export default function SignUp() {
       <div className="flex-1 flex items-center justify-center py-12 px-4 sm:px-8">
         <div className="w-full max-w-md animate-fade-up">
           <div className="mb-6">
-            <Link to="/" className="inline-flex items-center gap-3 mb-4 group">
-              <BrandLogo size="lg" className="flex-shrink-0" />
-              <span className="text-xl font-bold text-foreground group-hover:text-primary transition-colors">2K AI Accounting</span>
+            <Link to="/" className="inline-flex items-center gap-2 mb-3 group">
+              <BrandLogo size="sm" className="flex-shrink-0" />
+              <span className="text-base sm:text-lg font-bold text-foreground group-hover:text-primary transition-colors">2K AI Accounting</span>
             </Link>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Create your account</h1>
-            <p className="text-sm text-muted-foreground mt-2">Start managing your finances with AI-powered insights</p>
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">Create your account</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">Start managing your finances with AI-powered insights</p>
           </div>
 
           <div className="space-y-5">

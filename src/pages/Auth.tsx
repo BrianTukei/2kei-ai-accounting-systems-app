@@ -428,15 +428,15 @@ export default function Auth() {
         </div>
       
       {/* Logo + welcome — always visible above card on mobile */}
-      <div className="w-full max-w-md text-center mb-4 lg:hidden">
-        <Link to="/" className="inline-flex items-center gap-3 mb-4">
-          <BrandLogo size="lg" />
-          <span className="text-xl font-bold text-foreground">2K AI Accounting</span>
+      <div className="w-full max-w-md text-center mb-3 lg:hidden">
+        <Link to="/" className="inline-flex items-center gap-2 mb-2">
+          <BrandLogo size="sm" />
+          <span className="text-base font-bold text-foreground">2K AI Accounting</span>
         </Link>
-        <h2 className="text-xl sm:text-2xl font-bold leading-tight mb-1 text-foreground">
+        <h2 className="text-lg sm:text-xl font-bold leading-tight mb-1 text-foreground">
           Your money deserves better than spreadsheets
         </h2>
-        <p className="text-muted-foreground text-sm leading-relaxed">
+        <p className="text-muted-foreground text-xs leading-relaxed">
           50,000+ businesses trust 2K AI to automate their accounting and save 40+ hours every month.
         </p>
       </div>

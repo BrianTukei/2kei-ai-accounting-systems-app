@@ -9,13 +9,10 @@
       <stop offset="1" stop-color="#f59e0b"/>
     </linearGradient>
   </defs>
-  <rect width="152" height="152" rx="33.25" fill="url(#bg)"/>
+  <rect width="152" height="152" rx="33" fill="url(#bg)"/>
   <line x1="28.5" y1="109.25" x2="85.5" y2="109.25" stroke="white" stroke-opacity="0.15" stroke-width="3.5625" stroke-linecap="round"/>
   <line x1="28.5" y1="118.75" x2="71.25" y2="118.75" stroke="white" stroke-opacity="0.1" stroke-width="3.5625" stroke-linecap="round"/>
   <path d="M118.75 28.5 L123.5 42.75 L137.75 47.5 L123.5 52.25 L118.75 66.5 L114 52.25 L99.75 47.5 L114 42.75 Z" fill="url(#sparkle)"/>
   <circle cx="133" cy="28.5" r="3.5625" fill="#fbbf24" opacity="0.7"/>
-  <g fill="white" transform="scale(2.375)">
-    <path d="M8 24 Q8 18 14 18 L22 18 Q28 18 28 24 L28 26 L23 26 L23 24 Q23 22 22 22 L14 22 Q13 22 13 24 L13 26 L28 38 L28 42 L8 42 L8 38 L22 38 L8 26 Z"/>
-    <path d="M32 18 L37 18 L37 27 L47 18 L53 18 L43 27 L54 42 L48 42 L40 30 L37 33 L37 42 L32 42 Z"/>
-  </g>
+  <text x="57" y="90" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="800" font-size="62" fill="white" letter-spacing="-2">2K</text>
 </svg>

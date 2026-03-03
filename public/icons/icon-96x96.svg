@@ -14,8 +14,5 @@
   <line x1="18" y1="75" x2="45" y2="75" stroke="white" stroke-opacity="0.1" stroke-width="2.25" stroke-linecap="round"/>
   <path d="M75 18 L78 27 L87 30 L78 33 L75 42 L72 33 L63 30 L72 27 Z" fill="url(#sparkle)"/>
   <circle cx="84" cy="18" r="2.25" fill="#fbbf24" opacity="0.7"/>
-  <g fill="white" transform="scale(1.5)">
-    <path d="M8 24 Q8 18 14 18 L22 18 Q28 18 28 24 L28 26 L23 26 L23 24 Q23 22 22 22 L14 22 Q13 22 13 24 L13 26 L28 38 L28 42 L8 42 L8 38 L22 38 L8 26 Z"/>
-    <path d="M32 18 L37 18 L37 27 L47 18 L53 18 L43 27 L54 42 L48 42 L40 30 L37 33 L37 42 L32 42 Z"/>
-  </g>
+  <text x="36" y="57" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="800" font-size="39" fill="white" letter-spacing="-1">2K</text>
 </svg>

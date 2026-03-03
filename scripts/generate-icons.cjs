@@ -2,9 +2,12 @@ const fs = require('fs');
 const path = require('path');
 const sharp = require('sharp');
 
-// Path-based "2K" characters — no font dependency for reliable rendering
+// Text-based "2K" using embedded font-weight for reliable rendering
 function makeSvg(size) {
   const s = size / 64; // scale factor
+  const fontSize = Math.round(26 * s);
+  const textX = Math.round(24 * s);
+  const textY = Math.round(38 * s);
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="${size}" y2="${size}" gradientUnits="userSpaceOnUse">
@@ -16,15 +19,12 @@ function makeSvg(size) {
       <stop offset="1" stop-color="#f59e0b"/>
     </linearGradient>
   </defs>
-  <rect width="${size}" height="${size}" rx="${14*s}" fill="url(#bg)"/>
+  <rect width="${size}" height="${size}" rx="${Math.round(14*s)}" fill="url(#bg)"/>
   <line x1="${12*s}" y1="${46*s}" x2="${36*s}" y2="${46*s}" stroke="white" stroke-opacity="0.15" stroke-width="${1.5*s}" stroke-linecap="round"/>
   <line x1="${12*s}" y1="${50*s}" x2="${30*s}" y2="${50*s}" stroke="white" stroke-opacity="0.1" stroke-width="${1.5*s}" stroke-linecap="round"/>
   <path d="M${50*s} ${12*s} L${52*s} ${18*s} L${58*s} ${20*s} L${52*s} ${22*s} L${50*s} ${28*s} L${48*s} ${22*s} L${42*s} ${20*s} L${48*s} ${18*s} Z" fill="url(#sparkle)"/>
   <circle cx="${56*s}" cy="${12*s}" r="${1.5*s}" fill="#fbbf24" opacity="0.7"/>
-  <g fill="white" transform="scale(${s})">
-    <path d="M8 24 Q8 18 14 18 L22 18 Q28 18 28 24 L28 26 L23 26 L23 24 Q23 22 22 22 L14 22 Q13 22 13 24 L13 26 L28 38 L28 42 L8 42 L8 38 L22 38 L8 26 Z"/>
-    <path d="M32 18 L37 18 L37 27 L47 18 L53 18 L43 27 L54 42 L48 42 L40 30 L37 33 L37 42 L32 42 Z"/>
-  </g>
+  <text x="${textX}" y="${textY}" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="800" font-size="${fontSize}" fill="white" letter-spacing="${Math.round(-1*s)}">2K</text>
 </svg>`;
 }
 

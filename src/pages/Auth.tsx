@@ -365,7 +365,7 @@ export default function Auth() {
   };
   
   return (
-    <div className="min-h-screen flex bg-background">
+    <div className="min-h-screen flex bg-gradient-to-br from-primary/90 via-primary/70 to-accent/80 lg:bg-none lg:bg-background">
       {/* Left side - Image & branding (hidden on mobile) */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
         <div className="absolute inset-0">
@@ -413,9 +413,9 @@ export default function Auth() {
       </div>
 
       {/* Right side - Auth form */}
-      <div className="flex-1 flex flex-col items-center justify-start pt-16 sm:justify-center sm:pt-0 p-4 sm:p-8 relative overflow-y-auto">
+      <div className="flex-1 flex flex-col items-center justify-start pt-16 sm:justify-center sm:pt-0 p-4 sm:p-8 relative overflow-y-auto lg:bg-background">
         <div className="absolute top-4 left-4 lg:hidden z-10">
-          <Button variant="ghost" onClick={() => navigate('/')} className="rounded-full text-sm">
+          <Button variant="ghost" onClick={() => navigate('/')} className="rounded-full text-sm text-white hover:text-white/80 hover:bg-white/10">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
@@ -434,6 +434,8 @@ export default function Auth() {
               <BrandLogo size="lg" />
               <span className="text-lg font-bold text-foreground">2K AI Accounting</span>
             </div>
+            {/* Show tagline on mobile since left panel is hidden */}
+            <p className="text-xs text-muted-foreground lg:hidden">Your money deserves better than spreadsheets</p>
             <CardTitle className="text-2xl font-bold tracking-tight">
               {actionType === 'signin' ? 'Welcome back' : 'Create your account'}
             </CardTitle>

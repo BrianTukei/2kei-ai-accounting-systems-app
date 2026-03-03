@@ -413,10 +413,10 @@ export default function Auth() {
       </div>
 
       {/* Right side - Auth form */}
-      <div className="flex-1 flex flex-col items-center justify-start pt-16 sm:justify-center sm:pt-0 p-4 sm:p-8 relative overflow-y-auto">
-        <div className="absolute top-4 left-4 lg:hidden z-10">
-          <Button variant="ghost" onClick={() => navigate('/')} className="rounded-full text-sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
+      <div className="flex-1 flex flex-col items-center justify-start pt-10 sm:justify-center sm:pt-0 p-4 sm:p-8 relative overflow-y-auto">
+        <div className="absolute top-2 left-2 lg:hidden z-10">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="rounded-full text-xs h-7 px-2">
+            <ArrowLeft className="h-3 w-3 mr-1" />
             Back
           </Button>
         </div>

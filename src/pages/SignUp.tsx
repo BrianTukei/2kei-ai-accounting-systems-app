@@ -223,15 +223,11 @@ export default function SignUp() {
       {/* Left side - Sign-up form */}
       <div className="flex-1 flex items-center justify-center py-12 px-4 sm:px-8">
         <div className="w-full max-w-md animate-fade-up">
-          <div className="mb-8 text-center md:text-left">
-            <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-              Back to Home
-            </Link>
-            <div className="flex items-center gap-3 mb-4">
+          <div className="mb-8">
+            <Link to="/" className="inline-flex items-center gap-3 mb-6 group">
               <BrandLogo size="lg" />
-              <span className="text-xl font-bold text-foreground">2K AI Accounting</span>
-            </div>
+              <span className="text-xl font-bold text-foreground group-hover:text-primary transition-colors">2K AI Accounting</span>
+            </Link>
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Create your account</h1>
             <p className="text-sm text-muted-foreground mt-2">Start managing your finances with AI-powered insights</p>
           </div>

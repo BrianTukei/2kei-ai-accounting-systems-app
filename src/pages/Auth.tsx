@@ -430,8 +430,9 @@ export default function Auth() {
       <div className="w-full max-w-md animate-fade-up">
         <Card className="border-border/40 shadow-card bg-card/80 backdrop-blur-sm">
           <CardHeader className="space-y-1 text-center pb-4">
-            <div className="flex justify-center mb-2 lg:hidden">
+            <div className="flex items-center justify-center gap-2.5 mb-3">
               <BrandLogo size="lg" />
+              <span className="text-lg font-bold text-foreground">2K AI Accounting</span>
             </div>
             <CardTitle className="text-2xl font-bold tracking-tight">
               {actionType === 'signin' ? 'Welcome back' : 'Create your account'}

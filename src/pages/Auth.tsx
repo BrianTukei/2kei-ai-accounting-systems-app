@@ -365,7 +365,7 @@ export default function Auth() {
   };
   
   return (
-    <div className="min-h-screen flex bg-gradient-to-br from-primary/90 via-primary/70 to-accent/80 lg:bg-none lg:bg-background">
+    <div className="min-h-screen flex bg-background">
       {/* Left side - Image & branding (hidden on mobile) */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
         <div className="absolute inset-0">
@@ -413,9 +413,9 @@ export default function Auth() {
       </div>
 
       {/* Right side - Auth form */}
-      <div className="flex-1 flex flex-col items-center justify-start pt-16 sm:justify-center sm:pt-0 p-4 sm:p-8 relative overflow-y-auto lg:bg-background">
+      <div className="flex-1 flex flex-col items-center justify-start pt-16 sm:justify-center sm:pt-0 p-4 sm:p-8 relative overflow-y-auto">
         <div className="absolute top-4 left-4 lg:hidden z-10">
-          <Button variant="ghost" onClick={() => navigate('/')} className="rounded-full text-sm text-white hover:text-white/80 hover:bg-white/10">
+          <Button variant="ghost" onClick={() => navigate('/')} className="rounded-full text-sm">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
@@ -428,11 +428,11 @@ export default function Auth() {
         </div>
       
       {/* Mobile welcome section (visible below lg) */}
-      <div className="w-full max-w-md text-center text-white mb-6 lg:hidden">
-        <h2 className="text-2xl sm:text-3xl font-bold leading-tight mb-2">
+      <div className="w-full max-w-md text-center mb-6 lg:hidden">
+        <h2 className="text-2xl sm:text-3xl font-bold leading-tight mb-2 text-foreground">
           Your money deserves better than spreadsheets
         </h2>
-        <p className="text-white/80 text-sm leading-relaxed">
+        <p className="text-muted-foreground text-sm leading-relaxed">
           50,000+ businesses trust 2K AI to automate their accounting and save 40+ hours every month.
         </p>
       </div>

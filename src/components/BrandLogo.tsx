@@ -52,11 +52,11 @@ export default function BrandLogo({ size = 'md', className }: BrandLogoProps) {
           </linearGradient>
         </defs>
 
-        {/* Background */}
-        <rect width="64" height="64" rx="14" fill="url(#bg)" />
+        {/* Background – no rx here; the outer div's rounded-xl handles corner rounding */}
+        <rect width="64" height="64" fill="url(#bg)" />
 
         {/* Light sheen overlay */}
-        <rect width="64" height="64" rx="14" fill="url(#shine)" />
+        <rect width="64" height="64" fill="url(#shine)" />
 
         {/* ── Decorative ledger lines (subtle) ── */}
         <line x1="12" y1="46" x2="36" y2="46" stroke="white" strokeOpacity="0.15" strokeWidth="1.5" strokeLinecap="round" />

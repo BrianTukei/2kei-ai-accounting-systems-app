@@ -427,9 +427,13 @@ export default function Auth() {
           </Button>
         </div>
       
-      {/* Mobile welcome section (visible below lg) */}
-      <div className="w-full max-w-md text-center mb-6 lg:hidden">
-        <h2 className="text-2xl sm:text-3xl font-bold leading-tight mb-2 text-foreground">
+      {/* Logo + welcome — always visible above card on mobile */}
+      <div className="w-full max-w-md text-center mb-4 lg:hidden">
+        <Link to="/" className="inline-flex items-center gap-3 mb-4">
+          <BrandLogo size="lg" />
+          <span className="text-xl font-bold text-foreground">2K AI Accounting</span>
+        </Link>
+        <h2 className="text-xl sm:text-2xl font-bold leading-tight mb-1 text-foreground">
           Your money deserves better than spreadsheets
         </h2>
         <p className="text-muted-foreground text-sm leading-relaxed">
@@ -440,7 +444,8 @@ export default function Auth() {
       <div className="w-full max-w-md animate-fade-up">
         <Card className="border-border/40 shadow-card bg-card/80 backdrop-blur-sm">
           <CardHeader className="space-y-1 text-center pb-4">
-            <div className="flex items-center justify-center gap-2.5 mb-3">
+            {/* Logo inside card — only on desktop (mobile shows it above) */}
+            <div className="hidden lg:flex items-center justify-center gap-2.5 mb-3">
               <BrandLogo size="lg" />
               <span className="text-lg font-bold text-foreground">2K AI Accounting</span>
             </div>

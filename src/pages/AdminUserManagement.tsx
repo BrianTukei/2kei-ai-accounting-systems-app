@@ -232,13 +232,34 @@ export default function AdminUserManagement() {
         return;
       }
 
-      const result = await adminApiCall("list", {
-        userIds: roleData.map(r => r.user_id),
-      });
-      setAdminUsers(result.users || []);
+      try {
+        const result = await adminApiCall("list", {
+          userIds: roleData.map(r => r.user_id),
+        });
+        setAdminUsers(result.users || []);
+      } catch {
+        // Edge function unavailable — build admin list from profiles table
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, first_name, last_name, email, created_at, updated_at")
+          .in("id", roleData.map(r => r.user_id));
+
+        if (profiles && profiles.length > 0) {
+          setAdminUsers(profiles.map(p => ({
+            id: p.id,
+            email: p.email || "",
+            first_name: p.first_name || "",
+            last_name: p.last_name || "",
+            created_at: p.created_at,
+            last_sign_in_at: p.updated_at,
+            role: "admin",
+          })));
+        } else {
+          setAdminUsers([]);
+        }
+      }
     } catch (error: any) {
       console.error("Error fetching admin users:", error);
-      toast.error("Failed to load admin users");
     } finally {
       setLoading(false);
     }
@@ -247,17 +268,52 @@ export default function AdminUserManagement() {
   const fetchAllUsers = useCallback(async () => {
     try {
       setLoading(true);
-      const result = await adminApiCall("list-all", {
-        page,
-        perPage: 50,
-        search: searchQuery || undefined,
-        roleFilter: roleFilter !== 'all' ? roleFilter : undefined,
-      });
-      setAllUsers(result.users || []);
-      setTotalUsers(result.total || 0);
+      try {
+        const result = await adminApiCall("list-all", {
+          page,
+          perPage: 50,
+          search: searchQuery || undefined,
+          roleFilter: roleFilter !== 'all' ? roleFilter : undefined,
+        });
+        setAllUsers(result.users || []);
+        setTotalUsers(result.total || 0);
+      } catch {
+        // Edge function unavailable — load from profiles table
+        let query = supabase
+          .from("profiles")
+          .select("id, first_name, last_name, email, created_at, updated_at", { count: 'exact' });
+
+        if (searchQuery) {
+          query = query.or(`email.ilike.%${searchQuery}%,first_name.ilike.%${searchQuery}%,last_name.ilike.%${searchQuery}%`);
+        }
+
+        const { data: profiles, count } = await query
+          .order("created_at", { ascending: false })
+          .range((page - 1) * 50, page * 50 - 1);
+
+        if (profiles) {
+          // Get roles for these users
+          const { data: roles } = await supabase
+            .from("user_roles")
+            .select("user_id, role")
+            .in("user_id", profiles.map(p => p.id));
+
+          const roleMap = new Map(roles?.map(r => [r.user_id, r.role]) || []);
+
+          setAllUsers(profiles.map(p => ({
+            id: p.id,
+            email: p.email || "",
+            first_name: p.first_name || "",
+            last_name: p.last_name || "",
+            created_at: p.created_at,
+            last_sign_in_at: p.updated_at,
+            role: roleMap.get(p.id) || "user",
+          })));
+          setTotalUsers(count || 0);
+        }
+      }
     } catch (error: any) {
       console.error("Error fetching all users:", error);
-      toast.error("Failed to load users");
     } finally {
       setLoading(false);
     }

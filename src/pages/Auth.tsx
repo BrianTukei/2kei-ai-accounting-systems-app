@@ -427,6 +427,16 @@ export default function Auth() {
           </Button>
         </div>
       
+      {/* Mobile welcome section (visible below lg) */}
+      <div className="w-full max-w-md text-center text-white mb-6 lg:hidden">
+        <h2 className="text-2xl sm:text-3xl font-bold leading-tight mb-2">
+          Your money deserves better than spreadsheets
+        </h2>
+        <p className="text-white/80 text-sm leading-relaxed">
+          50,000+ businesses trust 2K AI to automate their accounting and save 40+ hours every month.
+        </p>
+      </div>
+
       <div className="w-full max-w-md animate-fade-up">
         <Card className="border-border/40 shadow-card bg-card/80 backdrop-blur-sm">
           <CardHeader className="space-y-1 text-center pb-4">
@@ -434,8 +444,6 @@ export default function Auth() {
               <BrandLogo size="lg" />
               <span className="text-lg font-bold text-foreground">2K AI Accounting</span>
             </div>
-            {/* Show tagline on mobile since left panel is hidden */}
-            <p className="text-xs text-muted-foreground lg:hidden">Your money deserves better than spreadsheets</p>
             <CardTitle className="text-2xl font-bold tracking-tight">
               {actionType === 'signin' ? 'Welcome back' : 'Create your account'}
             </CardTitle>

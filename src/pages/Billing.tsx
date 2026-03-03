@@ -287,12 +287,9 @@ export default function Billing() {
         setLoading(true);
         verifyPaymentFromRedirect(params, org.id).then((result) => {
           if (result.verified) {
-            toast.success('Payment verified! Subscription activated.');
             refresh();
-            window.history.replaceState({}, '', '/billing');
-            setTimeout(() => {
-              navigate('/dashboard', { replace: true });
-            }, 1500);
+            // Redirect to dashboard which shows the success toast
+            navigate('/dashboard?payment=success', { replace: true });
           } else {
             toast.error(result.error || 'Payment verification failed. Please contact support.');
             window.history.replaceState({}, '', '/billing');
@@ -306,13 +303,9 @@ export default function Billing() {
         return;
       }
       
-      // No provider or demo — just handle the upgrade flag
-      toast.success('Subscription Activated Successfully!');
+      // No provider or demo — redirect to dashboard which shows the toast
       refresh();
-      window.history.replaceState({}, '', '/billing');
-      setTimeout(() => {
-        navigate('/dashboard', { replace: true });
-      }, 1500);
+      navigate('/dashboard?payment=success', { replace: true });
       return;
     }
     
@@ -461,12 +454,10 @@ export default function Billing() {
 
           clearActivationFlag();
           setUpgradeDialog(false);
-          toast.success(`${successVerb} to ${PLANS[planId].name}! Redirecting…`);
           await refresh();
 
-          setTimeout(() => {
-            window.location.href = '/dashboard?payment=success&plan=' + planId;
-          }, 1200);
+          // Redirect to dashboard — it will show the success toast
+          window.location.href = '/dashboard?payment=success&plan=' + planId;
           return;
         } else {
           toast.error(result.error || 'Failed to activate subscription');
@@ -524,12 +515,10 @@ export default function Billing() {
 
             clearActivationFlag();
             setUpgradeDialog(false);
-            toast.success(`${successVerb} to ${PLANS[planId].name}! (Payment provider unavailable — activated in demo mode)`);
             await refresh();
 
-            setTimeout(() => {
-              window.location.href = '/dashboard?payment=success&plan=' + planId;
-            }, 1200);
+            // Redirect to dashboard — it will show the success toast
+            window.location.href = '/dashboard?payment=success&plan=' + planId;
             return;
           } else {
             toast.error('Failed to activate subscription. Please try again.');

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from "@/contexts/AuthContext";
 import { useOrganization } from "@/contexts/OrganizationContext";
 import { Navigate, useLocation } from "react-router-dom";
@@ -36,6 +36,9 @@ const SUBSCRIPTION_EXEMPT_ROUTES = [
   '/admin-test',
 ];
 
+/** Max seconds to wait for org loading before showing fallback */
+const LOADING_TIMEOUT_MS = 12_000;
+
 const ProtectedRoute = ({ 
   children, 
   allowWithoutOrg = false,
@@ -46,6 +49,22 @@ const ProtectedRoute = ({
   const { loading: orgLoading, needsOnboarding, subscription, plan } = useOrganization();
   const location = useLocation();
 
+  // Safety timeout to prevent infinite loading spinner
+  const [timedOut, setTimedOut] = useState(false);
+  useEffect(() => {
+    if (!orgLoading) {
+      setTimedOut(false);
+      return;
+    }
+    const timer = setTimeout(() => {
+      if (orgLoading) {
+        console.warn('[ProtectedRoute] Loading timed out after', LOADING_TIMEOUT_MS, 'ms');
+        setTimedOut(true);
+      }
+    }, LOADING_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [orgLoading]);
+
   // Check for demo user
   const isDemoUser = localStorage.getItem('2k_demo_user') !== null;
   
@@ -54,8 +73,20 @@ const ProtectedRoute = ({
     location.pathname.startsWith(route)
   );
 
-  // 1. Wait for both auth AND org to resolve
-  if (!authResolved || orgLoading) {
+  // 1. Wait for auth to resolve (always required)
+  if (!authResolved) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center space-y-4">
+          <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+          <p className="text-sm text-gray-500">Authenticating…</p>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. Wait for org to load (but with timeout protection)
+  if (orgLoading && !timedOut) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center space-y-4">
@@ -66,25 +97,30 @@ const ProtectedRoute = ({
     );
   }
 
-  // 2. Not authenticated → login (demo users skip email verification)
+  // 2b. If loading timed out, let the user through (fallback to free plan)
+  if (timedOut && orgLoading) {
+    console.warn('[ProtectedRoute] Proceeding despite timeout — org may not be fully loaded');
+  }
+
+  // 3. Not authenticated → login (demo users skip email verification)
   if (!user) {
     console.log('[ProtectedRoute] Not authenticated, redirecting to auth');
     return <Navigate to="/auth" replace />;
   }
 
-  // 3. Email not verified → email confirmation page (demo users skip)
+  // 4. Email not verified → email confirmation page (demo users skip)
   if (!isEmailVerified && !isDemoUser) {
     console.log('[ProtectedRoute] Email not verified, redirecting to email-confirmation');
     return <Navigate to="/email-confirmation" replace />;
   }
 
-  // 3. No org yet → onboarding (unless this route explicitly allows it)
+  // 5. No org yet → onboarding (unless this route explicitly allows it)
   if (needsOnboarding && !allowWithoutOrg) {
     console.log('[ProtectedRoute] Needs onboarding, redirecting');
     return <Navigate to="/onboarding" replace />;
   }
 
-  // 4. Subscription check (if required and not exempt)
+  // 6. Subscription check (if required and not exempt)
   if (requireActiveSubscription && !skipSubscriptionCheck && !isExemptRoute) {
     const hasActiveSubscription = subscription?.status === 'active' || subscription?.status === 'trialing';
     const isFreePlan = plan?.id === 'free';

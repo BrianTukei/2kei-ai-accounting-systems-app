@@ -202,7 +202,7 @@ serve(async (req) => {
       'mode': 'subscription',
       'line_items[0][price]': priceId,
       'line_items[0][quantity]': '1',
-      'success_url': `${successUrl}${successUrl.includes('?') ? '&' : '?'}upgraded=1&session_id={CHECKOUT_SESSION_ID}`,
+      'success_url': `${successUrl}${successUrl.includes('?') ? '&' : '?'}session_id={CHECKOUT_SESSION_ID}`,
       'cancel_url': cancelUrl,
       'metadata[organization_id]': organizationId,
       'metadata[plan_id]': planId,

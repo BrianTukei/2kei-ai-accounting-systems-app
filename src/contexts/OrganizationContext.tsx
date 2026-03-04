@@ -374,6 +374,16 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     } catch (err) {
       console.error('[OrganizationContext] load error:', err);
+      // Ensure subscription defaults to free on error so UI isn't stuck
+      if (!subscription) {
+        setSubscription({
+          id: '',
+          planId: 'free',
+          status: 'active',
+          billingCycle: 'monthly',
+          cancelAtPeriodEnd: false,
+        });
+      }
     } finally {
       setLoading(false);
     }

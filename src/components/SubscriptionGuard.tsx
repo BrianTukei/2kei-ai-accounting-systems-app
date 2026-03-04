@@ -1,30 +1,30 @@
 /**
  * SubscriptionGuard.tsx
  * ──────────────────────
- * Wraps any feature that requires a paid plan or specific permission.
- * Shows an upgrade prompt instead of the children when the user doesn't qualify.
+ * Production-grade subscription protection middleware.
  *
- * Usage:
- *   <SubscriptionGuard feature="aiAssistant">
- *     <AIAssistantPage />
- *   </SubscriptionGuard>
+ * Gate types:
+ *   • feature    — plan-level feature gate (e.g. AI Assistant)
+ *   • permission — role-based permission gate
+ *   • limit      — monthly usage limit gate
+ *   • subscription — requires active/trialing subscription
  *
- *   <SubscriptionGuard permission="canEditTransactions">
- *     <AddTransactionButton />
- *   </SubscriptionGuard>
- *
- *   <SubscriptionGuard limit="invoices" action="create an invoice">
- *     <NewInvoiceButton />
- *   </SubscriptionGuard>
+ * Also exports:
+ *   • UsageLimitBanner   — inline upgrade warning
+ *   • TrialCountdown     — trial days remaining display
+ *   • PastDueBanner      — payment failed warning
+ *   • SubscriptionStatus — status badge component
  */
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useOrganization } from '@/contexts/OrganizationContext';
-import { ROLE_PERMISSIONS, type OrgRole } from '@/lib/plans';
+import { ROLE_PERMISSIONS, type OrgRole, trialDaysRemaining, isTrialActive } from '@/lib/plans';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Lock, Zap, TrendingUp } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { Lock, Zap, TrendingUp, AlertTriangle, Clock, ShieldAlert, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // ─────────────────────────────────────────
@@ -42,10 +42,14 @@ interface Props {
   permission?: Permission;
   /** Monthly usage limit gate */
   limit?: Limit;
+  /** Require active or trialing subscription */
+  requireSubscription?: boolean;
   /** Friendly action name shown in the upgrade message */
   action?: string;
   /** Render nothing instead of an upgrade card */
   silent?: boolean;
+  /** Show a compact inline warning instead of a full card */
+  inline?: boolean;
   /** Custom class on the wrapper */
   className?: string;
   children: React.ReactNode;
@@ -86,6 +90,96 @@ function UpgradeCard({
         </Button>
       </CardContent>
     </Card>
+  );
+}
+
+// ─────────────────────────────────────────
+// Trial Countdown Component
+// ─────────────────────────────────────────
+
+export function TrialCountdown({ className }: { className?: string }) {
+  const { subscription } = useOrganization();
+  if (!subscription?.trialEndsAt) return null;
+
+  const daysLeft = trialDaysRemaining(subscription.trialEndsAt);
+  if (daysLeft <= 0) return null;
+
+  const isUrgent = daysLeft <= 2;
+
+  return (
+    <div className={cn(
+      'flex items-center gap-2 rounded-lg p-3 text-sm',
+      isUrgent
+        ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
+        : 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800',
+      className,
+    )}>
+      <Clock className={cn('w-4 h-4 shrink-0', isUrgent ? 'text-red-500' : 'text-blue-500')} />
+      <span className={isUrgent ? 'text-red-700 dark:text-red-300' : 'text-blue-700 dark:text-blue-300'}>
+        {daysLeft === 1
+          ? 'Your trial ends tomorrow. Add a payment method to continue.'
+          : `${daysLeft} days left in your free trial.`}
+      </span>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────
+// Past Due Banner
+// ─────────────────────────────────────────
+
+export function PastDueBanner({ className }: { className?: string }) {
+  const { subscription } = useOrganization();
+  const navigate = useNavigate();
+
+  if (subscription?.status !== 'past_due') return null;
+
+  return (
+    <div className={cn(
+      'flex items-center gap-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-3 text-sm',
+      className,
+    )}>
+      <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
+      <span className="text-red-800 dark:text-red-300">
+        Your payment has failed. Please update your payment method to avoid losing access to premium features.
+      </span>
+      <Button
+        size="sm"
+        variant="destructive"
+        className="ml-auto shrink-0"
+        onClick={() => navigate('/billing')}
+      >
+        Update Payment
+      </Button>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────
+// Subscription Status Badge
+// ─────────────────────────────────────────
+
+export function SubscriptionStatusBadge({ className }: { className?: string }) {
+  const { subscription, plan } = useOrganization();
+  const status = subscription?.status || 'active';
+
+  const variants: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
+    active:   { label: `${plan.name} Plan`, variant: 'default' },
+    trialing: { label: `${plan.name} Trial`, variant: 'secondary' },
+    past_due: { label: 'Payment Due', variant: 'destructive' },
+    canceled: { label: 'Canceled', variant: 'outline' },
+    paused:   { label: 'Paused', variant: 'outline' },
+  };
+
+  const { label, variant } = variants[status] || variants.active;
+
+  return (
+    <Badge variant={variant} className={className}>
+      {status === 'active' && <CheckCircle2 className="w-3 h-3 mr-1" />}
+      {status === 'past_due' && <AlertTriangle className="w-3 h-3 mr-1" />}
+      {status === 'trialing' && <Clock className="w-3 h-3 mr-1" />}
+      {label}
+    </Badge>
   );
 }
 
@@ -146,16 +240,67 @@ export const SubscriptionGuard: React.FC<Props> = ({
   feature,
   permission,
   limit,
+  requireSubscription = false,
   action,
   silent = false,
+  inline = false,
   className,
   children,
 }) => {
-  const { hasFeature, can, isAtLimit, plan } = useOrganization();
+  const { hasFeature, can, isAtLimit, plan, subscription } = useOrganization();
+  const navigate = useNavigate();
+
+  // Subscription status gate
+  if (requireSubscription) {
+    const status = subscription?.status;
+    if (status === 'past_due') {
+      if (silent) return null;
+      return (
+        <UpgradeCard
+          reason="Your payment has failed. Please update your payment method to continue using this feature."
+          action={action}
+          className={className}
+        />
+      );
+    }
+    if (status === 'canceled') {
+      if (silent) return null;
+      return (
+        <UpgradeCard
+          reason="Your subscription has been canceled. Please resubscribe to access this feature."
+          action={action}
+          className={className}
+        />
+      );
+    }
+    // Check trial expiry
+    if (status === 'trialing' && subscription?.trialEndsAt) {
+      const daysLeft = trialDaysRemaining(subscription.trialEndsAt);
+      if (daysLeft <= 0) {
+        if (silent) return null;
+        return (
+          <UpgradeCard
+            reason="Your free trial has expired. Please subscribe to continue using this feature."
+            action={action}
+            className={className}
+          />
+        );
+      }
+    }
+  }
 
   // Feature gate
   if (feature && !hasFeature(feature)) {
     if (silent) return null;
+    if (inline) {
+      return (
+        <div className={cn('flex items-center gap-2 text-sm text-slate-500', className)}>
+          <ShieldAlert className="w-4 h-4" />
+          <span>{FEATURE_LABELS[feature]}</span>
+          <Button size="sm" variant="link" onClick={() => navigate('/billing')}>Upgrade</Button>
+        </div>
+      );
+    }
     return (
       <UpgradeCard
         reason={FEATURE_LABELS[feature]}

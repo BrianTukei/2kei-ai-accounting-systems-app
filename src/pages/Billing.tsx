@@ -15,7 +15,12 @@ import { useOrganization } from '@/contexts/OrganizationContext';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   PLANS, PLAN_ORDER, type PlanId, isAtLimit, usagePercent,
+  trialDaysRemaining, formatStorageLimit,
 } from '@/lib/plans';
+import BillingDashboard from '@/components/dashboard/BillingDashboard';
+import {
+  TrialCountdown, PastDueBanner, SubscriptionStatusBadge,
+} from '@/components/SubscriptionGuard';
 import {
   cancelSubscription, reactivateSubscription,
   fetchBillingHistory, stripeBillingPortal, isInDemoMode,
@@ -699,7 +704,8 @@ export default function Billing() {
           </CardContent>
         </Card>
 
-        <UsageMeters />
+        {/* Enhanced Usage & Billing Dashboard */}
+        <BillingDashboard />
       </div>
 
       {/* Plan selection grid */}

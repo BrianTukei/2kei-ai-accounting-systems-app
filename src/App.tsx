@@ -39,6 +39,7 @@ import AcceptInvite from './pages/AcceptInvite';
 import SuperAdmin from './pages/SuperAdmin';
 import DeveloperAdminDashboard from './pages/DeveloperAdminDashboard';
 import AdminTest from './pages/AdminTest';
+import AdminBilling from './pages/AdminBilling';
 import RecurringTransactions from './pages/RecurringTransactions';
 import { InstallPrompt } from './components/pwa/InstallPrompt';
 
@@ -124,6 +125,7 @@ function AppInner() {
       <Route path="/super-admin"  element={<ProtectedRoute allowWithoutOrg><SuperAdmin /></ProtectedRoute>} />
       <Route path="/dev-admin"    element={<ProtectedRoute allowWithoutOrg><DeveloperAdminDashboard /></ProtectedRoute>} />
       <Route path="/admin-test"   element={<ProtectedRoute allowWithoutOrg><AdminTest /></ProtectedRoute>} />
+      <Route path="/admin/billing" element={<ProtectedRoute allowWithoutOrg><AdminBilling /></ProtectedRoute>} />
 
       {/* Legal */}
       <Route path="/privacy" element={<Privacy />} />

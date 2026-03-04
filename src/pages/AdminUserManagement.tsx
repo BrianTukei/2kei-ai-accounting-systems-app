@@ -35,7 +35,9 @@ interface AdminUser {
   user_metadata: {
     first_name?: string;
     last_name?: string;
+    full_name?: string;
   };
+  full_name?: string;
   roles?: string[];
   banned_until?: string;
   confirmed_at?: string;
@@ -241,19 +243,26 @@ export default function AdminUserManagement() {
         // Edge function unavailable — build admin list from profiles table
         const { data: profiles } = await supabase
           .from("profiles")
-          .select("id, first_name, last_name, email, created_at, updated_at")
+          .select("id, full_name, email, created_at, updated_at")
           .in("id", roleData.map(r => r.user_id));
 
         if (profiles && profiles.length > 0) {
-          setAdminUsers(profiles.map(p => ({
-            id: p.id,
-            email: p.email || "",
-            first_name: p.first_name || "",
-            last_name: p.last_name || "",
-            created_at: p.created_at,
-            last_sign_in_at: p.updated_at,
-            role: "admin",
-          })));
+          setAdminUsers(profiles.map(p => {
+            const nameParts = (p.full_name || '').split(' ');
+            return {
+              id: p.id,
+              email: p.email || "",
+              full_name: p.full_name || "",
+              user_metadata: {
+                first_name: nameParts[0] || "",
+                last_name: nameParts.slice(1).join(' ') || "",
+                full_name: p.full_name || "",
+              },
+              created_at: p.created_at,
+              last_sign_in_at: p.updated_at,
+              role: "admin",
+            };
+          }));
         } else {
           setAdminUsers([]);
         }
@@ -281,10 +290,10 @@ export default function AdminUserManagement() {
         // Edge function unavailable — load from profiles table
         let query = supabase
           .from("profiles")
-          .select("id, first_name, last_name, email, created_at, updated_at", { count: 'exact' });
+          .select("id, full_name, email, created_at, updated_at", { count: 'exact' });
 
         if (searchQuery) {
-          query = query.or(`email.ilike.%${searchQuery}%,first_name.ilike.%${searchQuery}%,last_name.ilike.%${searchQuery}%`);
+          query = query.or(`email.ilike.%${searchQuery}%,full_name.ilike.%${searchQuery}%`);
         }
 
         const { data: profiles, count } = await query
@@ -300,15 +309,22 @@ export default function AdminUserManagement() {
 
           const roleMap = new Map(roles?.map(r => [r.user_id, r.role]) || []);
 
-          setAllUsers(profiles.map(p => ({
-            id: p.id,
-            email: p.email || "",
-            first_name: p.first_name || "",
-            last_name: p.last_name || "",
-            created_at: p.created_at,
-            last_sign_in_at: p.updated_at,
-            role: roleMap.get(p.id) || "user",
-          })));
+          setAllUsers(profiles.map(p => {
+            const nameParts = (p.full_name || '').split(' ');
+            return {
+              id: p.id,
+              email: p.email || "",
+              full_name: p.full_name || "",
+              user_metadata: {
+                first_name: nameParts[0] || "",
+                last_name: nameParts.slice(1).join(' ') || "",
+                full_name: p.full_name || "",
+              },
+              created_at: p.created_at,
+              last_sign_in_at: p.updated_at,
+              role: roleMap.get(p.id) || "user",
+            };
+          }));
           setTotalUsers(count || 0);
         }
       }
@@ -570,9 +586,13 @@ export default function AdminUserManagement() {
   };
 
   const getUserName = (user: AdminUser) => {
+    // Try full_name first (from profiles table), then metadata (from auth)
+    if (user.full_name) return user.full_name;
+    if (user.user_metadata?.full_name) return user.user_metadata.full_name;
     const first = user.user_metadata?.first_name || '';
     const last = user.user_metadata?.last_name || '';
-    return (first + ' ' + last).trim() || '—';
+    const combined = (first + ' ' + last).trim();
+    return combined || user.email?.split('@')[0] || '—';
   };
 
   const toggleSelect = (id: string) => {

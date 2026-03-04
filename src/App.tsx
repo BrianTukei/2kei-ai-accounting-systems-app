@@ -94,23 +94,25 @@ function AppInner() {
       {/* Onboarding (protected but no org required) */}
       <Route path="/onboarding" element={<ProtectedRoute allowWithoutOrg><Onboarding /></ProtectedRoute>} />
 
-      {/* Main app */}
+      {/* Main app — free tier accessible */}
       <Route path="/dashboard"      element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/transactions"   element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
-      <Route path="/forecast"       element={<ProtectedRoute><Forecast /></ProtectedRoute>} />
-      <Route path="/reports"        element={<ProtectedRoute><Reports /></ProtectedRoute>} />
       <Route path="/settings"       element={<ProtectedRoute><Settings /></ProtectedRoute>} />
       <Route path="/profile"        element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-      <Route path="/payroll"        element={<ProtectedRoute><Payroll /></ProtectedRoute>} />
       <Route path="/invoices"       element={<ProtectedRoute><Invoices /></ProtectedRoute>} />
-      <Route path="/bank-import"    element={<ProtectedRoute><BankImport /></ProtectedRoute>} />
       <Route path="/journal"        element={<ProtectedRoute><Journal /></ProtectedRoute>} />
-      <Route path="/recurring-transactions" element={<ProtectedRoute><RecurringTransactions /></ProtectedRoute>} />
-      <Route path="/ai-assistant"   element={<ProtectedRoute><AIAssistant /></ProtectedRoute>} />
 
-      {/* SaaS */}
+      {/* Premium features — require active paid subscription */}
+      <Route path="/forecast"       element={<ProtectedRoute requireActiveSubscription><Forecast /></ProtectedRoute>} />
+      <Route path="/reports"        element={<ProtectedRoute requireActiveSubscription><Reports /></ProtectedRoute>} />
+      <Route path="/payroll"        element={<ProtectedRoute requireActiveSubscription><Payroll /></ProtectedRoute>} />
+      <Route path="/bank-import"    element={<ProtectedRoute requireActiveSubscription><BankImport /></ProtectedRoute>} />
+      <Route path="/recurring-transactions" element={<ProtectedRoute requireActiveSubscription><RecurringTransactions /></ProtectedRoute>} />
+      <Route path="/ai-assistant"   element={<ProtectedRoute requireActiveSubscription><AIAssistant /></ProtectedRoute>} />
+      <Route path="/team"           element={<ProtectedRoute requireActiveSubscription><Team /></ProtectedRoute>} />
+
+      {/* SaaS — billing (exempt from subscription check to avoid loops) */}
       <Route path="/billing"        element={<ProtectedRoute skipSubscriptionCheck><Billing /></ProtectedRoute>} />
-      <Route path="/team"           element={<ProtectedRoute><Team /></ProtectedRoute>} />
 
       {/* Financial statements */}
       <Route path="/income-statement" element={<ProtectedRoute><IncomeStatement /></ProtectedRoute>} />

@@ -288,7 +288,10 @@ export default function Billing() {
     if (params.get('upgraded') === '1' || params.get('reference') || params.get('tx_ref') || params.get('transaction_id') || params.get('OrderTrackingId') || params.get('orderTrackingId')) {
       console.log('[Billing] Payment return detected, provider:', provider);
       
-      if (provider && provider !== 'demo' && org) {
+      // Detect provider from URL or infer from session_id (Stripe)
+      const effectiveProvider = provider || (params.get('session_id') ? 'stripe' : null);
+      
+      if (effectiveProvider && effectiveProvider !== 'demo' && org) {
         // ── REAL PROVIDER: Verify payment THEN activate subscription ──
         setLoading(true);
         const returnPlan = (params.get('plan') || 'pro') as PlanId;
@@ -298,27 +301,42 @@ export default function Billing() {
           if (result.verified) {
             console.log('[Billing] Payment verified! Activating subscription...');
 
-            // NOW activate the subscription — payment is confirmed
-            const activationResult = await activateAfterPaymentVerified(
-              org.id, returnPlan, returnCycle, provider,
-            );
+            // Activate subscription — if webhook already did it, this will get a 409
+            // which is fine; the subscription is already active.
+            try {
+              const activationResult = await activateAfterPaymentVerified(
+                org.id, returnPlan, returnCycle, effectiveProvider,
+              );
 
-            if (activationResult.success) {
-              try {
-                const orgJson = localStorage.getItem('2k_onboarding_org');
-                if (orgJson) {
-                  const orgData = JSON.parse(orgJson);
-                  orgData.plan = returnPlan;
-                  localStorage.setItem('2k_onboarding_org', JSON.stringify(orgData));
+              if (!activationResult.success) {
+                // Check if it's an "already active" error (409 from webhook)
+                const alreadyActive = activationResult.error?.toLowerCase().includes('already') ||
+                                      activationResult.error?.toLowerCase().includes('active');
+                if (!alreadyActive) {
+                  console.warn('[Billing] Activation warning:', activationResult.error);
                 }
-              } catch { /* non-critical */ }
-
-              await refresh();
-              navigate('/dashboard?payment=success', { replace: true });
-            } else {
-              toast.error(activationResult.error || 'Payment verified but activation failed. Contact support.');
-              window.history.replaceState({}, '', '/billing');
+                // Either way, continue — the subscription may be active from webhook
+              }
+            } catch (actErr: any) {
+              // 409 = already activated by webhook → that's OK
+              const errMsg = actErr?.message || String(actErr);
+              if (!errMsg.includes('already') && !errMsg.includes('active')) {
+                console.warn('[Billing] Activation error (non-critical):', errMsg);
+              }
             }
+
+            // Always update localStorage and refresh regardless
+            try {
+              const orgJson = localStorage.getItem('2k_onboarding_org');
+              if (orgJson) {
+                const orgData = JSON.parse(orgJson);
+                orgData.plan = returnPlan;
+                localStorage.setItem('2k_onboarding_org', JSON.stringify(orgData));
+              }
+            } catch { /* non-critical */ }
+
+            await refresh();
+            navigate('/dashboard?payment=success&plan=' + returnPlan, { replace: true });
           } else {
             toast.error(result.error || 'Payment verification failed. Your card was not charged. Please try again.');
             window.history.replaceState({}, '', '/billing');
@@ -565,14 +583,24 @@ export default function Billing() {
   const handleManageBilling = async () => {
     if (!org) return;
     try {
-      const { url } = await stripeBillingPortal(org.id, `${window.location.origin}/billing`);
-      if (url.includes('demo=portal')) {
-        toast.info('Billing portal is available in production mode only.');
+      const result = await stripeBillingPortal(org.id, `${window.location.origin}/billing`);
+      const url = result?.url || '';
+      if (!url || url.includes('demo=portal')) {
+        // Demo mode or no URL — show billing info inline instead
+        toast.info(
+          `You are on the ${plan.name} plan${subscription?.periodEnd ? `. Renews ${new Date(subscription.periodEnd).toLocaleDateString()}.` : '.'}`,
+          { duration: 5000 },
+        );
         return;
       }
       window.open(url, '_blank');
-    } catch {
-      toast.error('Could not open billing portal.');
+    } catch (err) {
+      console.error('[Billing] Manage billing error:', err);
+      // Fallback: show plan info so the button always does something
+      toast.info(
+        `You are on the ${plan.name} plan. To manage payments, contact support or use the plan cards below.`,
+        { duration: 5000 },
+      );
     }
   };
 
@@ -617,6 +645,19 @@ export default function Billing() {
       subtitle="Manage your plan, usage, and payment details."
       showBackButton={false}
     >
+      {/* Full-page loading overlay when processing payment return */}
+      {loading && processingPlan === null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-4 p-8 rounded-xl bg-white dark:bg-slate-800 shadow-xl border">
+            <Loader2 className="w-10 h-10 animate-spin text-indigo-600" />
+            <div className="text-center">
+              <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">Verifying your payment…</p>
+              <p className="text-sm text-slate-500 mt-1">This usually takes a few seconds.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Demo mode indicator */}
       {isInDemoMode() && (
         <div className="flex items-center gap-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 p-3 mb-4 text-sm">

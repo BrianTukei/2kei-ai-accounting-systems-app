@@ -27,6 +27,7 @@ import {
 import {
   processSubscription,
   activateSubscription,
+  activateAfterPaymentVerified,
   clearActivationFlag,
 } from '@/services/subscription';
 import { supabase } from '@/integrations/supabase/client';
@@ -282,31 +283,57 @@ export default function Billing() {
     if (params.get('upgraded') === '1' || params.get('reference') || params.get('tx_ref') || params.get('transaction_id')) {
       console.log('[Billing] Payment return detected, provider:', provider);
       
-      // If we have a provider, verify the payment
       if (provider && provider !== 'demo' && org) {
+        // ── REAL PROVIDER: Verify payment THEN activate subscription ──
         setLoading(true);
-        verifyPaymentFromRedirect(params, org.id).then((result) => {
+        const returnPlan = (params.get('plan') || 'pro') as PlanId;
+        const returnCycle = (params.get('cycle') || 'monthly') as 'monthly' | 'annual';
+
+        verifyPaymentFromRedirect(params, org.id).then(async (result) => {
           if (result.verified) {
-            refresh();
-            // Redirect to dashboard which shows the success toast
-            navigate('/dashboard?payment=success', { replace: true });
+            console.log('[Billing] Payment verified! Activating subscription...');
+
+            // NOW activate the subscription — payment is confirmed
+            const activationResult = await activateAfterPaymentVerified(
+              org.id, returnPlan, returnCycle, provider,
+            );
+
+            if (activationResult.success) {
+              try {
+                const orgJson = localStorage.getItem('2k_onboarding_org');
+                if (orgJson) {
+                  const orgData = JSON.parse(orgJson);
+                  orgData.plan = returnPlan;
+                  localStorage.setItem('2k_onboarding_org', JSON.stringify(orgData));
+                }
+              } catch { /* non-critical */ }
+
+              await refresh();
+              navigate('/dashboard?payment=success', { replace: true });
+            } else {
+              toast.error(activationResult.error || 'Payment verified but activation failed. Contact support.');
+              window.history.replaceState({}, '', '/billing');
+            }
           } else {
-            toast.error(result.error || 'Payment verification failed. Please contact support.');
+            toast.error(result.error || 'Payment verification failed. Your card was not charged. Please try again.');
             window.history.replaceState({}, '', '/billing');
           }
           setLoading(false);
-        }).catch(() => {
-          toast.error('Could not verify payment. Please contact support.');
+        }).catch((err) => {
+          console.error('[Billing] Verification error:', err);
+          toast.error('Could not verify payment. Please contact support if you were charged.');
           window.history.replaceState({}, '', '/billing');
           setLoading(false);
         });
         return;
       }
       
-      // No provider or demo — redirect to dashboard which shows the toast
-      refresh();
-      navigate('/dashboard?payment=success', { replace: true });
-      return;
+      // Demo provider — redirect to dashboard
+      if (provider === 'demo' || !provider) {
+        refresh();
+        navigate('/dashboard?payment=success', { replace: true });
+        return;
+      }
     }
     
     // Handle cancelled payment
@@ -330,54 +357,48 @@ export default function Billing() {
       return;
     }
 
-    // For all plan changes (upgrade AND downgrade) — open confirmation dialog
     const currency = org.currency || 'USD';
+    const currentPlanId = plan.id as PlanId;
+    const isDowngrade = PLAN_ORDER.indexOf(planId) < PLAN_ORDER.indexOf(currentPlanId);
+
     setSelectedUpgradePlan(planId);
     setSelectedProvider(selectProvider(currency));
-    setUpgradeStep('confirm');
     setMomoPhoneNumber('');
+
+    // Downgrades go straight to confirmation (no payment needed)
+    // Upgrades go to payment method selection FIRST
+    if (isDowngrade) {
+      setUpgradeStep('confirm');
+    } else {
+      setUpgradeStep('provider');
+    }
     setUpgradeDialog(true);
   };
 
   /**
-   * Persist subscription change to Supabase DB (in addition to localStorage).
-   * This ensures the admin dashboard and other real queries see the subscription.
+   * Persist subscription change to Supabase DB via Edge Function.
+   * This is called internally by processSubscription/activateSubscription now,
+   * but kept as a manual fallback for edge cases.
    */
   const persistSubscriptionToDb = async (orgId: string, planId: PlanId, cycle: 'monthly' | 'annual') => {
     try {
-      const periodEnd = new Date();
-      if (cycle === 'annual') {
-        periodEnd.setFullYear(periodEnd.getFullYear() + 1);
-      } else {
-        periodEnd.setMonth(periodEnd.getMonth() + 1);
+      const result = await activateSubscription(orgId, planId, cycle, undefined, 'manual-sync', true);
+      if (!result.success) {
+        console.warn('[Billing] DB subscription persistence failed:', result.error);
       }
-
-      await supabase
-        .from('subscriptions')
-        .upsert({
-          organization_id: orgId,
-          plan_id: planId,
-          status: planId === 'free' ? 'active' : 'active',
-          billing_cycle: cycle,
-          current_period_start: new Date().toISOString(),
-          current_period_end: periodEnd.toISOString(),
-          cancel_at_period_end: false,
-          payment_provider: 'demo',
-          updated_at: new Date().toISOString(),
-        }, { onConflict: 'organization_id' });
     } catch (err) {
-      console.warn('[Billing] DB subscription persistence failed (non-critical):', err);
+      console.warn('[Billing] DB subscription persistence error (non-critical):', err);
     }
   };
 
   /**
-   * Execute the actual upgrade after user confirms.
-   * Tries external provider first, falls back to demo/local activation.
-   */
-  /**
    * Execute a plan change — works for both upgrades and downgrades.
-   * Downgrades are processed instantly (no payment).
-   * Upgrades go through external checkout or demo activation.
+   *
+   * CRITICAL FIX:
+   *   - Downgrades: instant activation (no payment).
+   *   - Demo provider: instant activation (testing only).
+   *   - Real providers: redirect to payment gateway → activation ONLY after payment verified.
+   *   - NO silent demo fallback when real providers fail.
    */
   const executeUpgrade = async () => {
     if (!selectedUpgradePlan || !org || !user) return;
@@ -392,23 +413,28 @@ export default function Billing() {
 
     console.log(`[Billing] ${actionLabel}:`, { planId, provider: selectedProvider, billingCycle });
 
+    // Validate phone number for mobile money providers
+    if (!isDowngrade && providerRequiresPhone(selectedProvider) && !momoPhoneNumber.trim()) {
+      toast.error('Please enter your mobile money phone number.');
+      return;
+    }
+
     setUpgradeStep('processing');
     setLoading(true);
     setProcessingPlan(planId);
 
     try {
-      // Downgrades are always processed instantly (no payment required)
+      // ── DOWNGRADE: No payment needed, activate immediately ──
       if (isDowngrade) {
         console.log('[Billing] Processing downgrade (no payment)');
 
         const result = await processSubscription(
           org.id, userId, planId, billingCycle,
-          user.email ?? '', currency, 'demo',
+          user.email ?? '', currency, selectedProvider,
+          true, // isDowngrade
         );
 
         if (result.success) {
-          await persistSubscriptionToDb(org.id, planId, billingCycle);
-
           try {
             const orgJson = localStorage.getItem('2k_onboarding_org');
             if (orgJson) {
@@ -428,11 +454,11 @@ export default function Billing() {
           }, 1200);
           return;
         } else {
-          toast.error(result.error || 'Failed to change plan');
+          toast.error(result.error || 'Failed to change plan. Please try again.');
         }
       }
-      // If demo provider OR demo mode — instant activation
-      else if (selectedProvider === 'demo' || isInDemoMode()) {
+      // ── DEMO PROVIDER: Instant activation for testing ──
+      else if (selectedProvider === 'demo') {
         console.log('[Billing] Demo mode activation');
 
         const result = await processSubscription(
@@ -441,8 +467,6 @@ export default function Billing() {
         );
 
         if (result.success) {
-          await persistSubscriptionToDb(org.id, planId, billingCycle);
-
           try {
             const orgJson = localStorage.getItem('2k_onboarding_org');
             if (orgJson) {
@@ -455,79 +479,78 @@ export default function Billing() {
           clearActivationFlag();
           setUpgradeDialog(false);
           await refresh();
-
-          // Redirect to dashboard — it will show the success toast
           window.location.href = '/dashboard?payment=success&plan=' + planId;
           return;
         } else {
-          toast.error(result.error || 'Failed to activate subscription');
+          toast.error(result.error || 'Failed to activate subscription.');
         }
-      } else {
-        // Real provider — try external checkout
-        console.log('[Billing] Attempting external checkout with:', selectedProvider);
+      }
+      // ── REAL PROVIDER: Redirect to payment gateway ──
+      else {
+        console.log('[Billing] Starting real payment checkout with:', selectedProvider);
 
-        await processSubscription(
+        // Step 1: Create pending payment record (does NOT activate subscription)
+        const paymentResult = await processSubscription(
           org.id, userId, planId, billingCycle,
           user.email ?? '', currency, selectedProvider,
         );
 
+        if (!paymentResult.success) {
+          toast.error(paymentResult.error || 'Failed to initiate payment.');
+          return;
+        }
+
+        // Step 2: Redirect to external payment provider
+        // Subscription activation will happen ONLY after payment is verified
         try {
-          const result: CheckoutResult = await initiateCheckout({
+          const checkoutResult: CheckoutResult = await initiateCheckout({
             organizationId: org.id,
             planId,
             billingCycle,
             email: user.email ?? '',
             currency,
-            successUrl: `${window.location.origin}/billing?upgraded=1&provider=${selectedProvider}`,
+            successUrl: `${window.location.origin}/billing?upgraded=1&provider=${selectedProvider}&plan=${planId}&cycle=${billingCycle}`,
             cancelUrl:  `${window.location.origin}/billing?payment=cancelled`,
-            ...(providerRequiresPhone(selectedProvider) ? { phoneNumber: momoPhoneNumber, network: selectedProvider === 'airtel_money' ? 'AIRTEL' as const : 'MTN' as const } : {}),
+            ...(providerRequiresPhone(selectedProvider)
+              ? { phoneNumber: momoPhoneNumber, network: selectedProvider === 'airtel_money' ? 'AIRTEL' as const : 'MTN' as const }
+              : {}),
           }, selectedProvider);
 
-          console.log('[Billing] Checkout result:', result);
+          console.log('[Billing] Checkout result:', checkoutResult);
 
-          if (result.checkoutUrl) {
-            window.location.href = result.checkoutUrl;
+          if (checkoutResult.checkoutUrl) {
+            // Redirect user to payment page (Stripe, Flutterwave, Paystack, etc.)
+            window.location.href = checkoutResult.checkoutUrl;
             return;
           } else {
-            toast.success('Payment processing…');
+            // Inline payment (e.g., mobile money push) — wait for confirmation
+            toast.info('Payment request sent. Please check your phone to approve.');
             setUpgradeDialog(false);
             return;
           }
-        } catch (providerErr) {
-          console.warn('[Billing] External provider failed, falling back to demo activation:', providerErr);
+        } catch (providerErr: any) {
+          // !! NO SILENT DEMO FALLBACK !!
+          // If the provider fails, tell the user clearly.
+          console.error('[Billing] Payment provider error:', providerErr);
 
-          const fallbackResult = await processSubscription(
-            org.id, userId, planId, billingCycle,
-            user.email ?? '', currency, 'demo',
-          );
-
-          if (fallbackResult.success) {
-            await persistSubscriptionToDb(org.id, planId, billingCycle);
-
-            try {
-              const orgJson = localStorage.getItem('2k_onboarding_org');
-              if (orgJson) {
-                const orgData = JSON.parse(orgJson);
-                orgData.plan = planId;
-                localStorage.setItem('2k_onboarding_org', JSON.stringify(orgData));
-              }
-            } catch { /* non-critical */ }
-
-            clearActivationFlag();
-            setUpgradeDialog(false);
-            await refresh();
-
-            // Redirect to dashboard — it will show the success toast
-            window.location.href = '/dashboard?payment=success&plan=' + planId;
-            return;
+          const errorMsg = providerErr?.message || String(providerErr);
+          if (errorMsg.includes('not available') || errorMsg.includes('not configured') || errorMsg.includes('Demo mode')) {
+            toast.error(
+              'This payment method is not yet configured. Please select "Demo Mode" for testing, or contact support to set up real payments.',
+              { duration: 8000 },
+            );
           } else {
-            toast.error('Failed to activate subscription. Please try again.');
+            toast.error(`Payment failed: ${errorMsg}. Please try a different payment method.`, { duration: 6000 });
           }
+
+          // Go back to provider selection so user can pick another option
+          setUpgradeStep('provider');
+          return;
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(`[Billing] ${actionLabel} error:`, err);
-      toast.error('Could not process plan change. Please try again.');
+      toast.error(err?.message || 'Could not process plan change. Please try again.');
     } finally {
       setLoading(false);
       setProcessingPlan(null);
@@ -909,18 +932,18 @@ export default function Billing() {
 
                   {/* Payment provider info — only for upgrades (downgrades don't need payment) */}
                   {isUpgrade && (
-                    <div className="rounded-lg border border-slate-200 dark:border-slate-700 p-3">
-                      <div className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Payment Method</div>
+                    <div className="rounded-lg border border-indigo-200 dark:border-indigo-700 bg-indigo-50/50 dark:bg-indigo-900/10 p-3">
+                      <div className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Selected Payment Method</div>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <CreditCard className="w-4 h-4 text-indigo-500" />
-                          <span className="text-sm text-slate-600 dark:text-slate-400">
+                          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
                             {getProviderDisplayName(selectedProvider)}
                           </span>
                         </div>
                         <Button variant="ghost" size="sm" className="text-xs text-indigo-600"
                           onClick={() => setUpgradeStep('provider')}>
-                          Change
+                          Change method
                         </Button>
                       </div>
                       <div className="flex flex-wrap gap-1 mt-1.5">
@@ -928,6 +951,12 @@ export default function Billing() {
                           <Badge key={m} variant="secondary" className="text-[10px]">{m}</Badge>
                         ))}
                       </div>
+                      {providerRequiresPhone(selectedProvider) && momoPhoneNumber && (
+                        <div className="flex items-center gap-1.5 mt-2 text-xs text-slate-500">
+                          <Phone className="w-3 h-3" />
+                          Payment will be charged to: <span className="font-mono font-medium">{momoPhoneNumber}</span>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -948,8 +977,14 @@ export default function Billing() {
                 </div>
 
                 <DialogFooter className="gap-2 sm:gap-0">
-                  <Button variant="outline" onClick={() => setUpgradeDialog(false)}>
-                    Cancel
+                  <Button variant="outline" onClick={() => {
+                    if (isUpgrade) {
+                      setUpgradeStep('provider');
+                    } else {
+                      setUpgradeDialog(false);
+                    }
+                  }}>
+                    {isUpgrade ? 'Back' : 'Cancel'}
                   </Button>
                   <Button
                     onClick={executeUpgrade}
@@ -957,7 +992,7 @@ export default function Billing() {
                   >
                     {isUpgrade ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />}
                     {isUpgrade
-                      ? `Upgrade Now — ${priceInfo.formatted}/${billingCycle === 'annual' ? 'yr' : 'mo'}`
+                      ? `Pay & Upgrade — ${priceInfo.formatted}/${billingCycle === 'annual' ? 'yr' : 'mo'}`
                       : `Downgrade to ${newPlan.name}`}
                   </Button>
                 </DialogFooter>
@@ -986,16 +1021,23 @@ export default function Billing() {
             }
 
             providers.push(
-              { id: 'demo', label: 'Demo Mode', icon: Sparkles, desc: 'Instant activation (no real payment)' },
+              { id: 'demo', label: 'Demo Mode', icon: Sparkles, desc: 'Instant activation for testing (no real payment)' },
             );
 
             const needsPhone = providerRequiresPhone(selectedProvider);
+            const newPlan = PLANS[selectedUpgradePlan];
+            const priceInfo = getDisplayPrice(selectedUpgradePlan, billingCycle, currency);
 
             return (
               <>
                 <DialogHeader>
-                  <DialogTitle>Choose Payment Method</DialogTitle>
-                  <DialogDescription>Select how you'd like to pay for your subscription</DialogDescription>
+                  <DialogTitle className="flex items-center gap-2">
+                    <CreditCard className="w-5 h-5 text-indigo-500" />
+                    Choose Payment Method
+                  </DialogTitle>
+                  <DialogDescription>
+                    Select how you'd like to pay for {newPlan.name} — {priceInfo.formatted}/{billingCycle === 'annual' ? 'yr' : 'mo'}
+                  </DialogDescription>
                 </DialogHeader>
 
                 <RadioGroup value={selectedProvider} onValueChange={(v) => setSelectedProvider(v as PaymentProvider)} className="space-y-2 py-2">
@@ -1041,15 +1083,24 @@ export default function Billing() {
                   </div>
                 )}
 
+                {selectedProvider === 'demo' && (
+                  <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-50 dark:bg-amber-900/20 rounded-lg px-3 py-2">
+                    <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                    Demo mode activates instantly without real payment. For testing only.
+                  </div>
+                )}
+
                 <DialogFooter className="gap-2 sm:gap-0">
-                  <Button variant="outline" onClick={() => setUpgradeStep('confirm')}>
-                    Back
+                  <Button variant="outline" onClick={() => setUpgradeDialog(false)}>
+                    Cancel
                   </Button>
                   <Button
                     onClick={() => setUpgradeStep('confirm')}
                     disabled={needsPhone && !momoPhoneNumber.trim()}
+                    className="gap-2"
                   >
-                    Confirm Provider
+                    <ArrowRight className="w-4 h-4" />
+                    Continue to Review
                   </Button>
                 </DialogFooter>
               </>

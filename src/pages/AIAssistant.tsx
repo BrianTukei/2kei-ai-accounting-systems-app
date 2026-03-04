@@ -171,7 +171,7 @@ export default function AIAssistant() {
             AI Accounting Assistant
           </h1>
           <p className="text-sm sm:text-base text-muted-foreground mt-2">
-            Get intelligent help with your accounting questions and financial analysis
+            Get CFO-grade financial analysis powered by your real data
           </p>
           
           {/* Section Navigation */}

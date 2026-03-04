@@ -2,9 +2,20 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Send, Bot, Minimize2, Maximize2, X } from 'lucide-react';
+import { Loader2, Send, Bot, Minimize2, Maximize2, X, BarChart3, DollarSign, TrendingDown, AlertTriangle, Sparkles } from 'lucide-react';
 import { ChatMessage } from './ChatMessage';
-import { AIAssistantService, ChatMessage as ChatMessageType } from '@/services/aiAssistant';
+import { AIAssistantService, ChatMessage as ChatMessageType, FinancialSnapshot } from '@/services/aiAssistant';
+import { useFinancialStats } from '@/hooks/useFinancialStats';
+
+/** Quick suggestion chips shown when conversation is empty / after welcome */
+const QUICK_SUGGESTIONS = [
+  { label: '📊 Health Score', message: 'How is my business doing?' },
+  { label: '💰 Cash Flow', message: 'Analyze my cash flow' },
+  { label: '📉 Expenses', message: 'Analyze my expenses' },
+  { label: '⚠️ Risk Areas', message: 'Show risk areas' },
+  { label: '📈 Profit Analysis', message: 'Analyze my profits' },
+  { label: '🚀 Growth Strategy', message: 'Give me a growth strategy' },
+];
 
 interface AIChatProps {
   contextType?: string;
@@ -40,6 +51,23 @@ export const AIChat: React.FC<AIChatProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // ── Real financial data ─────────────────────────────────────────────────
+  const stats = useFinancialStats();
+
+  /** Build a snapshot every render so the AI always has fresh numbers */
+  const financialSnapshot: FinancialSnapshot = {
+    totalIncome: stats.totalIncome,
+    totalExpenses: stats.totalExpenses,
+    totalBalance: stats.totalBalance,
+    monthlyIncome: stats.monthlyIncome,
+    monthlyExpenses: stats.monthlyExpenses,
+    incomeGrowth: stats.incomeGrowth,
+    expenseGrowth: stats.expenseGrowth,
+    categoryBreakdown: stats.categoryBreakdown,
+    monthlyData: stats.monthlyData,
+    transactionCount: stats.totalIncome > 0 || stats.totalExpenses > 0 ? Math.max(stats.categoryBreakdown.length * 3, 1) : 0,
+  };
+
   // Scroll to latest message
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -60,7 +88,7 @@ export const AIChat: React.FC<AIChatProps> = ({
       setMessages([{
         id: 'welcome',
         role: 'assistant',
-        content: `Hello! I'm your AI Accounting Assistant. I can help you with:\n\n• Understanding financial reports\n• Expense categorization\n• Accounting principles\n• Tax and bookkeeping guidance\n• Financial analysis and insights\n\nWhat would you like to know about your finances today?`,
+        content: `Hello! I'm **2KEI AI** — your intelligent financial co-pilot. 🧠\n\nI analyze your **real financial data** to provide:\n\n• 📊 Financial Health Score (0-100)\n• 📈 Profit & Margin Analysis\n• 💰 Cash Flow Assessment\n• ⚠️ Error & Risk Detection\n• 🚀 Growth Strategies\n\nTry asking: **"How is my business doing?"**`,
         timestamp: new Date(),
       }]);
     }
@@ -100,6 +128,7 @@ export const AIChat: React.FC<AIChatProps> = ({
         conversationId,
         contextType,
         contextData,
+        financialSnapshot,
       });
 
       if (response.success && response.response) {
@@ -140,24 +169,40 @@ export const AIChat: React.FC<AIChatProps> = ({
 
   // ── Input bar (shared) ─────────────────────────────────────────────────────
   const inputBar = (
-    <div className="flex gap-2 pt-2 border-t border-border bg-background">
-      <Input
-        ref={inputRef}
-        value={inputValue}
-        onChange={e => setInputValue(e.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder="Ask me about your finances…"
-        disabled={isLoading}
-        className="flex-1 text-sm h-9"
-      />
-      <Button
-        onClick={handleSend}
-        disabled={!inputValue.trim() || isLoading}
-        size="sm"
-        className="h-9 px-3"
-      >
-        {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-      </Button>
+    <div className="flex flex-col gap-2 pt-2 border-t border-border bg-background">
+      {/* Quick suggestion chips — only show when few messages */}
+      {messages.length <= 2 && !isLoading && (
+        <div className="flex flex-wrap gap-1.5">
+          {QUICK_SUGGESTIONS.map(s => (
+            <button
+              key={s.label}
+              onClick={() => sendMessage(s.message)}
+              className="text-[11px] px-2.5 py-1.5 rounded-full bg-primary/5 hover:bg-primary/15 text-primary border border-primary/15 transition-colors duration-200 font-medium whitespace-nowrap"
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+      )}
+      <div className="flex gap-2">
+        <Input
+          ref={inputRef}
+          value={inputValue}
+          onChange={e => setInputValue(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Ask 2KEI AI about your finances…"
+          disabled={isLoading}
+          className="flex-1 text-sm h-9"
+        />
+        <Button
+          onClick={handleSend}
+          disabled={!inputValue.trim() || isLoading}
+          size="sm"
+          className="h-9 px-3"
+        >
+          {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+        </Button>
+      </div>
     </div>
   );
 
@@ -192,7 +237,7 @@ export const AIChat: React.FC<AIChatProps> = ({
             <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
               <Bot className="w-4 h-4 text-white" />
             </div>
-            <span className="font-medium text-sm">AI Assistant</span>
+            <span className="font-medium text-sm">2KEI AI</span>
           </div>
           <div className="flex gap-1">
             <Button variant="ghost" size="sm" onClick={onToggleMinimize} className="h-7 w-7 p-0 rounded-lg hover:bg-primary/10"><Maximize2 className="w-3.5 h-3.5" /></Button>
@@ -229,7 +274,7 @@ export const AIChat: React.FC<AIChatProps> = ({
               <Bot className="w-4 h-4 text-white" />
             </div>
             <div>
-              <span className="text-sm font-semibold">AI Accounting Assistant</span>
+              <span className="text-sm font-semibold">2KEI AI</span>
               <div className="flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
                 <span className="text-[10px] text-muted-foreground font-normal">Online</span>

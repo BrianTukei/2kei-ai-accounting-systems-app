@@ -1,11 +1,19 @@
 import React from 'react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Bot, User, Navigation } from 'lucide-react';
-import { ChatMessage as ChatMessageType } from '@/services/aiAssistant';
+import { Bot, User, Navigation, AlertTriangle, Info, Zap, Brain } from 'lucide-react';
+import { type ChatMessage as ChatMessageType } from '@/services/aiAssistant';
 import type { NavigationAction } from '@/ai/navigationMap';
+import type { AIAlert } from '@/services/ai';
 
 interface ChatMessageProps {
-  message: ChatMessageType;
+  message: ChatMessageType & {
+    metadata?: {
+      mode?: string;
+      modeLabel?: string;
+      action?: { description?: string; requiresConfirmation?: boolean };
+      alerts?: AIAlert[];
+    };
+  };
   onNavigate?: (action: NavigationAction) => void;
 }
 
@@ -76,7 +84,47 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, onNavigate })
               Go to {navAction.pageName} →
             </button>
           )}
+
+          {/* Action pending indicator */}
+          {!isUser && message.metadata?.action?.requiresConfirmation && (
+            <div className="mt-2 flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 rounded-lg px-2.5 py-1.5 border border-amber-200 dark:border-amber-800">
+              <Zap className="w-3.5 h-3.5" />
+              <span>Action ready: <strong>{message.metadata.action.description}</strong> — use the Execute button below.</span>
+            </div>
+          )}
+
+          {/* Alerts */}
+          {!isUser && message.metadata?.alerts && message.metadata.alerts.length > 0 && (
+            <div className="mt-2 space-y-1">
+              {message.metadata.alerts.slice(0, 3).map((alert, idx) => (
+                <div
+                  key={idx}
+                  className={`flex items-start gap-1.5 text-xs rounded-lg px-2.5 py-1.5 border ${
+                    alert.severity === 'critical'
+                      ? 'bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800'
+                      : alert.severity === 'warning'
+                      ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800'
+                      : 'bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800'
+                  }`}
+                >
+                  {alert.severity === 'critical' || alert.severity === 'warning'
+                    ? <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-px" />
+                    : <Info className="w-3.5 h-3.5 flex-shrink-0 mt-px" />}
+                  <span>{alert.message}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
+
+        {/* Mode badge for AI messages */}
+        {!isUser && message.metadata?.modeLabel && (
+          <div className="flex items-center gap-1 text-[9px] text-muted-foreground px-1">
+            <Brain className="w-2.5 h-2.5" />
+            {message.metadata.modeLabel}
+          </div>
+        )}
+
         <span className="text-[10px] text-muted-foreground px-1">
           {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </span>

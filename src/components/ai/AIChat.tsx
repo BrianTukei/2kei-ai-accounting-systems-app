@@ -1,22 +1,25 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Send, Bot, Minimize2, Maximize2, X, BarChart3, DollarSign, TrendingDown, AlertTriangle, Sparkles, Navigation } from 'lucide-react';
+import { Loader2, Send, Bot, Minimize2, Maximize2, X, BarChart3, DollarSign, TrendingDown, AlertTriangle, Sparkles, Navigation, Zap, Shield, Brain } from 'lucide-react';
 import { ChatMessage } from './ChatMessage';
-import { AIAssistantService, ChatMessage as ChatMessageType, FinancialSnapshot } from '@/services/aiAssistant';
+import { type ChatMessage as ChatMessageType, type FinancialSnapshot } from '@/services/aiAssistant';
+import { AIEngine, type AIAction, type AIContext, type AIMode, getModeLabel } from '@/services/ai';
 import { useFinancialStats } from '@/hooks/useFinancialStats';
+import { useOrganization } from '@/contexts/OrganizationContext';
+import { useAuth } from '@/contexts/AuthContext';
 import type { NavigationAction } from '@/ai/navigationMap';
 
-/** Quick suggestion chips shown when conversation is empty / after welcome */
-const QUICK_SUGGESTIONS = [
+/** Default quick suggestion chips */
+const DEFAULT_SUGGESTIONS = [
   { label: '📊 Health Score', message: 'How is my business doing?' },
-  { label: '💰 Cash Flow', message: 'Analyze my cash flow' },
-  { label: '📉 Expenses', message: 'Analyze my expenses' },
-  { label: '⚠️ Risk Areas', message: 'Show risk areas' },
-  { label: '📈 Profit Analysis', message: 'Analyze my profits' },
-  { label: '🧭 Navigate', message: 'Where do I add a transaction?' },
+  { label: '📈 Forecast', message: 'Give me a 3-month forecast' },
+  { label: '🧾 Classify Expense', message: 'Bought fuel 200' },
+  { label: '🤖 Create Invoice', message: 'Create invoice for Client $500' },
+  { label: '🔍 Error Check', message: 'Check for anomalies' },
+  { label: '🎯 Business Coach', message: 'How can I improve profits?' },
 ];
 
 interface AIChatProps {
@@ -50,15 +53,20 @@ export const AIChat: React.FC<AIChatProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | undefined>();
   const [sentInitial, setSentInitial] = useState(false);
+  const [currentMode, setCurrentMode] = useState<AIMode>('financial_analyst');
+  const [pendingAction, setPendingAction] = useState<AIAction | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
-  // ── Real financial data ─────────────────────────────────────────────────
+  // ── Context hooks ─────────────────────────────────────────────────────
   const stats = useFinancialStats();
+  const { org, role } = useOrganization();
+  const { user } = useAuth();
 
   /** Build a snapshot every render so the AI always has fresh numbers */
-  const financialSnapshot: FinancialSnapshot = {
+  const financialSnapshot: FinancialSnapshot = useMemo(() => ({
     totalIncome: stats.totalIncome,
     totalExpenses: stats.totalExpenses,
     totalBalance: stats.totalBalance,
@@ -69,7 +77,36 @@ export const AIChat: React.FC<AIChatProps> = ({
     categoryBreakdown: stats.categoryBreakdown,
     monthlyData: stats.monthlyData,
     transactionCount: stats.totalIncome > 0 || stats.totalExpenses > 0 ? Math.max(stats.categoryBreakdown.length * 3, 1) : 0,
-  };
+  }), [stats]);
+
+  /** Build AI context from all available data */
+  const buildAIContext = useCallback((message: string): AIContext => ({
+    message,
+    organizationId: org?.id,
+    role: role || 'viewer',
+    currentPage: location.pathname,
+    financialSnapshot,
+    conversationHistory: messages.map(m => ({
+      ...m,
+      role: m.role as 'user' | 'assistant' | 'system',
+    })),
+    userName: user?.user_metadata?.full_name || user?.email?.split('@')[0],
+    conversationId,
+    contextType,
+    contextData,
+  }), [org, role, location.pathname, financialSnapshot, messages, user, conversationId, contextType, contextData]);
+
+  /** Get mode-aware suggestions */
+  const quickSuggestions = useMemo(() => {
+    const modeInfo = AIEngine.getModeInfo(location.pathname);
+    if (modeInfo.quickSuggestions.length > 0) {
+      return modeInfo.quickSuggestions.map((s, i) => ({
+        label: ['📊', '📈', '🧾', '🤖', '🔍', '🎯'][i % 6] + ' ' + s.split(' ').slice(0, 3).join(' '),
+        message: s,
+      }));
+    }
+    return DEFAULT_SUGGESTIONS;
+  }, [location.pathname]);
 
   /**
    * Extract a NavigationAction from an AI response if it contains one.
@@ -133,6 +170,37 @@ export const AIChat: React.FC<AIChatProps> = ({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialMessage, sentInitial, messages.length, isLoading]);
 
+  /** Execute a pending action after user confirmation */
+  const handleExecuteAction = useCallback(async () => {
+    if (!pendingAction) return;
+    setIsLoading(true);
+    try {
+      const ctx = buildAIContext('execute action');
+      const result = await AIEngine.executeConfirmedAction(pendingAction, ctx);
+      const resultMsg: ChatMessageType = {
+        id: `action-${Date.now()}`,
+        role: 'assistant',
+        content: result.message,
+        timestamp: new Date(),
+      };
+      setMessages(prev => {
+        const next = [...prev, resultMsg];
+        onMessagesChange?.(next);
+        return next;
+      });
+    } catch {
+      setMessages(prev => [...prev, {
+        id: `err-${Date.now()}`,
+        role: 'assistant',
+        content: '❌ Failed to execute action. Please try again.',
+        timestamp: new Date(),
+      }]);
+    } finally {
+      setPendingAction(null);
+      setIsLoading(false);
+    }
+  }, [pendingAction, buildAIContext, onMessagesChange]);
+
   const sendMessage = useCallback(async (message: string) => {
     if (!message.trim() || isLoading) return;
 
@@ -152,20 +220,30 @@ export const AIChat: React.FC<AIChatProps> = ({
     setIsLoading(true);
 
     try {
-      const response = await AIAssistantService.sendMessage({
-        message,
-        conversationId,
-        contextType,
-        contextData,
-        financialSnapshot,
-      });
+      // Use the new Financial Intelligence Engine
+      const ctx = buildAIContext(message);
+      const response = await AIEngine.processMessage(ctx);
 
-      if (response.success && response.response) {
+      if (response.success && response.message) {
+        // Update mode indicator
+        setCurrentMode(response.mode);
+
+        // Handle action if detected
+        if (response.action && response.action.requiresConfirmation) {
+          setPendingAction(response.action);
+        }
+
         const aiMsg: ChatMessageType = {
           id: `ai-${Date.now()}`,
           role: 'assistant',
-          content: response.response!,
+          content: response.message,
           timestamp: new Date(),
+          metadata: {
+            mode: response.mode,
+            modeLabel: getModeLabel(response.mode),
+            action: response.action,
+            alerts: response.alerts,
+          },
         };
         setMessages(prev => {
           const next = [...prev, aiMsg];
@@ -176,7 +254,7 @@ export const AIChat: React.FC<AIChatProps> = ({
           setConversationId(response.conversationId);
         }
       } else {
-        throw new Error(response.error || 'No response');
+        throw new Error('No response');
       }
     } catch {
       setMessages(prev => [...prev, {
@@ -188,7 +266,7 @@ export const AIChat: React.FC<AIChatProps> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [conversationId, contextType, contextData, isLoading, onMessagesChange]);
+  }, [conversationId, isLoading, onMessagesChange, buildAIContext]);
 
   const handleSend = () => sendMessage(inputValue.trim());
 
@@ -199,10 +277,37 @@ export const AIChat: React.FC<AIChatProps> = ({
   // ── Input bar (shared) ─────────────────────────────────────────────────────
   const inputBar = (
     <div className="flex flex-col gap-2 pt-2 border-t border-border bg-background">
+      {/* Mode indicator */}
+      {currentMode !== 'general' && messages.length > 2 && (
+        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+          <Brain className="w-3 h-3" />
+          <span>Mode: <strong>{getModeLabel(currentMode)}</strong></span>
+        </div>
+      )}
+      {/* Action execution button */}
+      {pendingAction && !isLoading && (
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            onClick={handleExecuteAction}
+            className="h-7 text-xs gap-1.5 bg-green-600 hover:bg-green-700"
+          >
+            <Zap className="w-3 h-3" /> Execute: {pendingAction.description.slice(0, 40)}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setPendingAction(null)}
+            className="h-7 text-xs"
+          >
+            Cancel
+          </Button>
+        </div>
+      )}
       {/* Quick suggestion chips — only show when few messages */}
       {messages.length <= 2 && !isLoading && (
         <div className="flex flex-wrap gap-1.5">
-          {QUICK_SUGGESTIONS.map(s => (
+          {quickSuggestions.map(s => (
             <button
               key={s.label}
               onClick={() => sendMessage(s.message)}
@@ -306,7 +411,7 @@ export const AIChat: React.FC<AIChatProps> = ({
               <span className="text-sm font-semibold">2KEI AI</span>
               <div className="flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-                <span className="text-[10px] text-muted-foreground font-normal">Online</span>
+                <span className="text-[10px] text-muted-foreground font-normal">{getModeLabel(currentMode)}</span>
               </div>
             </div>
           </div>

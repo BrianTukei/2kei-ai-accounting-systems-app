@@ -18,6 +18,7 @@ import { useAuth } from './AuthContext';
 import {
   Plan, PlanId, OrgRole, SubStatus, BillingCycle,
   PLANS, isAtLimit as _isAtLimit, ROLE_PERMISSIONS,
+  trialDaysRemaining, isTrialActive,
 } from '@/lib/plans';
 import orgStorage from '@/lib/orgStorage';
 import { getDemoSubscriptionData as getBillingDemoSub } from '@/services/billing';
@@ -63,8 +64,14 @@ export interface Subscription {
   status:          SubStatus;
   billingCycle:    BillingCycle;
   trialEndsAt?:    string;
+  trialStartDate?: string;
   periodEnd?:      string;
   cancelAtPeriodEnd: boolean;
+  stripeCustomerId?:     string;
+  stripeSubscriptionId?: string;
+  paymentMethodLast4?:   string;
+  paymentMethodBrand?:   string;
+  paymentProvider?:      string;
 }
 
 export interface AIUsage {
@@ -100,6 +107,10 @@ export interface OrganizationContextType {
   trackAI:         (action: 'chat' | 'invoice_gen' | 'bank_import' | 'categorise') => Promise<boolean>;
   /** Current usage counts for display */
   usageCounts:     { invoices: number; aiChats: number; bankImports: number };
+  /** Days left in trial (0 if not trialing) */
+  trialDaysLeft:   number;
+  /** True if subscription is currently in a valid trial */
+  isTrialing:      boolean;
 }
 
 // ─────────────────────────────────────────
@@ -269,8 +280,14 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
             status:            subData.status   as SubStatus,
             billingCycle:      subData.billing_cycle as BillingCycle,
             trialEndsAt:       subData.trial_ends_at  ?? undefined,
+            trialStartDate:    (subData as any).trial_start_date ?? undefined,
             periodEnd:         subData.current_period_end ?? undefined,
             cancelAtPeriodEnd: subData.cancel_at_period_end,
+            stripeCustomerId:     (subData as any).stripe_customer_id ?? undefined,
+            stripeSubscriptionId: (subData as any).stripe_subscription_id ?? undefined,
+            paymentMethodLast4:   (subData as any).payment_method_last4 ?? undefined,
+            paymentMethodBrand:   (subData as any).payment_method_brand ?? undefined,
+            paymentProvider:      (subData as any).payment_provider ?? undefined,
           });
           subscriptionLoaded = true;
         } else {
@@ -447,6 +464,18 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const needsOnboarding = !loading && authResolved && !!user && !org;
 
+  const trialDaysLeft = useMemo(() => {
+    if (!subscription?.trialEndsAt) return 0;
+    return trialDaysRemaining(subscription.trialEndsAt);
+  }, [subscription]);
+
+  const isTrialingNow = useMemo(() => {
+    if (subscription?.status === 'trialing' && subscription?.trialEndsAt) {
+      return isTrialActive(subscription.trialEndsAt);
+    }
+    return false;
+  }, [subscription]);
+
   const value: OrganizationContextType = {
     org,
     subscription,
@@ -461,6 +490,8 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     isAtLimit,
     trackAI,
     usageCounts,
+    trialDaysLeft,
+    isTrialing: isTrialingNow,
   };
 
   return (

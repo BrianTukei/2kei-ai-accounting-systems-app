@@ -280,7 +280,7 @@ export default function Billing() {
     const provider = params.get('provider');
     
     // Handle successful upgrade from external provider
-    if (params.get('upgraded') === '1' || params.get('reference') || params.get('tx_ref') || params.get('transaction_id')) {
+    if (params.get('upgraded') === '1' || params.get('reference') || params.get('tx_ref') || params.get('transaction_id') || params.get('OrderTrackingId') || params.get('orderTrackingId')) {
       console.log('[Billing] Payment return detected, provider:', provider);
       
       if (provider && provider !== 'demo' && org) {
@@ -1008,15 +1008,16 @@ export default function Billing() {
 
             const providers: { id: PaymentProvider; label: string; icon: React.ElementType; desc: string; recommended?: boolean }[] = [
               { id: 'stripe', label: 'Stripe', icon: Globe, desc: 'International cards (Visa, Mastercard, Amex)', recommended: autoProvider === 'stripe' },
-              { id: 'flutterwave', label: 'Flutterwave', icon: Smartphone, desc: 'Cards, Mobile Money, Bank Transfer (Africa)', recommended: autoProvider === 'flutterwave' },
+              { id: 'pesapal', label: 'Pesapal', icon: Smartphone, desc: 'MTN MoMo, Airtel Money, Cards, Bank Transfer (East Africa)', recommended: autoProvider === 'pesapal' },
+              { id: 'flutterwave', label: 'Flutterwave', icon: Smartphone, desc: 'Cards, Mobile Money, Bank Transfer (West/South Africa)', recommended: autoProvider === 'flutterwave' },
               { id: 'paystack', label: 'Paystack', icon: Building, desc: 'Cards, USSD, Bank Transfer (Nigeria/Ghana)', recommended: autoProvider === 'paystack' },
             ];
 
-            // Add MTN MoMo and Airtel Money when mobile money is available for the currency
+            // Add direct MTN MoMo and Airtel Money when mobile money is available for the currency
             if (momoAvailable) {
               providers.push(
-                { id: 'mtn_momo', label: 'MTN Mobile Money', icon: Phone, desc: 'Pay directly from your MTN MoMo wallet' },
-                { id: 'airtel_money', label: 'Airtel Money', icon: Phone, desc: 'Pay directly from your Airtel Money wallet' },
+                { id: 'mtn_momo', label: 'MTN MoMo (Direct)', icon: Phone, desc: 'Pay via USSD push directly from your MTN MoMo wallet' },
+                { id: 'airtel_money', label: 'Airtel Money', icon: Phone, desc: 'Pay directly from your Airtel Money wallet (via Pesapal)' },
               );
             }
 
@@ -1061,12 +1062,13 @@ export default function Billing() {
                   ))}
                 </RadioGroup>
 
-                {/* Phone number input for MTN MoMo / Airtel Money */}
-                {needsPhone && (
+                {/* Phone number input for MTN MoMo / Airtel Money / Pesapal (optional for Pesapal) */}
+                {(needsPhone || selectedProvider === 'pesapal') && (
                   <div className="space-y-2 py-2 px-1">
                     <Label htmlFor="momo-phone" className="text-sm font-medium flex items-center gap-2">
                       <Phone className="w-4 h-4 text-yellow-600" />
-                      {selectedProvider === 'mtn_momo' ? 'MTN' : 'Airtel'} Phone Number
+                      {selectedProvider === 'mtn_momo' ? 'MTN' : selectedProvider === 'pesapal' ? 'Mobile Money' : 'Airtel'} Phone Number
+                      {selectedProvider === 'pesapal' && <span className="text-xs text-slate-400">(optional)</span>}
                     </Label>
                     <Input
                       id="momo-phone"
@@ -1077,8 +1079,9 @@ export default function Billing() {
                       className="font-mono"
                     />
                     <p className="text-xs text-slate-500">
-                      Enter the phone number registered with your {selectedProvider === 'mtn_momo' ? 'MTN MoMo' : 'Airtel Money'} account.
-                      A payment prompt will be sent to this number.
+                      {selectedProvider === 'pesapal'
+                        ? 'Optional: Pre-fill your mobile money number on the Pesapal payment page.'
+                        : `Enter the phone number registered with your ${selectedProvider === 'mtn_momo' ? 'MTN MoMo' : 'Airtel Money'} account. A payment prompt will be sent to this number.`}
                     </p>
                   </div>
                 )}

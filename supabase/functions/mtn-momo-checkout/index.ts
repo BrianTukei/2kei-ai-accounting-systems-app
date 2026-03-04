@@ -1,24 +1,16 @@
 /**
  * mtn-momo-checkout Edge Function
- * ───────────────────────────────
  * Direct integration with MTN MoMo Open API (no Flutterwave).
- *
- * Uses the MTN Mobile Money API Collections product to:
- *   1. Request payment (sends USSD push to subscriber's phone)
- *   2. Verify payment status
- *
- * MTN MoMo API Portal: https://momodeveloper.mtn.com
  *
  * Actions:
  *   - checkout:  Initiate a RequestToPay
  *   - verify:    Check payment status by referenceId
  *
  * Required env vars:
- *   - MTN_MOMO_SUBSCRIPTION_KEY   (Primary key from MTN Developer Portal)
- *   - MTN_MOMO_API_USER           (API User UUID)
- *   - MTN_MOMO_API_KEY            (API Key for the user)
- *   - MTN_MOMO_ENVIRONMENT        ("sandbox" or "production", defaults to "sandbox")
- *   - MTN_MOMO_CALLBACK_HOST      (Your public URL for callbacks, optional)
+ *   - MTN_MOMO_SUBSCRIPTION_KEY
+ *   - MTN_MOMO_API_USER
+ *   - MTN_MOMO_API_KEY
+ *   - MTN_MOMO_ENVIRONMENT  ("sandbox" or "production")
  *   - SUPABASE_URL
  *   - SUPABASE_SERVICE_ROLE_KEY
  */
@@ -30,8 +22,6 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-// ── MTN MoMo API URLs ──
 
 function getMomoBaseUrl(): string {
   const env = Deno.env.get('MTN_MOMO_ENVIRONMENT') || 'sandbox';
@@ -45,8 +35,6 @@ function getTargetEnvironment(): string {
   return env === 'production' ? 'mtnuganda' : 'sandbox';
 }
 
-// ── Plan Pricing ──
-
 const PLAN_PRICES: Record<string, Record<string, number>> = {
   pro:        { monthly: 29, annual: 290 },
   enterprise: { monthly: 79, annual: 790 },
@@ -58,12 +46,10 @@ function getUGXAmount(usdAmount: number): number {
   return Math.round(usdAmount * UGX_RATE);
 }
 
-// ── Get OAuth2 Token ──
-
 let cachedToken: { token: string; expiresAt: number } | null = null;
 
 async function getMomoToken(): Promise<string> {
-  if (cachedToken && Date.now() < cachedToken.expiresAt - 60_000) {
+  if (cachedToken && Date.now() < cachedToken.expiresAt - 60000) {
     return cachedToken.token;
   }
 
@@ -72,13 +58,13 @@ async function getMomoToken(): Promise<string> {
   const subscriptionKey = Deno.env.get('MTN_MOMO_SUBSCRIPTION_KEY');
 
   if (!apiUser || !apiKey || !subscriptionKey) {
-    throw new Error('MTN MoMo API credentials not configured (MTN_MOMO_API_USER, MTN_MOMO_API_KEY, MTN_MOMO_SUBSCRIPTION_KEY)');
+    throw new Error('MTN MoMo API credentials not configured');
   }
 
-  const baseUrl = getMomoBaseUrl();
+  const momoUrl = getMomoBaseUrl();
   const credentials = btoa(`${apiUser}:${apiKey}`);
 
-  const res = await fetch(`${baseUrl}/collection/token/`, {
+  const res = await fetch(`${momoUrl}/collection/token/`, {
     method: 'POST',
     headers: {
       'Authorization': `Basic ${credentials}`,
@@ -101,8 +87,6 @@ async function getMomoToken(): Promise<string> {
   return data.access_token;
 }
 
-// ── Main Handler ──
-
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -120,25 +104,20 @@ serve(async (req: Request) => {
 
     const body = await req.json();
     const action = body.action || 'checkout';
-    const baseUrl = getMomoBaseUrl();
+    const momoApiUrl = getMomoBaseUrl();
 
-    // ────────────────────────────────────────────
-    // VERIFY: Check RequestToPay status
-    // ────────────────────────────────────────────
-
+    // VERIFY action
     if (action === 'verify') {
       const { referenceId, organizationId, planId, billingCycle } = body;
-
       if (!referenceId) {
         throw new Error('referenceId is required for verification');
       }
 
       const token = await getMomoToken();
-
       console.log('[mtn-momo] Checking payment status:', referenceId);
 
       const statusRes = await fetch(
-        `${baseUrl}/collection/v1_0/requesttopay/${referenceId}`,
+        `${momoApiUrl}/collection/v1_0/requesttopay/${referenceId}`,
         {
           method: 'GET',
           headers: {
@@ -157,7 +136,6 @@ serve(async (req: Request) => {
       const statusData = await statusRes.json();
       console.log('[mtn-momo] Payment status:', statusData.status);
 
-      // MTN MoMo statuses: SUCCESSFUL, FAILED, PENDING, REJECTED, TIMEOUT, EXPIRED
       const isSuccess = statusData.status === 'SUCCESSFUL';
 
       if (!isSuccess) {
@@ -177,7 +155,7 @@ serve(async (req: Request) => {
         }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
-      // Payment successful — activate subscription
+      // Payment successful - activate subscription
       const periodStart = new Date().toISOString();
       const periodEnd = new Date();
       if (billingCycle === 'annual') periodEnd.setFullYear(periodEnd.getFullYear() + 1);
@@ -226,12 +204,9 @@ serve(async (req: Request) => {
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // ────────────────────────────────────────────
-    // CHECKOUT: Send RequestToPay
-    // ────────────────────────────────────────────
-
+    // CHECKOUT action
     const {
-      organizationId, planId, billingCycle, email,
+      organizationId, planId, billingCycle,
       phoneNumber, successUrl,
     } = body;
 
@@ -246,15 +221,12 @@ serve(async (req: Request) => {
     }
 
     const token = await getMomoToken();
-
     const usdAmount = PLAN_PRICES[planId][billingCycle];
     const amount = getUGXAmount(usdAmount);
-
-    // Generate a UUID for the request (MTN requires UUID v4)
     const referenceId = crypto.randomUUID();
 
-    // Normalize phone number (MTN expects MSISDN format: 256XXXXXXXXX)
-    let msisdn = phoneNumber.replace(/[\s\-+]/g, '');
+    // Normalize phone number to MSISDN: 256XXXXXXXXX
+    let msisdn = phoneNumber.replace(/[\s+\-]/g, '');
     if (msisdn.startsWith('0')) {
       msisdn = '256' + msisdn.substring(1);
     }
@@ -262,7 +234,6 @@ serve(async (req: Request) => {
       msisdn = '256' + msisdn;
     }
 
-    // Record pending payment
     await supabase.from('payment_transactions').insert({
       organization_id: organizationId,
       plan_id: planId,
@@ -274,15 +245,11 @@ serve(async (req: Request) => {
       transaction_ref: referenceId,
     });
 
-    // Callback URL for MTN to notify us (optional, we also poll)
-    const callbackUrl = Deno.env.get('MTN_MOMO_CALLBACK_HOST')
-      ? `${Deno.env.get('MTN_MOMO_CALLBACK_HOST')}/functions/v1/mtn-momo-checkout`
-      : `${supabaseUrl}/functions/v1/mtn-momo-checkout`;
+    const callbackUrl = `${supabaseUrl}/functions/v1/mtn-momo-checkout`;
 
-    // Send RequestToPay
     console.log(`[mtn-momo] Requesting ${amount} UGX from ${msisdn}, ref: ${referenceId}`);
 
-    const payRes = await fetch(`${baseUrl}/collection/v1_0/requesttopay`, {
+    const payRes = await fetch(`${momoApiUrl}/collection/v1_0/requesttopay`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -305,7 +272,6 @@ serve(async (req: Request) => {
       }),
     });
 
-    // MTN returns 202 Accepted (async processing)
     if (payRes.status !== 202 && payRes.status !== 200) {
       const errorText = await payRes.text();
       console.error('[mtn-momo] RequestToPay failed:', payRes.status, errorText);
@@ -319,7 +285,6 @@ serve(async (req: Request) => {
       throw new Error(`MTN MoMo payment request failed: ${errorText}`);
     }
 
-    // Update to processing
     await supabase.from('payment_transactions').update({
       payment_status: 'processing',
       updated_at: new Date().toISOString(),
@@ -327,18 +292,19 @@ serve(async (req: Request) => {
 
     console.log('[mtn-momo] RequestToPay accepted, waiting for approval on phone');
 
-    // Build redirect URL with reference for verification
-    const redirectUrl = `${successUrl}${successUrl.includes('?') ? '&' : '?'}` +
-      `provider=mtn_momo&tx_ref=${referenceId}&plan=${planId}&cycle=${billingCycle}`;
+    const redirectBase = successUrl || '';
+    const verifyUrl = redirectBase
+      ? `${redirectBase}${redirectBase.includes('?') ? '&' : '?'}provider=mtn_momo&tx_ref=${referenceId}&plan=${planId}&cycle=${billingCycle}`
+      : '';
 
     return new Response(JSON.stringify({
       status: 'success',
       txRef: referenceId,
       amount,
       currency: 'UGX',
-      redirectUrl: '',  // No redirect — user approves on phone, then we verify
+      redirectUrl: '',
       message: `Payment request sent to ${msisdn}. Please check your phone and enter your MoMo PIN to approve.`,
-      verifyUrl: redirectUrl,
+      verifyUrl,
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
   } catch (error) {

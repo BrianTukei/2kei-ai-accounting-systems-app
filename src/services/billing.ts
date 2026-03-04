@@ -82,7 +82,7 @@ function isDemoMode(): boolean {
 // Shared types
 // ─────────────────────────────────────────
 
-export type PaymentProvider = 'stripe' | 'flutterwave' | 'paystack' | 'mtn_momo' | 'airtel_money' | 'demo';
+export type PaymentProvider = 'stripe' | 'flutterwave' | 'paystack' | 'pesapal' | 'mtn_momo' | 'airtel_money' | 'demo';
 
 export interface CheckoutOptions {
   organizationId: string;
@@ -125,9 +125,12 @@ export interface PaymentVerificationResult {
 // Provider selection heuristic
 // ─────────────────────────────────────────
 
-/** African countries — prefer Flutterwave / Paystack */
+/** Uganda & East Africa — prefer Pesapal (Flutterwave doesn't support Uganda merchants) */
+const PESAPAL_CURRENCIES = new Set(['UGX', 'KES', 'TZS', 'RWF']);
+
+/** African countries — Flutterwave (non-EA) */
 const AF_CURRENCIES = new Set([
-  'NGN','GHS','KES','ZAR','TZS','UGX','RWF','XOF','XAF','ETB',
+  'NGN','GHS','ZAR','XOF','XAF','ETB',
   'EGP','MAD','DZD','TND','ZMW','BWP','MWK','MZN','AOA',
 ]);
 
@@ -142,6 +145,11 @@ export function selectProvider(currency: string): PaymentProvider {
   if (isDemoMode()) return 'demo';
   
   const upper = currency.toUpperCase();
+  
+  // Uganda & East Africa — Pesapal (supports MTN MoMo, Airtel Money, Cards)
+  if (PESAPAL_CURRENCIES.has(upper)) {
+    return 'pesapal';
+  }
   
   // Paystack is preferred for NGN and GHS (their primary markets)
   if (PAYSTACK_CURRENCIES.has(upper) && import.meta.env.VITE_PAYSTACK_PUBLIC_KEY) {
@@ -165,7 +173,8 @@ export function getProviderDisplayName(provider: PaymentProvider): string {
     case 'stripe':       return 'Stripe (Card)';
     case 'flutterwave':  return 'Flutterwave';
     case 'paystack':     return 'Paystack';
-    case 'mtn_momo':     return 'MTN Mobile Money';
+    case 'pesapal':      return 'Pesapal';
+    case 'mtn_momo':     return 'MTN Mobile Money (Direct)';
     case 'airtel_money': return 'Airtel Money';
     case 'demo':         return 'Demo Mode';
     default:             return provider;
@@ -180,6 +189,7 @@ export function getProviderPaymentMethods(provider: PaymentProvider): string[] {
     case 'stripe':       return ['Card', 'Bank Debit'];
     case 'flutterwave':  return ['Card', 'Bank Transfer', 'USSD', 'Mobile Money'];
     case 'paystack':     return ['Card', 'Bank Transfer', 'USSD', 'Mobile Money'];
+    case 'pesapal':      return ['MTN MoMo', 'Airtel Money', 'Visa/Mastercard', 'Bank Transfer'];
     case 'mtn_momo':     return ['MTN MoMo'];
     case 'airtel_money': return ['Airtel Money'];
     case 'demo':         return ['Demo Payment'];
@@ -192,6 +202,13 @@ export function getProviderPaymentMethods(provider: PaymentProvider): string[] {
  */
 export function providerRequiresPhone(provider: PaymentProvider): boolean {
   return provider === 'mtn_momo' || provider === 'airtel_money';
+}
+
+/**
+ * Check if provider optionally accepts a phone number (for pre-filling)
+ */
+export function providerAcceptsPhone(provider: PaymentProvider): boolean {
+  return provider === 'pesapal' || provider === 'mtn_momo' || provider === 'airtel_money';
 }
 
 /**
@@ -443,26 +460,8 @@ export async function verifyPaystackPayment(
 // ─────────────────────────────────────────
 
 /**
- * Map currency to Flutterwave mobile money charge type.
- * Flutterwave uses different charge endpoints per country.
- */
-function getMomoChargeType(currency: string): string {
-  switch (currency.toUpperCase()) {
-    case 'UGX': return 'mobile_money_uganda';
-    case 'GHS': return 'mobile_money_ghana';
-    case 'XOF':
-    case 'XAF': return 'mobile_money_franco';
-    case 'RWF': return 'mobile_money_rwanda';
-    case 'ZMW': return 'mobile_money_zambia';
-    case 'KES': return 'mpesa';             // M-Pesa for Kenya
-    case 'TZS': return 'mobile_money_tanzania';
-    case 'MWK': return 'mobile_money_uganda'; // fallback via UGX corridor
-    default:    return 'mobile_money_uganda';
-  }
-}
-
-/**
- * Initiate an MTN Mobile Money checkout via the mobile-money-checkout edge function
+ * Initiate an MTN Mobile Money checkout via the mtn-momo-checkout edge function.
+ * Uses the MTN MoMo Open API directly (not Flutterwave).
  */
 export async function mtnMomoCheckout(opts: CheckoutOptions): Promise<CheckoutResult> {
   if (!opts.phoneNumber) throw new Error('Phone number is required for MTN Mobile Money');
@@ -472,16 +471,15 @@ export async function mtnMomoCheckout(opts: CheckoutOptions): Promise<CheckoutRe
     amount: number;
     currency: string;
     redirectUrl?: string;
+    verifyUrl?: string;
     message?: string;
-  }>('mobile-money-checkout', {
+  }>('mtn-momo-checkout', {
     ...opts,
     action: 'checkout',
-    network: 'MTN',
-    chargeType: getMomoChargeType(opts.currency),
   });
   return {
     provider: 'mtn_momo',
-    checkoutUrl: data.redirectUrl || '',
+    checkoutUrl: data.redirectUrl || data.verifyUrl || '',
     txRef: data.txRef,
     amount: data.amount,
     currency: data.currency,
@@ -489,47 +487,89 @@ export async function mtnMomoCheckout(opts: CheckoutOptions): Promise<CheckoutRe
 }
 
 /**
- * Initiate an Airtel Money checkout via the mobile-money-checkout edge function
+ * Initiate an Airtel Money checkout.
+ * Routes through Pesapal (which supports Airtel Money in Uganda).
  */
 export async function airtelMoneyCheckout(opts: CheckoutOptions): Promise<CheckoutResult> {
   if (!opts.phoneNumber) throw new Error('Phone number is required for Airtel Money');
-  const data = await callEdgeFunction<{
-    status: string;
-    txRef: string;
-    amount: number;
-    currency: string;
-    redirectUrl?: string;
-    message?: string;
-  }>('mobile-money-checkout', {
-    ...opts,
-    action: 'checkout',
-    network: 'AIRTEL',
-    chargeType: getMomoChargeType(opts.currency),
-  });
-  return {
-    provider: 'airtel_money',
-    checkoutUrl: data.redirectUrl || '',
-    txRef: data.txRef,
-    amount: data.amount,
-    currency: data.currency,
-  };
+  // Use Pesapal for Airtel Money in Uganda (Pesapal supports it natively)
+  return pesapalCheckout(opts);
 }
 
 /**
- * Verify a Mobile Money payment after completion
+ * Verify an MTN MoMo payment via the direct API
  */
 export async function verifyMomoPayment(
   txRef: string,
   organizationId: string,
+  planId?: string,
+  billingCycle?: string,
 ): Promise<PaymentVerificationResult> {
   if (isDemoMode()) {
     return { success: true, verified: true };
   }
   try {
-    return await callEdgeFunction<PaymentVerificationResult>('mobile-money-checkout', {
+    return await callEdgeFunction<PaymentVerificationResult>('mtn-momo-checkout', {
       action: 'verify',
-      txRef,
+      referenceId: txRef,
       organizationId,
+      planId,
+      billingCycle,
+    });
+  } catch (error: any) {
+    return { success: false, verified: false, error: error.message };
+  }
+}
+
+// ─────────────────────────────────────────
+// Pesapal (East Africa — Uganda, Kenya, Tanzania, Rwanda)
+// ─────────────────────────────────────────
+
+/**
+ * Initiate a Pesapal checkout.
+ * Pesapal handles: MTN MoMo, Airtel Money, Visa/MC, Bank Transfer.
+ * The user is redirected to Pesapal's hosted payment page.
+ */
+export async function pesapalCheckout(opts: CheckoutOptions): Promise<CheckoutResult> {
+  const data = await callEdgeFunction<{
+    status: string;
+    checkoutUrl: string;
+    orderTrackingId: string;
+    merchantRef: string;
+    amount: number;
+    currency: string;
+  }>('pesapal-checkout', {
+    ...opts,
+    action: 'checkout',
+  });
+  return {
+    provider: 'pesapal',
+    checkoutUrl: data.checkoutUrl,
+    txRef: data.orderTrackingId,
+    amount: data.amount,
+    currency: data.currency,
+  };
+}
+
+/**
+ * Verify a Pesapal payment after redirect
+ */
+export async function verifyPesapalPayment(
+  orderTrackingId: string,
+  organizationId: string,
+  planId?: string,
+  billingCycle?: string,
+): Promise<PaymentVerificationResult> {
+  if (isDemoMode()) {
+    return { success: true, verified: true };
+  }
+  try {
+    return await callEdgeFunction<PaymentVerificationResult>('pesapal-checkout', {
+      action: 'verify',
+      orderTrackingId,
+      organizationId,
+      planId,
+      billingCycle,
     });
   } catch (error: any) {
     return { success: false, verified: false, error: error.message };
@@ -551,6 +591,7 @@ export async function initiateCheckout(
     case 'stripe':        return stripeCheckout(opts);
     case 'flutterwave':   return flutterwaveCheckout(opts);
     case 'paystack':      return paystackCheckout(opts);
+    case 'pesapal':       return pesapalCheckout(opts);
     case 'mtn_momo':      return mtnMomoCheckout(opts);
     case 'airtel_money':  return airtelMoneyCheckout(opts);
     default:              return demoCheckout(opts);
@@ -598,12 +639,24 @@ export async function verifyPaymentFromRedirect(
       return { success: true, verified: true };
     }
 
+    if (provider === 'pesapal') {
+      const orderTrackingId = params.get('OrderTrackingId') || params.get('orderTrackingId') || '';
+      const planId = params.get('planId') || '';
+      const billingCycle = params.get('billingCycle') || '';
+      if (!orderTrackingId) {
+        return { success: false, verified: false, error: 'Missing Pesapal order tracking ID' };
+      }
+      return await verifyPesapalPayment(orderTrackingId, organizationId, planId, billingCycle);
+    }
+
     if (provider === 'mtn_momo' || provider === 'airtel_money') {
-      const txRef = params.get('tx_ref') || '';
+      const txRef = params.get('tx_ref') || params.get('referenceId') || '';
+      const planId = params.get('planId') || '';
+      const billingCycle = params.get('billingCycle') || '';
       if (!txRef) {
         return { success: false, verified: false, error: 'Missing mobile money transaction reference' };
       }
-      return await verifyMomoPayment(txRef, organizationId);
+      return await verifyMomoPayment(txRef, organizationId, planId, billingCycle);
     }
 
     return { success: false, verified: false, error: `Unknown provider: ${provider}` };

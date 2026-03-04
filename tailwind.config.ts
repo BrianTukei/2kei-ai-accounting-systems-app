@@ -127,6 +127,10 @@ export default {
                     '0%, 100%': { boxShadow: '0 0 0 0 hsl(var(--primary) / 0.3)' },
                     '50%': { boxShadow: '0 0 0 8px hsl(var(--primary) / 0)' },
                 },
+                'pulse-glow': {
+                    '0%, 100%': { boxShadow: '0 0 0 0 hsl(var(--primary) / 0.4)', transform: 'scale(1)' },
+                    '50%': { boxShadow: '0 0 12px 4px hsl(var(--primary) / 0.25)', transform: 'scale(1.03)' },
+                },
                 'count-up': {
                     '0%': { opacity: '0', transform: 'translateY(8px)' },
                     '100%': { opacity: '1', transform: 'translateY(0)' },
@@ -144,6 +148,7 @@ export default {
                 'scale-spring': 'scale-spring 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)',
                 'breathe': 'breathe 2.5s ease-in-out infinite',
                 'count-up': 'count-up 0.4s ease-out',
+                'pulse-glow': 'pulse-glow 1.5s ease-in-out infinite',
 			},
             backgroundImage: {
                 'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',

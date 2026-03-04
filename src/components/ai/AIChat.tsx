@@ -1,11 +1,13 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Send, Bot, Minimize2, Maximize2, X, BarChart3, DollarSign, TrendingDown, AlertTriangle, Sparkles } from 'lucide-react';
+import { Loader2, Send, Bot, Minimize2, Maximize2, X, BarChart3, DollarSign, TrendingDown, AlertTriangle, Sparkles, Navigation } from 'lucide-react';
 import { ChatMessage } from './ChatMessage';
 import { AIAssistantService, ChatMessage as ChatMessageType, FinancialSnapshot } from '@/services/aiAssistant';
 import { useFinancialStats } from '@/hooks/useFinancialStats';
+import type { NavigationAction } from '@/ai/navigationMap';
 
 /** Quick suggestion chips shown when conversation is empty / after welcome */
 const QUICK_SUGGESTIONS = [
@@ -14,7 +16,7 @@ const QUICK_SUGGESTIONS = [
   { label: '📉 Expenses', message: 'Analyze my expenses' },
   { label: '⚠️ Risk Areas', message: 'Show risk areas' },
   { label: '📈 Profit Analysis', message: 'Analyze my profits' },
-  { label: '🚀 Growth Strategy', message: 'Give me a growth strategy' },
+  { label: '🧭 Navigate', message: 'Where do I add a transaction?' },
 ];
 
 interface AIChatProps {
@@ -50,6 +52,7 @@ export const AIChat: React.FC<AIChatProps> = ({
   const [sentInitial, setSentInitial] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
 
   // ── Real financial data ─────────────────────────────────────────────────
   const stats = useFinancialStats();
@@ -67,6 +70,32 @@ export const AIChat: React.FC<AIChatProps> = ({
     monthlyData: stats.monthlyData,
     transactionCount: stats.totalIncome > 0 || stats.totalExpenses > 0 ? Math.max(stats.categoryBreakdown.length * 3, 1) : 0,
   };
+
+  /**
+   * Extract a NavigationAction from an AI response if it contains one.
+   * The AI engine embeds it as <!--NAV_ACTION:{...}-->
+   */
+  const extractNavAction = useCallback((text: string): NavigationAction | null => {
+    const match = text.match(/<!--NAV_ACTION:(.*?)-->/);
+    if (!match) return null;
+    try {
+      return JSON.parse(match[1]) as NavigationAction;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  /**
+   * Navigate to a page and dispatch highlight event for the Navbar.
+   */
+  const handleNavigate = useCallback((action: NavigationAction) => {
+    // Dispatch highlight event for the Navbar
+    window.dispatchEvent(new CustomEvent('ai-nav-highlight', { detail: { menuItem: action.highlight } }));
+    // Navigate after a small delay so the highlight is visible first
+    setTimeout(() => {
+      navigate(action.path);
+    }, 300);
+  }, [navigate]);
 
   // Scroll to latest message
   useEffect(() => {
@@ -209,7 +238,7 @@ export const AIChat: React.FC<AIChatProps> = ({
   // ── Messages list (shared) ─────────────────────────────────────────────────
   const messageList = (
     <div className="flex flex-col gap-3 py-3 px-1">
-      {messages.map(msg => <ChatMessage key={msg.id} message={msg} />)}
+      {messages.map(msg => <ChatMessage key={msg.id} message={msg} onNavigate={handleNavigate} />)}
       {isLoading && (
         <div className="flex gap-2 items-end">
           <div className="w-7 h-7 rounded-full bg-muted border border-border flex items-center justify-center flex-shrink-0 mb-1">

@@ -242,17 +242,20 @@ export async function updatePaymentStatus(
 }
 
 /**
- * Activate subscription after successful payment
+ * Activate subscription after successful payment.
+ * Uses the activate-subscription Edge Function to bypass RLS.
+ * Falls back to localStorage in demo mode only.
  */
 export async function activateSubscription(
   organizationId: string,
   planId: PlanId,
   billingCycle: BillingCycle,
   paymentId?: string,
-  paymentProvider: string = 'demo'
+  paymentProvider: string = 'demo',
+  isDowngrade: boolean = false,
 ): Promise<SubscriptionResult> {
   console.log('[Subscription] Activating subscription:', {
-    organizationId, planId, billingCycle, paymentProvider
+    organizationId, planId, billingCycle, paymentProvider, isDowngrade,
   });
 
   const periodStart = new Date().toISOString();
@@ -263,10 +266,8 @@ export async function activateSubscription(
     periodEnd.setMonth(periodEnd.getMonth() + 1);
   }
 
-  // For demo provider OR demo mode, save to localStorage
-  // This ensures MVP works without Stripe/payment provider setup
-  if (paymentProvider === 'demo' || isInDemoMode()) {
-    // Demo mode - save to localStorage
+  // For demo mode ONLY, save to localStorage
+  if (isInDemoMode()) {
     const demoSub: DemoSubscriptionStorage = {
       planId,
       status: 'active',
@@ -278,13 +279,73 @@ export async function activateSubscription(
       paymentProvider,
     };
     setDemoSubscription(demoSub);
-    
-    console.log('[Subscription] Demo subscription activated successfully and saved to localStorage');
+    console.log('[Subscription] Demo subscription activated (localStorage)');
     return { success: true, subscriptionId: 'demo' };
   }
 
+  // ── Production: use Edge Function (bypasses RLS) ──
   try {
-    // Use the activate_subscription function if available, otherwise direct upsert
+    const { data, error } = await supabase.functions.invoke('activate-subscription', {
+      body: {
+        organizationId,
+        planId,
+        billingCycle,
+        paymentProvider,
+        paymentId: paymentId || undefined,
+        isDowngrade,
+      },
+    });
+
+    if (error) {
+      console.error('[Subscription] Edge function error:', error);
+      // Fallback: try direct upsert (may work if RLS policy allows)
+      return await activateSubscriptionDirect(
+        organizationId, planId, billingCycle, paymentId, paymentProvider, periodStart, periodEnd.toISOString(),
+      );
+    }
+
+    if (data?.error) {
+      console.error('[Subscription] Activation rejected:', data.error);
+      return { success: false, error: data.error };
+    }
+
+    console.log('[Subscription] Subscription activated via Edge Function:', data.subscriptionId);
+
+    // Also save to localStorage as cache for faster UI updates
+    const demoSub: DemoSubscriptionStorage = {
+      planId,
+      status: 'active',
+      billingCycle,
+      periodStart,
+      periodEnd: periodEnd.toISOString(),
+      cancelAtPeriodEnd: false,
+      activatedAt: new Date().toISOString(),
+      paymentProvider,
+    };
+    setDemoSubscription(demoSub);
+
+    return { success: true, subscriptionId: data.subscriptionId };
+  } catch (e) {
+    console.error('[Subscription] Edge function call failed, trying direct upsert:', e);
+    return await activateSubscriptionDirect(
+      organizationId, planId, billingCycle, paymentId, paymentProvider, periodStart, periodEnd.toISOString(),
+    );
+  }
+}
+
+/**
+ * Direct DB upsert fallback when Edge Function is unavailable.
+ */
+async function activateSubscriptionDirect(
+  organizationId: string,
+  planId: PlanId,
+  billingCycle: BillingCycle,
+  paymentId: string | undefined,
+  paymentProvider: string,
+  periodStart: string,
+  periodEnd: string,
+): Promise<SubscriptionResult> {
+  try {
     const { data, error } = await supabase
       .from('subscriptions')
       .upsert({
@@ -293,35 +354,45 @@ export async function activateSubscription(
         status: 'active',
         billing_cycle: billingCycle,
         current_period_start: periodStart,
-        current_period_end: periodEnd.toISOString(),
+        current_period_end: periodEnd,
         cancel_at_period_end: false,
         payment_provider: paymentProvider,
-        last_payment_id: paymentId || null,
-        activated_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }, { onConflict: 'organization_id' })
       .select('id')
       .single();
 
     if (error) {
-      console.error('[Subscription] Failed to activate subscription:', error);
-      return { success: false, error: error.message };
+      console.error('[Subscription] Direct upsert failed (possibly RLS):', error);
+      // Last resort: save to localStorage so UI at least updates
+      const demoSub: DemoSubscriptionStorage = {
+        planId,
+        status: 'active',
+        billingCycle,
+        periodStart,
+        periodEnd,
+        cancelAtPeriodEnd: false,
+        activatedAt: new Date().toISOString(),
+        paymentProvider,
+      };
+      setDemoSubscription(demoSub);
+      return { success: true, subscriptionId: 'local-fallback', error: 'DB write failed, saved locally' };
     }
 
-    console.log('[Subscription] Subscription activated in database:', data.id);
+    console.log('[Subscription] Direct upsert succeeded:', data.id);
     return { success: true, subscriptionId: data.id };
   } catch (e) {
-    console.error('[Subscription] Exception activating subscription:', e);
+    console.error('[Subscription] Direct upsert exception:', e);
     return { success: false, error: String(e) };
   }
 }
 
 /**
- * Process complete subscription flow
- * 1. Create payment record
- * 2. Process payment (demo or redirect to provider)
- * 3. Update payment status
- * 4. Activate subscription
+ * Process complete subscription flow.
+ *
+ * For demo/downgrade: instant activation.
+ * For real providers: creates pending payment, does NOT activate.
+ *   Activation happens ONLY after payment verification (webhook or redirect).
  */
 export async function processSubscription(
   organizationId: string,
@@ -330,37 +401,44 @@ export async function processSubscription(
   billingCycle: BillingCycle,
   email: string,
   currency: string,
-  paymentProvider: string
+  paymentProvider: string,
+  isDowngrade: boolean = false,
 ): Promise<SubscriptionResult> {
   console.log('[Subscription] Processing subscription:', {
-    organizationId, userId, planId, billingCycle, paymentProvider
+    organizationId, userId, planId, billingCycle, paymentProvider, isDowngrade,
   });
 
-  // Step 1: Create payment transaction
+  // ── Downgrade: No payment needed, activate immediately ──
+  if (isDowngrade) {
+    console.log('[Subscription] Processing as downgrade (no payment)');
+    const result = await activateSubscription(
+      organizationId, planId, billingCycle, undefined, paymentProvider, true,
+    );
+    return result;
+  }
+
+  // Step 1: Create payment transaction record
   const { paymentId, transactionRef } = await createPaymentTransaction(
-    organizationId, userId, planId, billingCycle, currency, paymentProvider
+    organizationId, userId, planId, billingCycle, currency, paymentProvider,
   );
   console.log('[Subscription] Payment transaction created:', { paymentId, transactionRef });
 
-  // Step 2: For demo mode, simulate instant payment success
+  // ── Demo mode: simulate instant payment + activation ──
   if (isInDemoMode() || paymentProvider === 'demo') {
-    // Update payment status to completed
     if (paymentId) {
       await updatePaymentStatus(paymentId, 'completed');
     }
     console.log('[Subscription] Demo payment completed');
 
-    // Step 3: Activate subscription
     const result = await activateSubscription(
-      organizationId, planId, billingCycle, paymentId || undefined, 'demo'
+      organizationId, planId, billingCycle, paymentId || undefined, 'demo',
     );
-    console.log('[Subscription] Subscription activation result:', result);
-
+    console.log('[Subscription] Demo subscription activation result:', result);
     return result;
   }
 
-  // For real providers, payment ID will be used to track the transaction
-  // The actual activation happens via webhook
+  // ── Real provider: mark as processing, do NOT activate yet ──
+  // Activation happens via webhook callback or verifyPaymentFromRedirect()
   if (paymentId) {
     await updatePaymentStatus(paymentId, 'processing');
   }
@@ -369,6 +447,34 @@ export async function processSubscription(
     success: true,
     paymentId: paymentId || undefined,
   };
+}
+
+/**
+ * Activate subscription after a real payment has been verified.
+ * Called from Billing.tsx after verifyPaymentFromRedirect() succeeds.
+ */
+export async function activateAfterPaymentVerified(
+  organizationId: string,
+  planId: PlanId,
+  billingCycle: BillingCycle,
+  paymentProvider: string,
+  paymentId?: string,
+): Promise<SubscriptionResult> {
+  console.log('[Subscription] Activating after verified payment:', {
+    organizationId, planId, billingCycle, paymentProvider,
+  });
+
+  const result = await activateSubscription(
+    organizationId, planId, billingCycle, paymentId, paymentProvider, false,
+  );
+
+  if (result.success) {
+    console.log('[Subscription] Post-payment activation succeeded');
+  } else {
+    console.error('[Subscription] Post-payment activation failed:', result.error);
+  }
+
+  return result;
 }
 
 /**

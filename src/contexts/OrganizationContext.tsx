@@ -243,29 +243,18 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         orgStorage.migrateFromLegacy(orgData.id);
       }
 
-      // 3. Load subscription - ALWAYS check localStorage first (supports MVP/demo mode)
+      // 3. Load subscription
+      //    - In demo mode: localStorage is the source of truth
+      //    - In production: Supabase DB is the source of truth, localStorage is a cache
       let subscriptionLoaded = false;
       
-      // Check for localStorage subscription first (works with or without demo mode)
-      // This ensures subscriptions saved via processSubscription are always loaded
-      const demoSub = getDemoSubscriptionData();
-      if (demoSub) {
-        console.log('[OrganizationContext] Found localStorage subscription:', demoSub);
-        setSubscription({
-          id:                '',
-          planId:            demoSub.planId,
-          status:            demoSub.status,
-          billingCycle:      demoSub.billingCycle,
-          trialEndsAt:       undefined,
-          periodEnd:         demoSub.periodEnd,
-          cancelAtPeriodEnd: demoSub.cancelAtPeriodEnd,
-        });
-        subscriptionLoaded = true;
-      }
-      
-      // If no localStorage subscription, try Supabase
-      if (!subscriptionLoaded) {
-        console.log('[OrganizationContext] No localStorage subscription, checking Supabase');
+      // Check if we're in demo mode (no real Supabase URL configured)
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const realSupabaseMode = supabaseUrl && !supabaseUrl.includes('placeholder');
+
+      if (realSupabaseMode) {
+        // PRODUCTION: Check Supabase FIRST (DB is source of truth)
+        console.log('[OrganizationContext] Production mode: checking Supabase DB for subscription');
         const { data: subData } = await supabase
           .from('subscriptions')
           .select('*')
@@ -273,7 +262,7 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
           .single();
 
         if (subData) {
-          console.log('[OrganizationContext] Found Supabase subscription:', subData.plan_id);
+          console.log('[OrganizationContext] Found Supabase subscription:', subData.plan_id, subData.status);
           setSubscription({
             id:                subData.id,
             planId:            subData.plan_id as PlanId,
@@ -283,17 +272,53 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
             periodEnd:         subData.current_period_end ?? undefined,
             cancelAtPeriodEnd: subData.cancel_at_period_end,
           });
+          subscriptionLoaded = true;
         } else {
-          console.log('[OrganizationContext] No subscription found, defaulting to free');
-          // No subscription yet — default to free active
-          setSubscription({
-            id: '',
-            planId: 'free',
-            status: 'active',
-            billingCycle: 'monthly',
-            cancelAtPeriodEnd: false,
-          });
+          // No Supabase subscription — check localStorage as fallback
+          // (may have been activated via demo mode or edge function not yet deployed)
+          const demoSub = getDemoSubscriptionData();
+          if (demoSub && demoSub.planId !== 'free') {
+            console.log('[OrganizationContext] No DB subscription, using localStorage cache:', demoSub.planId);
+            setSubscription({
+              id:                '',
+              planId:            demoSub.planId,
+              status:            demoSub.status,
+              billingCycle:      demoSub.billingCycle,
+              trialEndsAt:       undefined,
+              periodEnd:         demoSub.periodEnd,
+              cancelAtPeriodEnd: demoSub.cancelAtPeriodEnd,
+            });
+            subscriptionLoaded = true;
+          }
         }
+      } else {
+        // DEMO MODE: localStorage is the source of truth
+        const demoSub = getDemoSubscriptionData();
+        if (demoSub) {
+          console.log('[OrganizationContext] Demo mode: using localStorage subscription:', demoSub.planId);
+          setSubscription({
+            id:                '',
+            planId:            demoSub.planId,
+            status:            demoSub.status,
+            billingCycle:      demoSub.billingCycle,
+            trialEndsAt:       undefined,
+            periodEnd:         demoSub.periodEnd,
+            cancelAtPeriodEnd: demoSub.cancelAtPeriodEnd,
+          });
+          subscriptionLoaded = true;
+        }
+      }
+
+      // Default to free plan if nothing found anywhere
+      if (!subscriptionLoaded) {
+        console.log('[OrganizationContext] No subscription found anywhere, defaulting to free');
+        setSubscription({
+          id: '',
+          planId: 'free',
+          status: 'active',
+          billingCycle: 'monthly',
+          cancelAtPeriodEnd: false,
+        });
       }
 
       // 4. Load AI usage this month

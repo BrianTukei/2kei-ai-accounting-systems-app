@@ -66,9 +66,11 @@ interface NavigationItemsProps {
   onItemClick?: () => void;
   /** When true, only render items marked `primary` */
   onlyPrimary?: boolean;
+  /** The nav-item name to highlight with pulse-glow (set by AI navigation) */
+  highlightedItem?: string | null;
 }
 
-export default function NavigationItems({ orientation = 'horizontal', onItemClick, onlyPrimary = false }: NavigationItemsProps) {
+export default function NavigationItems({ orientation = 'horizontal', onItemClick, onlyPrimary = false, highlightedItem }: NavigationItemsProps) {
   const location = useLocation();
   const items = onlyPrimary ? navItems.filter((i) => i.primary) : navItems;
 
@@ -81,6 +83,7 @@ export default function NavigationItems({ orientation = 'horizontal', onItemClic
     >
       {items.map((item) => {
         const isActive = location.pathname === item.path;
+        const isHighlighted = highlightedItem === item.name;
         const Icon = item.icon;
         
         return (
@@ -96,7 +99,8 @@ export default function NavigationItems({ orientation = 'horizontal', onItemClic
                   : 'bg-primary/10 text-primary'
                 : orientation === 'horizontal'
                   ? 'text-slate-600 hover:text-primary hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800'
-                  : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800',
+              isHighlighted && 'animate-pulse-glow ring-2 ring-primary/60 bg-primary/10 text-primary scale-105'
             )}
             onClick={onItemClick}
           >

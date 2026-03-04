@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { findNavPages, buildNavigationAction } from '@/ai/navigationMap';
 
 /* ═══════════════════════════════════════════════════════════════════════
    2KEI AI – CFO-Grade Accounting Intelligence Engine
@@ -101,6 +102,7 @@ type Intent =
   | 'invoice_status'
   | 'report_explain'
   | 'general_accounting'
+  | 'navigation'
   | 'greeting'
   | 'off_topic';
 
@@ -174,6 +176,17 @@ const INTENT_PATTERNS: Array<{ intent: Intent; patterns: RegExp[] }> = [
     patterns: [
       /balance\s*sheet/i, /income\s*statement/i, /trial\s*balance/i,
       /p\s*&\s*l/i, /explain.*report/i, /what\s*is\s*a/i,
+    ],
+  },
+  {
+    intent: 'navigation',
+    patterns: [
+      /where\s*(is|do|can|are)/i, /how\s*do\s*i\s*(find|access|get\s*to|open|see|view|go|create|add|make|record|enter|manage|check|set\s*up|configure)/i,
+      /take\s*me\s*to/i, /navigate\s*to/i, /go\s*to/i, /open\s*the/i, /show\s*me\s*(the|where)/i,
+      /how\s*to\s*(find|access|get\s*to|open|see|view|go|create|add|make|record|enter|manage)/i,
+      /can\s*you\s*(take|show|bring|open)/i, /i\s*want\s*to\s*(go|see|open|find|access|navigate|view)/i,
+      /where.*page/i, /where.*section/i, /where.*menu/i, /where.*button/i,
+      /find\s*the/i, /looking\s*for/i, /guide\s*me/i, /help\s*me\s*(find|navigate|go|get)/i,
     ],
   },
   {
@@ -380,12 +393,18 @@ export class AIAssistantService {
         `• 💰 **Cash Flow Assessment**\n` +
         `• ⚠️ **Error & Risk Detection**\n` +
         `• 🎯 **Growth Strategies**\n` +
-        `• 📋 **Executive Summaries**\n\n`;
+        `• 📋 **Executive Summaries**\n` +
+        `• 🧭 **System Navigation Guide**\n\n`;
       if (hasData) {
         const { score } = calculateHealthScore(s!);
         return base + `Your current health score is **${score}/100** ${healthEmoji(score)}. Ask me anything about your finances!`;
       }
       return base + `Start by recording some transactions, then ask me "How is my business doing?" for a full analysis.`;
+    }
+
+    // ── Navigation works even without financial data ──────────────────
+    if (intent === 'navigation') {
+      return this.handleNavigation(message, greeting);
     }
 
     // ── If no financial data available ────────────────────────────────────
@@ -650,6 +669,11 @@ export class AIAssistantService {
       return this.handleGeneralAccounting(message, snap);
     }
 
+    // ── Navigation Guide ──────────────────────────────────────────────────
+    if (intent === 'navigation') {
+      return this.handleNavigation(message, greeting);
+    }
+
     // ── Fallback ─────────────────────────────────────────────────────────
     return `${greeting}I can help you with that! Here's what I can analyze:\n\n` +
       `• **"How is my business doing?"** — Financial health score\n` +
@@ -660,11 +684,53 @@ export class AIAssistantService {
       `• **"Why am I losing money?"** — Loss diagnosis\n` +
       `• **"Give me a growth strategy"** — Actionable growth plan\n` +
       `• **"Invoice status"** — Receivables report\n` +
-      `• **"Analyze my expenses"** — Spending breakdown\n\n` +
+      `• **"Analyze my expenses"** — Spending breakdown\n` +
+      `• **"Where do I find..."** — System navigation guide 🧭\n\n` +
       `All analysis is based on your real financial data — no fake numbers.`;
   }
 
   // ── Sub-handlers ──────────────────────────────────────────────────────
+
+  /**
+   * Navigation Guide handler – matches user query to system pages
+   * and returns step-by-step instructions with a navigation JSON action.
+   */
+  private static handleNavigation(message: string, greeting: string): string {
+    const pages = findNavPages(message);
+
+    if (pages.length === 0) {
+      return `${greeting}I couldn't find a matching page for that. Here are some things you can ask:\n\n` +
+        `• **"Where do I add a transaction?"**\n` +
+        `• **"How do I create an invoice?"**\n` +
+        `• **"Take me to reports"**\n` +
+        `• **"Where is the payroll page?"**\n` +
+        `• **"How do I import bank statements?"**\n` +
+        `• **"Show me the balance sheet"**\n\n` +
+        `I can guide you to any page in the system!`;
+    }
+
+    const top = pages[0];
+    const navAction = buildNavigationAction(top);
+
+    let response = `## 🧭 ${top.name}\n\n`;
+    response += `**Here's how to get there:**\n\n`;
+    top.steps.forEach((step, i) => {
+      response += `${i + 1}. ${step}\n`;
+    });
+
+    // If there are additional relevant pages, mention them
+    if (pages.length > 1) {
+      response += `\n**Related pages:**\n`;
+      for (const p of pages.slice(1, 4)) {
+        response += `• **${p.name}** — \`${p.path}\`\n`;
+      }
+    }
+
+    // Embed the navigation action JSON (parsed by AIChat component)
+    response += `\n\n<!--NAV_ACTION:${JSON.stringify(navAction)}-->`;
+
+    return response;
+  }
 
   private static handleReportExplanation(message: string, contextType?: string, contextData?: any, snap?: FinancialSnapshot): string {
     const msg = message.toLowerCase();

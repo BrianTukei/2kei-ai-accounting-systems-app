@@ -36,9 +36,24 @@ export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [highlightedItem, setHighlightedItem] = useState<string | null>(null);
   const [theme, setTheme] = useState<'light' | 'dark'>(() => (localStorage.getItem('theme') as 'light' | 'dark') || 'light');
   const location = useLocation();
   const { user } = useAuth();
+
+  // ── AI Navigation highlight listener ───────────────────────────────────
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.menuItem) {
+        setHighlightedItem(detail.menuItem);
+        // Auto-clear after 5 seconds
+        setTimeout(() => setHighlightedItem(null), 5000);
+      }
+    };
+    window.addEventListener('ai-nav-highlight', handler);
+    return () => window.removeEventListener('ai-nav-highlight', handler);
+  }, []);
 
   // Check admin role
   useEffect(() => {
@@ -138,7 +153,7 @@ export default function Navbar() {
                 </Button>
               </>
             ) : (
-              <NavigationItems onlyPrimary />
+              <NavigationItems onlyPrimary highlightedItem={highlightedItem} />
             )}
           </div>
 
@@ -216,6 +231,7 @@ export default function Navbar() {
                   <nav className="space-y-0.5">
                     {groupItems.map((item) => {
                       const isActive = location.pathname === item.path;
+                      const isHighlighted = highlightedItem === item.name;
                       const Icon = item.icon;
                       return (
                         <Link
@@ -226,7 +242,8 @@ export default function Navbar() {
                             'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group',
                             isActive
                               ? 'bg-primary/8 dark:bg-primary/15 text-primary shadow-sm'
-                              : 'text-foreground/70 hover:bg-muted transition-all duration-300'
+                              : 'text-foreground/70 hover:bg-muted transition-all duration-300',
+                            isHighlighted && 'animate-pulse-glow ring-2 ring-primary/60 bg-primary/10 text-primary scale-[1.02]'
                           )}
                         >
                           {/* Colored icon badge */}

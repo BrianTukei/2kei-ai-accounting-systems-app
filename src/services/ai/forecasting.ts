@@ -14,11 +14,17 @@
  */
 
 import type { FinancialSnapshot, ForecastResult } from './types';
+import { formatCurrency } from '@/lib/utils';
 
 // ── Formatting ──────────────────────────────────────────────────────────────
 
 function fmt(n: number): string {
   return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+/** Currency-aware formatting — replaces hardcoded $ signs */
+function fmtCur(n: number): string {
+  return formatCurrency(n);
 }
 
 // ── Statistical helpers ─────────────────────────────────────────────────────
@@ -151,9 +157,9 @@ export function generateForecast(snap: FinancialSnapshot): ForecastResult {
   }
 
   if (projectedProfit > 0) {
-    summary += `\n\nProjected average monthly profit: **$${fmt(projectedProfit)}** over next 3 months.`;
+    summary += `\n\nProjected average monthly profit: **${fmtCur(projectedProfit)}** over next 3 months.`;
   } else if (projectedProfit < 0) {
-    summary += `\n\nProjected average monthly loss: **$${fmt(Math.abs(projectedProfit))}** over next 3 months.`;
+    summary += `\n\nProjected average monthly loss: **${fmtCur(Math.abs(projectedProfit))}** over next 3 months.`;
   }
 
   return {
@@ -184,7 +190,7 @@ export function generateForecastResponse(snap: FinancialSnapshot): string {
   response += `|-------|----------:|-----------:|\n`;
   for (const r of forecast.revenueProjection) {
     const confBar = '█'.repeat(Math.round(r.confidence * 5)) + '░'.repeat(5 - Math.round(r.confidence * 5));
-    response += `| ${r.month} | $${fmt(r.projected)} | ${(r.confidence * 100).toFixed(0)}% ${confBar} |\n`;
+    response += `| ${r.month} | ${fmtCur(r.projected)} | ${(r.confidence * 100).toFixed(0)}% ${confBar} |\n`;
   }
   response += '\n';
 
@@ -194,14 +200,14 @@ export function generateForecastResponse(snap: FinancialSnapshot): string {
   response += `|-------|----------:|-----------:|\n`;
   for (const e of forecast.expenseProjection) {
     const confBar = '█'.repeat(Math.round(e.confidence * 5)) + '░'.repeat(5 - Math.round(e.confidence * 5));
-    response += `| ${e.month} | $${fmt(e.projected)} | ${(e.confidence * 100).toFixed(0)}% ${confBar} |\n`;
+    response += `| ${e.month} | ${fmtCur(e.projected)} | ${(e.confidence * 100).toFixed(0)}% ${confBar} |\n`;
   }
   response += '\n';
 
   // Key metrics
   response += `### Key Metrics\n`;
   response += `• **Cash Runway:** ${forecast.cashRunway >= 999 ? '∞ (positive cash flow)' : `${forecast.cashRunway.toFixed(1)} months`}\n`;
-  response += `• **Monthly Burn Rate:** $${fmt(forecast.burnRate)}\n`;
+  response += `• **Monthly Burn Rate:** ${fmtCur(forecast.burnRate)}\n`;
   if (forecast.breakEvenDate) {
     response += `• **Projected Break-Even:** ${forecast.breakEvenDate}\n`;
   }

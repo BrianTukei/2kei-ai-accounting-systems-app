@@ -9,7 +9,7 @@ import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import type { PlatformUser, OrgRow } from '@/services/adminService';
 import { PLANS } from '@/lib/plans';
-import { cn } from '@/lib/utils';
+import { cn, formatCurrency } from '@/lib/utils';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 // ─────────────────────────────────────────
@@ -136,7 +136,7 @@ export function RevenueBreakdownChart({ orgs }: RevenueBreakdownProps) {
       </CardHeader>
       <CardContent>
         <div className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-4">
-          ${totalMRR.toLocaleString()}<span className="text-sm font-normal text-slate-400">/mo</span>
+          {formatCurrency(totalMRR)}<span className="text-sm font-normal text-slate-400">/mo</span>
         </div>
 
         {/* Stacked bar */}
@@ -149,7 +149,7 @@ export function RevenueBreakdownChart({ orgs }: RevenueBreakdownProps) {
                 key={b.plan}
                 className={cn('h-full transition-all', b.color)}
                 style={{ width: `${pct}%` }}
-                title={`${b.name}: ${b.count} orgs ($${b.mrr}/mo)`}
+                title={`${b.name}: ${b.count} orgs (${formatCurrency(b.mrr)}/mo)`}
               />
             );
           })}

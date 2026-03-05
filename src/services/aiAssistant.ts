@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { findNavPages, buildNavigationAction } from '@/ai/navigationMap';
+import { formatCurrency } from '@/lib/utils';
 
 /* ═══════════════════════════════════════════════════════════════════════
    2KEI AI – CFO-Grade Accounting Intelligence Engine
@@ -222,6 +223,12 @@ function detectIntent(msg: string): Intent {
 function fmt(n: number): string {
   return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
+
+/** Currency-aware formatting — replaces hardcoded $ signs */
+function fmtCur(n: number): string {
+  return formatCurrency(n);
+}
+
 function fmtPct(n: number): string {
   return `${n >= 0 ? '+' : ''}${n.toFixed(1)}%`;
 }
@@ -327,7 +334,7 @@ function detectErrors(s: FinancialSnapshot): FinancialAlert[] {
 
   if (s.totalExpenses > s.totalIncome && s.totalIncome > 0) {
     const deficit = s.totalExpenses - s.totalIncome;
-    alerts.push({ severity: 'critical', message: `⚠️ **Operating at a loss** — spending exceeds revenue by $${fmt(deficit)}.` });
+    alerts.push({ severity: 'critical', message: `⚠️ **Operating at a loss** — spending exceeds revenue by ${fmtCur(deficit)}.` });
   }
 
   if (s.expenseGrowth > 20) {
@@ -341,7 +348,7 @@ function detectErrors(s: FinancialSnapshot): FinancialAlert[] {
   if (s.invoiceSummary && s.invoiceSummary.overdue > 0) {
     alerts.push({
       severity: s.invoiceSummary.overdue >= 5 ? 'critical' : 'warning',
-      message: `⚠️ **${s.invoiceSummary.overdue} overdue invoice(s)** — $${fmt(s.invoiceSummary.overdueValue)} uncollected.`,
+      message: `⚠️ **${s.invoiceSummary.overdue} overdue invoice(s)** — ${fmtCur(s.invoiceSummary.overdueValue)} uncollected.`,
     });
   }
 
@@ -447,20 +454,20 @@ export class AIAssistantService {
       let response = `## 📋 Executive Financial Summary\n\n`;
       response += `**Health Score:** ${score}/100 ${healthEmoji(score)} (${healthLabel(score)})\n\n`;
       response += `**Key Metrics:**\n`;
-      response += `• Total Revenue: **$${fmt(snap.totalIncome)}**\n`;
-      response += `• Total Expenses: **$${fmt(snap.totalExpenses)}**\n`;
-      response += `• Net ${netProfit >= 0 ? 'Profit' : 'Loss'}: **$${fmt(Math.abs(netProfit))}** ${netProfit >= 0 ? '✅' : '❌'}\n`;
+      response += `• Total Revenue: **${fmtCur(snap.totalIncome)}**\n`;
+      response += `• Total Expenses: **${fmtCur(snap.totalExpenses)}**\n`;
+      response += `• Net ${netProfit >= 0 ? 'Profit' : 'Loss'}: **${fmtCur(Math.abs(netProfit))}** ${netProfit >= 0 ? '✅' : '❌'}\n`;
       response += `• Net Margin: **${netMargin.toFixed(1)}%**\n`;
-      response += `• This Month Income: **$${fmt(snap.monthlyIncome)}** (${fmtPct(snap.incomeGrowth)} vs last month)\n`;
-      response += `• This Month Expenses: **$${fmt(snap.monthlyExpenses)}** (${fmtPct(snap.expenseGrowth)} vs last month)\n`;
-      response += `• Cash Balance: **$${fmt(snap.totalBalance)}**\n`;
+      response += `• This Month Income: **${fmtCur(snap.monthlyIncome)}** (${fmtPct(snap.incomeGrowth)} vs last month)\n`;
+      response += `• This Month Expenses: **${fmtCur(snap.monthlyExpenses)}** (${fmtPct(snap.expenseGrowth)} vs last month)\n`;
+      response += `• Cash Balance: **${fmtCur(snap.totalBalance)}**\n`;
       if (snap.invoiceSummary) {
         response += `• Invoices: **${snap.invoiceSummary.paid}** paid, **${snap.invoiceSummary.overdue}** overdue, **${snap.invoiceSummary.draft}** draft\n`;
       }
       response += `\n**3 Key Insights:**\n`;
       // Insight 1: Profitability
       if (netProfit > 0) response += `1. ✅ Your business is **profitable** with a ${netMargin.toFixed(1)}% net margin.\n`;
-      else response += `1. ❌ Your business is **operating at a loss**. Expenses exceed revenue by $${fmt(Math.abs(netProfit))}.\n`;
+      else response += `1. ❌ Your business is **operating at a loss**. Expenses exceed revenue by ${fmtCur(Math.abs(netProfit))}.\n`;
       // Insight 2: Growth trend
       if (snap.incomeGrowth > 0) response += `2. 📈 Revenue is **growing** ${fmtPct(snap.incomeGrowth)} month-over-month — positive momentum.\n`;
       else if (snap.incomeGrowth < 0) response += `2. 📉 Revenue is **declining** ${fmtPct(snap.incomeGrowth)} — needs attention.\n`;
@@ -468,7 +475,7 @@ export class AIAssistantService {
       // Insight 3: Top expense
       if (snap.categoryBreakdown.length > 0) {
         const top = snap.categoryBreakdown[0];
-        response += `3. 💰 Biggest expense: **${top.category}** at $${fmt(top.amount)} (${top.percentage.toFixed(0)}% of total expenses).\n`;
+        response += `3. 💰 Biggest expense: **${top.category}** at ${fmtCur(top.amount)} (${top.percentage.toFixed(0)}% of total expenses).\n`;
       }
       if (alerts.filter(a => a.severity !== 'info').length > 0) {
         response += `\n**⚠️ Active Warnings:**\n`;
@@ -480,9 +487,9 @@ export class AIAssistantService {
     // ── Profit / Margin Analysis ─────────────────────────────────────────
     if (intent === 'profit_analysis') {
       let response = `## 📈 Profitability Analysis\n\n`;
-      response += `• **Total Revenue:** $${fmt(snap.totalIncome)}\n`;
-      response += `• **Total Expenses:** $${fmt(snap.totalExpenses)}\n`;
-      response += `• **Net ${netProfit >= 0 ? 'Profit' : 'Loss'}:** $${fmt(Math.abs(netProfit))} ${netProfit >= 0 ? '✅' : '❌'}\n`;
+      response += `• **Total Revenue:** ${fmtCur(snap.totalIncome)}\n`;
+      response += `• **Total Expenses:** ${fmtCur(snap.totalExpenses)}\n`;
+      response += `• **Net ${netProfit >= 0 ? 'Profit' : 'Loss'}:** ${fmtCur(Math.abs(netProfit))} ${netProfit >= 0 ? '✅' : '❌'}\n`;
       response += `• **Net Margin:** ${netMargin.toFixed(1)}%\n`;
       response += `• **Expense Ratio:** ${expenseRatio.toFixed(1)}% of revenue goes to expenses\n\n`;
       // Rating
@@ -503,17 +510,17 @@ export class AIAssistantService {
       const runway = snap.totalBalance > 0 ? snap.totalBalance / monthlyBurn : 0;
       const monthlyNet = snap.monthlyIncome - snap.monthlyExpenses;
       let response = `## 💰 Cash Flow Analysis\n\n`;
-      response += `• **Cash Balance:** $${fmt(snap.totalBalance)} ${snap.totalBalance > 0 ? '✅' : '⚠️'}\n`;
-      response += `• **Monthly Inflow:** $${fmt(snap.monthlyIncome)} (${fmtPct(snap.incomeGrowth)})\n`;
-      response += `• **Monthly Outflow:** $${fmt(snap.monthlyExpenses)} (${fmtPct(snap.expenseGrowth)})\n`;
-      response += `• **Monthly Net Cash:** $${fmt(monthlyNet)} ${monthlyNet >= 0 ? '✅' : '❌'}\n`;
+      response += `• **Cash Balance:** ${fmtCur(snap.totalBalance)} ${snap.totalBalance > 0 ? '✅' : '⚠️'}\n`;
+      response += `• **Monthly Inflow:** ${fmtCur(snap.monthlyIncome)} (${fmtPct(snap.incomeGrowth)})\n`;
+      response += `• **Monthly Outflow:** ${fmtCur(snap.monthlyExpenses)} (${fmtPct(snap.expenseGrowth)})\n`;
+      response += `• **Monthly Net Cash:** ${fmtCur(monthlyNet)} ${monthlyNet >= 0 ? '✅' : '❌'}\n`;
       response += `• **Cash Runway:** ${runway.toFixed(1)} months\n\n`;
       if (runway >= 6) response += `**Status: Strong** 🟢 — Over 6 months of runway. Good cash cushion.\n`;
       else if (runway >= 3) response += `**Status: Adequate** 🟡 — 3-6 months runway. Consider building reserves.\n`;
       else if (runway > 0) response += `**Status: Low** 🟠 — Under 3 months runway. Accelerate collections and reduce spend.\n`;
       else response += `**Status: Critical** 🔴 — Negative or zero runway. Cash emergency.\n`;
       if (snap.invoiceSummary && snap.invoiceSummary.overdueValue > 0) {
-        response += `\n📌 **Collecting $${fmt(snap.invoiceSummary.overdueValue)} in overdue invoices would add ${(snap.invoiceSummary.overdueValue / monthlyBurn).toFixed(1)} months of runway.**`;
+        response += `\n📌 **Collecting ${fmtCur(snap.invoiceSummary.overdueValue)} in overdue invoices would add ${(snap.invoiceSummary.overdueValue / monthlyBurn).toFixed(1)} months of runway.**`;
       }
       response += `\n\n**Tips to Improve Cash Flow:**\n`;
       response += `• Invoice immediately after delivering services\n`;
@@ -526,14 +533,14 @@ export class AIAssistantService {
     // ── Expense Analysis ─────────────────────────────────────────────────
     if (intent === 'expense_analysis') {
       let response = `## 📊 Expense Analysis\n\n`;
-      response += `• **Total Expenses:** $${fmt(snap.totalExpenses)}\n`;
-      response += `• **This Month:** $${fmt(snap.monthlyExpenses)} (${fmtPct(snap.expenseGrowth)} vs last month)\n`;
+      response += `• **Total Expenses:** ${fmtCur(snap.totalExpenses)}\n`;
+      response += `• **This Month:** ${fmtCur(snap.monthlyExpenses)} (${fmtPct(snap.expenseGrowth)} vs last month)\n`;
       response += `• **Expense Ratio:** ${expenseRatio.toFixed(1)}% of revenue\n\n`;
       if (snap.categoryBreakdown.length > 0) {
         response += `**Expense Breakdown by Category:**\n`;
         for (const cat of snap.categoryBreakdown.slice(0, 8)) {
           const bar = '█'.repeat(Math.round(cat.percentage / 10)) + '░'.repeat(10 - Math.round(cat.percentage / 10));
-          response += `• **${cat.category}:** $${fmt(cat.amount)} (${cat.percentage.toFixed(1)}%) ${bar}\n`;
+          response += `• **${cat.category}:** ${fmtCur(cat.amount)} (${cat.percentage.toFixed(1)}%) ${bar}\n`;
         }
       }
       response += `\n**Efficiency Assessment:**\n`;
@@ -587,9 +594,9 @@ export class AIAssistantService {
       let response = `## 🚀 Growth Strategy\n\n`;
       response += `Based on your financial data, here's a personalized growth plan:\n\n`;
       response += `**Current Position:**\n`;
-      response += `• Revenue: $${fmt(snap.totalIncome)} | Growth: ${fmtPct(snap.incomeGrowth)}/mo\n`;
+      response += `• Revenue: ${fmtCur(snap.totalIncome)} | Growth: ${fmtPct(snap.incomeGrowth)}/mo\n`;
       response += `• Net Margin: ${netMargin.toFixed(1)}%\n`;
-      response += `• Cash Reserves: $${fmt(snap.totalBalance)}\n\n`;
+      response += `• Cash Reserves: ${fmtCur(snap.totalBalance)}\n\n`;
       response += `**3 Growth Strategies:**\n\n`;
       // Strategy based on current position
       if (netMargin >= 15) {
@@ -600,7 +607,7 @@ export class AIAssistantService {
         response += `1. **Fix Profitability First** — Reduce costs by ${Math.min(expenseRatio - 80, 30).toFixed(0)}% or increase prices before pursuing growth.\n\n`;
       }
       if (snap.invoiceSummary && snap.invoiceSummary.overdue > 0) {
-        response += `2. **Collect Outstanding Revenue** — $${fmt(snap.invoiceSummary.overdueValue)} in overdue invoices is immediate growth capital. Follow up this week.\n\n`;
+        response += `2. **Collect Outstanding Revenue** — ${fmtCur(snap.invoiceSummary.overdueValue)} in overdue invoices is immediate growth capital. Follow up this week.\n\n`;
       } else {
         response += `2. **Diversify Revenue Streams** — Add complementary products/services to reduce dependency on a single income source.\n\n`;
       }
@@ -612,18 +619,18 @@ export class AIAssistantService {
     if (intent === 'loss_diagnosis') {
       let response = `## 🩺 Loss Diagnosis\n\n`;
       if (netProfit >= 0) {
-        response += `${greeting}Good news — you're actually **profitable** with $${fmt(netProfit)} net income (${netMargin.toFixed(1)}% margin).\n\n`;
+        response += `${greeting}Good news — you're actually **profitable** with ${fmtCur(netProfit)} net income (${netMargin.toFixed(1)}% margin).\n\n`;
         response += `However, here are areas to watch to **stay** profitable:\n`;
         if (snap.expenseGrowth > 5) response += `• Expenses grew ${fmtPct(snap.expenseGrowth)} this month — faster than ideal\n`;
         if (snap.incomeGrowth < 0) response += `• Revenue declined ${fmtPct(snap.incomeGrowth)} — needs reversal\n`;
         if (snap.invoiceSummary?.overdue) response += `• ${snap.invoiceSummary.overdue} overdue invoices need collection\n`;
         return response;
       }
-      response += `${greeting}Your business is currently **operating at a loss** of $${fmt(Math.abs(netProfit))}.\n\n`;
+      response += `${greeting}Your business is currently **operating at a loss** of ${fmtCur(Math.abs(netProfit))}.\n\n`;
       response += `**Root Cause Analysis:**\n`;
-      response += `• Expense ratio is ${expenseRatio.toFixed(1)}% — you spend $${fmt(expenseRatio / 100)} for every $1 earned\n`;
+      response += `• Expense ratio is ${expenseRatio.toFixed(1)}% — you spend ${fmtCur(expenseRatio / 100)} for every $1 earned\n`;
       if (snap.categoryBreakdown.length > 0) {
-        response += `• Top cost driver: **${snap.categoryBreakdown[0].category}** at $${fmt(snap.categoryBreakdown[0].amount)} (${snap.categoryBreakdown[0].percentage.toFixed(0)}% of expenses)\n`;
+        response += `• Top cost driver: **${snap.categoryBreakdown[0].category}** at ${fmtCur(snap.categoryBreakdown[0].amount)} (${snap.categoryBreakdown[0].percentage.toFixed(0)}% of expenses)\n`;
       }
       if (snap.incomeGrowth < 0) response += `• Revenue is declining ${fmtPct(snap.incomeGrowth)} — compounding the loss\n`;
       if (snap.expenseGrowth > 0) response += `• Expenses growing ${fmtPct(snap.expenseGrowth)} — accelerating the burn\n`;
@@ -646,15 +653,15 @@ export class AIAssistantService {
       response += `• **Paid:** ${inv.paid} ✅\n`;
       response += `• **Overdue:** ${inv.overdue} ${inv.overdue > 0 ? '⚠️' : '✅'}\n`;
       response += `• **Draft:** ${inv.draft}\n`;
-      response += `• **Total Value:** $${fmt(inv.totalValue)}\n`;
-      response += `• **Overdue Amount:** $${fmt(inv.overdueValue)}\n\n`;
+      response += `• **Total Value:** ${fmtCur(inv.totalValue)}\n`;
+      response += `• **Overdue Amount:** ${fmtCur(inv.overdueValue)}\n\n`;
       const collectionRate = inv.total > 0 ? (inv.paid / inv.total * 100) : 0;
       response += `**Collection Rate:** ${collectionRate.toFixed(0)}%\n`;
       if (collectionRate >= 80) response += `🟢 Excellent collection performance.\n`;
       else if (collectionRate >= 60) response += `🟡 Decent, but aim for 80%+ collection rate.\n`;
       else response += `🔴 Low collection rate. Review your invoicing and follow-up process.\n`;
       if (inv.overdue > 0) {
-        response += `\n**Action Required:** Follow up on ${inv.overdue} overdue invoice(s) worth $${fmt(inv.overdueValue)} immediately.`;
+        response += `\n**Action Required:** Follow up on ${inv.overdue} overdue invoice(s) worth ${fmtCur(inv.overdueValue)} immediately.`;
       }
       return response;
     }
@@ -743,10 +750,10 @@ export class AIAssistantService {
         `• **Equity** — Owner's value (Assets minus Liabilities)\n\n`;
       if (snap) {
         r += `**Your Current Position:**\n`;
-        r += `• Cash/Balance: $${fmt(snap.totalBalance)}\n`;
-        r += `• Total inflows (proxy for assets): $${fmt(snap.totalIncome)}\n`;
-        r += `• Total outflows (proxy for liabilities): $${fmt(snap.totalExpenses)}\n`;
-        r += `• Net Position: $${fmt(snap.totalBalance)} ${snap.totalBalance >= 0 ? '✅' : '⚠️'}\n`;
+        r += `• Cash/Balance: ${fmtCur(snap.totalBalance)}\n`;
+        r += `• Total inflows (proxy for assets): ${fmtCur(snap.totalIncome)}\n`;
+        r += `• Total outflows (proxy for liabilities): ${fmtCur(snap.totalExpenses)}\n`;
+        r += `• Net Position: ${fmtCur(snap.totalBalance)} ${snap.totalBalance >= 0 ? '✅' : '⚠️'}\n`;
       }
       return r;
     }
@@ -762,9 +769,9 @@ export class AIAssistantService {
       if (snap) {
         const nm = snap.totalIncome > 0 ? ((snap.totalIncome - snap.totalExpenses) / snap.totalIncome * 100) : 0;
         r += `**Your Numbers:**\n`;
-        r += `• Revenue: $${fmt(snap.totalIncome)}\n`;
-        r += `• Expenses: $${fmt(snap.totalExpenses)}\n`;
-        r += `• Net Income: $${fmt(snap.totalIncome - snap.totalExpenses)}\n`;
+        r += `• Revenue: ${fmtCur(snap.totalIncome)}\n`;
+        r += `• Expenses: ${fmtCur(snap.totalExpenses)}\n`;
+        r += `• Net Income: ${fmtCur(snap.totalIncome - snap.totalExpenses)}\n`;
         r += `• Net Margin: ${nm.toFixed(1)}% ${nm >= 10 ? '✅' : nm >= 0 ? '🟡' : '❌'}\n`;
       }
       return r;
@@ -776,7 +783,7 @@ export class AIAssistantService {
         `• **Investing Activities** — Equipment, assets, investments\n` +
         `• **Financing Activities** — Loans, owner contributions, dividends\n\n` +
         `Positive operating cash flow is the strongest sign of business health.` +
-        (snap ? `\n\n**Your Cash Position:** $${fmt(snap.totalBalance)} | Monthly net: $${fmt(snap.monthlyIncome - snap.monthlyExpenses)}` : '');
+        (snap ? `\n\n**Your Cash Position:** ${fmtCur(snap.totalBalance)} | Monthly net: ${fmtCur(snap.monthlyIncome - snap.monthlyExpenses)}` : '');
     }
 
     if (msg.includes('trial balance')) {
@@ -803,7 +810,7 @@ export class AIAssistantService {
         `1. Keep digital receipts for everything\n2. Separate personal and business finances\n` +
         `3. Set aside 25-30% of profit quarterly for taxes\n4. Track mileage and business meals\n\n` +
         `⚠️ Always consult a qualified tax professional for advice specific to your jurisdiction.` +
-        (snap ? `\n\n**Your tax-relevant data:** Revenue $${fmt(snap.totalIncome)} | Deductible expenses $${fmt(snap.totalExpenses)}` : '');
+        (snap ? `\n\n**Your tax-relevant data:** Revenue ${fmtCur(snap.totalIncome)} | Deductible expenses ${fmtCur(snap.totalExpenses)}` : '');
     }
 
     if (msg.includes('payroll') || msg.includes('salary') || msg.includes('employee')) {
@@ -819,7 +826,7 @@ export class AIAssistantService {
         `**How to Build a Budget:**\n1. Start with last period's actual figures\n2. Separate fixed costs (rent, salaries) from variable costs\n` +
         `3. Project revenue conservatively (80% of pipeline)\n4. Build in a 10-15% contingency buffer\n\n` +
         `**Review Cadence:**\n• Weekly: Cash flow check\n• Monthly: Budget vs actuals review\n• Quarterly: Forecast adjustment\n` +
-        (snap ? `\n\n**Your baseline:** Monthly income $${fmt(snap.monthlyIncome)} | Monthly expenses $${fmt(snap.monthlyExpenses)}` : '');
+        (snap ? `\n\n**Your baseline:** Monthly income ${fmtCur(snap.monthlyIncome)} | Monthly expenses ${fmtCur(snap.monthlyExpenses)}` : '');
     }
 
     if (msg.includes('depreciat') || msg.includes('amortiz')) {

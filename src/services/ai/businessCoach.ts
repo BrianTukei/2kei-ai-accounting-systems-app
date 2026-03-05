@@ -13,9 +13,15 @@
 
 import type { FinancialSnapshot } from './types';
 import { analyzeFinancials, type FinancialAnalysis } from './analysis';
+import { formatCurrency } from '@/lib/utils';
 
 function fmt(n: number): string {
   return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+/** Currency-aware formatting — replaces hardcoded $ signs */
+function fmtCur(n: number): string {
+  return formatCurrency(n);
 }
 
 // ── Coaching topics ─────────────────────────────────────────────────────────
@@ -50,8 +56,8 @@ function generateCostReductionAdvice(analysis: FinancialAnalysis, snap: Financia
   const { expenses, cashflow } = analysis;
   let response = `## 💡 Cost Reduction Strategy\n\n`;
   response += `**Current Expense Profile:**\n`;
-  response += `• Total Expenses: $${fmt(expenses.total)}\n`;
-  response += `• Monthly Average: $${fmt(expenses.monthlyAverage)}\n`;
+  response += `• Total Expenses: ${fmtCur(expenses.total)}\n`;
+  response += `• Monthly Average: ${fmtCur(expenses.monthlyAverage)}\n`;
   response += `• Expense Trend: ${expenses.trend.direction === 'up' ? '📈 Rising' : expenses.trend.direction === 'down' ? '📉 Falling' : '➡️ Stable'}\n\n`;
 
   response += `### 🎯 Actionable Cost-Cutting Strategies\n\n`;
@@ -61,7 +67,7 @@ function generateCostReductionAdvice(analysis: FinancialAnalysis, snap: Financia
     const top = expenses.topCategories[0];
     const savings10pct = top.amount * 0.1;
     response += `**1. Audit ${top.category} (${top.percentage.toFixed(0)}% of expenses)**\n`;
-    response += `This is your largest cost center at $${fmt(top.amount)}. A 10% reduction saves **$${fmt(savings10pct)}**.\n`;
+    response += `This is your largest cost center at ${fmtCur(top.amount)}. A 10% reduction saves **${fmtCur(savings10pct)}**.\n`;
     response += `→ Review contracts, negotiate rates, find alternatives.\n\n`;
   }
 
@@ -69,7 +75,7 @@ function generateCostReductionAdvice(analysis: FinancialAnalysis, snap: Financia
   if (expenses.topCategories.length > 1) {
     const second = expenses.topCategories[1];
     response += `**2. Optimize ${second.category} Spend**\n`;
-    response += `At $${fmt(second.amount)} (${second.percentage.toFixed(0)}%), there may be room to consolidate or eliminate redundancies.\n\n`;
+    response += `At ${fmtCur(second.amount)} (${second.percentage.toFixed(0)}%), there may be room to consolidate or eliminate redundancies.\n\n`;
   }
 
   // Strategy 3: Spike-based
@@ -91,8 +97,8 @@ function generateCostReductionAdvice(analysis: FinancialAnalysis, snap: Financia
   const potential5pct = expenses.total * 0.05;
   const potential10pct = expenses.total * 0.10;
   response += `### 💰 Savings Potential\n`;
-  response += `• Conservative (5% cut): **$${fmt(potential5pct)}** saved\n`;
-  response += `• Moderate (10% cut): **$${fmt(potential10pct)}** saved\n`;
+  response += `• Conservative (5% cut): **${fmtCur(potential5pct)}** saved\n`;
+  response += `• Moderate (10% cut): **${fmtCur(potential10pct)}** saved\n`;
   response += `• **Impact on margin:** +${((potential10pct / Math.max(snap.totalIncome, 1)) * 100).toFixed(1)}% net margin improvement\n`;
 
   return response;
@@ -103,9 +109,9 @@ function generateGrowthAdvice(analysis: FinancialAnalysis, snap: FinancialSnapsh
   let response = `## 🚀 Growth Strategy\n\n`;
 
   response += `**Current Position:**\n`;
-  response += `• Revenue: $${fmt(revenue.total)} | Growth: ${revenue.trend.changePercent >= 0 ? '+' : ''}${revenue.trend.changePercent.toFixed(1)}%/mo\n`;
+  response += `• Revenue: ${fmtCur(revenue.total)} | Growth: ${revenue.trend.changePercent >= 0 ? '+' : ''}${revenue.trend.changePercent.toFixed(1)}%/mo\n`;
   response += `• Net Margin: ${profitability.netMargin.toFixed(1)}%\n`;
-  response += `• Cash Reserves: $${fmt(cashflow.balance)}\n\n`;
+  response += `• Cash Reserves: ${fmtCur(cashflow.balance)}\n\n`;
 
   // Readiness assessment
   const readiness = profitability.netMargin >= 15 ? 'ready' : profitability.netMargin >= 5 ? 'nearly_ready' : 'not_ready';
@@ -140,7 +146,7 @@ function generateGrowthAdvice(analysis: FinancialAnalysis, snap: FinancialSnapsh
   if (snap.categoryBreakdown.length > 0) {
     const marketingSpend = snap.categoryBreakdown.find(c => /market|advert|promot/i.test(c.category));
     if (marketingSpend) {
-      response += `• Marketing spend: $${fmt(marketingSpend.amount)} (${marketingSpend.percentage.toFixed(0)}% of costs)\n`;
+      response += `• Marketing spend: ${fmtCur(marketingSpend.amount)} (${marketingSpend.percentage.toFixed(0)}% of costs)\n`;
       response += `• Track ROI per channel — double down on what works, cut what doesn't\n`;
     } else {
       response += `• Consider allocating 5-10% of revenue to marketing\n`;
@@ -153,7 +159,7 @@ function generateGrowthAdvice(analysis: FinancialAnalysis, snap: FinancialSnapsh
   const targetGrowth = Math.max(revenue.trend.changePercent + 5, 10);
   response += `**3. Set 90-Day Growth Targets**\n`;
   response += `• Monthly revenue growth target: **${targetGrowth.toFixed(0)}%**\n`;
-  response += `• Revenue goal next quarter: **$${fmt(revenue.monthlyAverage * 3 * (1 + targetGrowth / 100))}**\n`;
+  response += `• Revenue goal next quarter: **${fmtCur(revenue.monthlyAverage * 3 * (1 + targetGrowth / 100))}**\n`;
   response += `• Weekly check-ins to track progress\n`;
 
   return response;
@@ -165,21 +171,21 @@ function generateProfitAdvice(analysis: FinancialAnalysis, snap: FinancialSnapsh
 
   response += `**Current Margin:** ${profitability.netMargin.toFixed(1)}% `;
   response += profitability.rating === 'excellent' ? '🟢\n' : profitability.rating === 'good' ? '🟡\n' : profitability.rating === 'thin' ? '🟠\n' : '🔴\n';
-  response += `**Net ${profitability.netProfit >= 0 ? 'Profit' : 'Loss'}:** $${fmt(Math.abs(profitability.netProfit))}\n\n`;
+  response += `**Net ${profitability.netProfit >= 0 ? 'Profit' : 'Loss'}:** ${fmtCur(Math.abs(profitability.netProfit))}\n\n`;
 
   // Revenue lever
   const rev5pct = revenue.total * 0.05;
   response += `### Revenue Levers\n`;
-  response += `• 5% price increase → **$${fmt(rev5pct)}** additional revenue\n`;
+  response += `• 5% price increase → **${fmtCur(rev5pct)}** additional revenue\n`;
   response += `• Focus on highest-margin services/products\n`;
   response += `• Reduce client churn — retaining 1 client is cheaper than acquiring 2\n\n`;
 
   // Cost lever
   const exp5pct = expenses.total * 0.05;
   response += `### Cost Levers\n`;
-  response += `• 5% expense reduction → **$${fmt(exp5pct)}** saved\n`;
+  response += `• 5% expense reduction → **${fmtCur(exp5pct)}** saved\n`;
   if (expenses.topCategories.length >= 2) {
-    response += `• Focus on #1: **${expenses.topCategories[0].category}** ($${fmt(expenses.topCategories[0].amount)}) and #2: **${expenses.topCategories[1].category}** ($${fmt(expenses.topCategories[1].amount)})\n`;
+    response += `• Focus on #1: **${expenses.topCategories[0].category}** (${fmtCur(expenses.topCategories[0].amount)}) and #2: **${expenses.topCategories[1].category}** (${fmtCur(expenses.topCategories[1].amount)})\n`;
   }
   response += `• Eliminate subscriptions and services with low ROI\n\n`;
 
@@ -190,7 +196,7 @@ function generateProfitAdvice(analysis: FinancialAnalysis, snap: FinancialSnapsh
     : 0;
 
   response += `### Combined Impact\n`;
-  response += `• Combined improvement: **$${fmt(combinedImprovement)}**\n`;
+  response += `• Combined improvement: **${fmtCur(combinedImprovement)}**\n`;
   response += `• New projected margin: **${newMargin.toFixed(1)}%** (from ${profitability.netMargin.toFixed(1)}%)\n`;
   response += `• This is achievable within **60-90 days** with disciplined execution.\n`;
 
@@ -217,7 +223,7 @@ function generateOptimizationAdvice(analysis: FinancialAnalysis, snap: Financial
   }
 
   if (snap.invoiceSummary && snap.invoiceSummary.overdue > 0) {
-    response += `• 📌 Collect $${fmt(snap.invoiceSummary.overdueValue)} in overdue invoices this week\n`;
+    response += `• 📌 Collect ${fmtCur(snap.invoiceSummary.overdueValue)} in overdue invoices this week\n`;
   }
 
   response += `\n### Automation Opportunities\n`;

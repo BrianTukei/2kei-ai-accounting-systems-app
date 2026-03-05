@@ -52,6 +52,7 @@ import { toast } from 'sonner';
 import AdminAccessCheck from '@/components/admin/AdminAccessCheck';
 import { useAdminAuth, useDashboardStats, useFeatureFlags, useAccountingModules, useAIControl, useSystemMonitoring, useNotifications, useDeveloperTools, useBilling } from '@/hooks/useDeveloperAdmin';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 // ─────────────────────────────────────────
 // Types & Constants
@@ -127,6 +128,7 @@ function DeveloperAdminDashboardContent() {
   ];
   
   const { user, signOut } = useAuth();
+  const { formatCurrency: fmtCur } = useCurrency();
   const { isAdmin, adminRole, adminUser, hasPermission, isSuperAdmin, isDeveloper } = useAdminAuth();
   const dashboardStats = useDashboardStats();
   const featureFlags = useFeatureFlags();
@@ -608,7 +610,7 @@ function OverviewSection({ stats, monitoring }: { stats: ReturnType<typeof useDa
     },
     {
       title: 'Monthly Revenue',
-      value: `$${(data?.monthlyRevenue ?? 0).toLocaleString()}`,
+      value: fmtCur(data?.monthlyRevenue ?? 0),
       icon: DollarSign,
       change: '+23%',
       changeType: 'positive' as const,

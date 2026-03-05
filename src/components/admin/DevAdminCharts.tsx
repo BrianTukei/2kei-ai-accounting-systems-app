@@ -24,7 +24,7 @@ import {
   Legend,
 } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
+import { cn, formatCurrency } from '@/lib/utils';
 
 // ─────────────────────────────────────────
 // Types
@@ -235,7 +235,7 @@ export function RevenueLineChart({ data, isLoading }: RevenueChartProps) {
                   tick={{ fill: '#94a3b8', fontSize: 12 }}
                   axisLine={false}
                   tickLine={false}
-                  tickFormatter={(value) => `$${value}`}
+                  tickFormatter={(value) => formatCurrency(value)}
                 />
                 <Tooltip
                   contentStyle={{
@@ -244,7 +244,7 @@ export function RevenueLineChart({ data, isLoading }: RevenueChartProps) {
                     borderRadius: '8px',
                     color: '#f8fafc',
                   }}
-                  formatter={(value: number) => [`$${value.toLocaleString()}`, 'Revenue']}
+                  formatter={(value: number) => [formatCurrency(value), 'Revenue']}
                   labelStyle={{ color: '#94a3b8' }}
                 />
                 <Line

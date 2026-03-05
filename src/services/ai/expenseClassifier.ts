@@ -10,6 +10,12 @@
  */
 
 import type { ExpenseClassification } from './types';
+import { formatCurrency } from '@/lib/utils';
+
+/** Currency-aware formatting */
+function fmtCur(n: number): string {
+  return formatCurrency(n);
+}
 
 // ── Category definitions ────────────────────────────────────────────────────
 
@@ -236,12 +242,12 @@ export function generateClassificationResponse(text: string): string {
   response += `• **Confidence:** ${(classification.confidence * 100).toFixed(0)}%\n`;
 
   if (amount > 0) {
-    response += `• **Amount:** $${amount.toLocaleString()}\n\n`;
+    response += `• **Amount:** ${fmtCur(amount)}\n\n`;
     response += `### Suggested Journal Entry\n`;
     response += `| | Account | Amount |\n`;
     response += `|---|---------|-------:|\n`;
-    response += `| **DR** | ${classification.suggestedJournalEntry.debit.account} | $${amount.toLocaleString()} |\n`;
-    response += `| **CR** | ${classification.suggestedJournalEntry.credit.account} | $${amount.toLocaleString()} |\n\n`;
+    response += `| **DR** | ${classification.suggestedJournalEntry.debit.account} | ${fmtCur(amount)} |\n`;
+    response += `| **CR** | ${classification.suggestedJournalEntry.credit.account} | ${fmtCur(amount)} |\n\n`;
   }
 
   response += `Would you like me to **record this expense** automatically?`;

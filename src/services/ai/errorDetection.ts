@@ -14,9 +14,15 @@
  */
 
 import type { FinancialSnapshot, AIAlert } from './types';
+import { formatCurrency } from '@/lib/utils';
 
 function fmt(n: number): string {
   return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+/** Currency-aware formatting — replaces hardcoded $ signs */
+function fmtCur(n: number): string {
+  return formatCurrency(n);
 }
 
 // ── Error detection rules ───────────────────────────────────────────────────
@@ -32,7 +38,7 @@ export function detectErrors(snap: FinancialSnapshot): AIAlert[] {
     alerts.push({
       severity: 'critical',
       title: 'Negative Balance',
-      message: `Your account balance is **-$${fmt(Math.abs(snap.totalBalance))}**. This suggests expenses exceed income or there's a recording error.`,
+      message: `Your account balance is **-${fmtCur(Math.abs(snap.totalBalance))}**. This suggests expenses exceed income or there's a recording error.`,
       category: 'negative_balance',
     });
   }
@@ -43,7 +49,7 @@ export function detectErrors(snap: FinancialSnapshot): AIAlert[] {
     alerts.push({
       severity: 'critical',
       title: 'Operating Loss',
-      message: `Operating at a loss of **$${fmt(Math.abs(netProfit))}**. Total expenses ($${fmt(snap.totalExpenses)}) exceed revenue ($${fmt(snap.totalIncome)}).`,
+      message: `Operating at a loss of **${fmtCur(Math.abs(netProfit))}**. Total expenses (${fmtCur(snap.totalExpenses)}) exceed revenue (${fmtCur(snap.totalIncome)}).`,
       category: 'general',
     });
   }
@@ -73,7 +79,7 @@ export function detectErrors(snap: FinancialSnapshot): AIAlert[] {
     alerts.push({
       severity: snap.invoiceSummary.overdueValue > snap.monthlyExpenses ? 'critical' : 'warning',
       title: 'Overdue Invoices',
-      message: `**${snap.invoiceSummary.overdue}** overdue invoice(s) totaling **$${fmt(snap.invoiceSummary.overdueValue)}**. This impacts your cash flow.`,
+      message: `**${snap.invoiceSummary.overdue}** overdue invoice(s) totaling **${fmtCur(snap.invoiceSummary.overdueValue)}**. This impacts your cash flow.`,
       category: 'overdue_invoice',
     });
   }
@@ -83,7 +89,7 @@ export function detectErrors(snap: FinancialSnapshot): AIAlert[] {
     alerts.push({
       severity: 'warning',
       title: 'Expense Concentration',
-      message: `**${snap.categoryBreakdown[0].category}** accounts for ${snap.categoryBreakdown[0].percentage.toFixed(0)}% of ALL expenses ($${fmt(snap.categoryBreakdown[0].amount)}). Consider diversifying.`,
+      message: `**${snap.categoryBreakdown[0].category}** accounts for ${snap.categoryBreakdown[0].percentage.toFixed(0)}% of ALL expenses (${fmtCur(snap.categoryBreakdown[0].amount)}). Consider diversifying.`,
       category: 'general',
     });
   }
@@ -106,7 +112,7 @@ export function detectErrors(snap: FinancialSnapshot): AIAlert[] {
     alerts.push({
       severity: 'critical',
       title: 'Cash Flow Emergency',
-      message: `Only **${runway.toFixed(1)} months** of cash runway. At current burn rate ($${fmt(monthlyBurn)}/mo), cash will run out within ${Math.ceil(runway * 30)} days.`,
+      message: `Only **${runway.toFixed(1)} months** of cash runway. At current burn rate (${fmtCur(monthlyBurn)}/mo), cash will run out within ${Math.ceil(runway * 30)} days.`,
       category: 'cashflow_risk',
     });
   } else if (runway > 0 && runway < 4) {

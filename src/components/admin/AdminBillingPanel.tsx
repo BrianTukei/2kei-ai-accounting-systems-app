@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 // ─────────────────────────────────────────
 // Types
@@ -128,6 +129,7 @@ function StatusBadge({ status }: { status: string }) {
 // ─────────────────────────────────────────
 
 export default function AdminBillingPanel() {
+  const { formatCurrency } = useCurrency();
   const [subscribers, setSubscribers] = useState<SubscriberRow[]>([]);
   const [stats, setStats] = useState<RevenueStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -364,14 +366,14 @@ export default function AdminBillingPanel() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <StatCard
             label="Monthly Revenue"
-            value={`$${stats?.monthlyRevenue?.toLocaleString() || '0'}`}
+            value={formatCurrency(stats?.monthlyRevenue ?? 0)}
             icon={DollarSign}
             color="bg-green-500"
             subtext="MRR"
           />
           <StatCard
             label="Total Revenue"
-            value={`$${stats?.totalRevenue?.toLocaleString() || '0'}`}
+            value={formatCurrency(stats?.totalRevenue ?? 0)}
             icon={TrendingUp}
             color="bg-indigo-500"
             subtext="All time"
@@ -576,8 +578,8 @@ export default function AdminBillingPanel() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="free">Free</SelectItem>
-                    <SelectItem value="pro">Pro ($29/mo)</SelectItem>
-                    <SelectItem value="enterprise">Enterprise ($79/mo)</SelectItem>
+                    <SelectItem value="pro">Pro ({formatCurrency(29)}/mo)</SelectItem>
+                    <SelectItem value="enterprise">Enterprise ({formatCurrency(79)}/mo)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

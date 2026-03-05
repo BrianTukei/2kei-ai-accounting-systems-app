@@ -4,8 +4,10 @@ import { Transaction } from '@/components/TransactionCard';
 import { allTransactions } from '@/data/mockTransactions';
 import { supabase } from '@/integrations/supabase/client';
 import { autoCategory, generateJournalEntry, appendJournalEntry } from '@/services/bookkeeping';
+import { exchangeService } from '@/services/exchangeService';
 
 const LOCAL_STORAGE_KEY = 'finance-app-transactions';
+const BASE_CURRENCY = 'USD';
 
 export const useTransactions = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -27,6 +29,12 @@ export const useTransactions = () => {
               category: t.category ?? '',
               description: t.description ?? '',
               date: t.date ?? new Date().toLocaleDateString(),
+              currency: t.currency ?? 'USD',
+              original_amount: t.original_amount ?? t.amount ?? 0,
+              original_currency: t.original_currency ?? t.currency ?? 'USD',
+              base_currency_amount: t.base_currency_amount ?? t.amount ?? 0,
+              exchange_rate_used: t.exchange_rate_used ?? 1,
+              exchange_rate_date: t.exchange_rate_date ?? undefined,
               metadata: t.metadata ?? undefined,
             } as Transaction));
 
@@ -72,6 +80,19 @@ export const useTransactions = () => {
         : autoCategory(newTransaction.description, newTransaction.type),
     };
 
+    // Determine transaction currency and compute base-currency (USD) amount
+    const txCurrency = (enriched.currency || BASE_CURRENCY).toUpperCase();
+    const rate = exchangeService.getRateSync(txCurrency, BASE_CURRENCY);
+    const baseCurrencyAmount = Math.round(enriched.amount * rate * 100) / 100;
+
+    // Attach multi-currency fields
+    enriched.currency = txCurrency;
+    enriched.original_amount = enriched.amount;
+    enriched.original_currency = txCurrency;
+    enriched.base_currency_amount = baseCurrencyAmount;
+    enriched.exchange_rate_used = rate;
+    enriched.exchange_rate_date = new Date().toISOString();
+
     const SUPABASE_ENABLED = Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
     if (SUPABASE_ENABLED) {
@@ -91,6 +112,12 @@ export const useTransactions = () => {
             category: created.category ?? enriched.category,
             description: created.description ?? enriched.description,
             date: created.date ?? enriched.date,
+            currency: created.currency ?? enriched.currency,
+            original_amount: created.original_amount ?? enriched.original_amount,
+            original_currency: created.original_currency ?? enriched.original_currency,
+            base_currency_amount: created.base_currency_amount ?? enriched.base_currency_amount,
+            exchange_rate_used: created.exchange_rate_used ?? enriched.exchange_rate_used,
+            exchange_rate_date: created.exchange_rate_date ?? enriched.exchange_rate_date,
             metadata: created.metadata ?? enriched.metadata,
           };
 

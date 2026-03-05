@@ -149,24 +149,8 @@ export const generateBasePDF = async (title: string, content: any[][], summary: 
   toast.success(`${title} has been downloaded`);
 };
 
-/** Format a value using the user's selected currency (from localStorage). */
-export const formatCurrency = (value: number, currency?: string) => {
-  if (!currency) {
-    try {
-      const stored = localStorage.getItem('selected-currency');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        currency = parsed.code || 'USD';
-      }
-    } catch { /* ignore */ }
-  }
-  currency = currency || 'USD';
-  try {
-    return new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(value);
-  } catch (e) {
-    return `${currency} ${value.toFixed(2)}`;
-  }
-};
+/** Format a value using the unified multi-currency engine from lib/utils. */
+export { formatCurrency } from '@/lib/utils';
 
 /** Get the user's selected currency symbol from localStorage. */
 export const getStoredCurrencySymbol = (): string => {

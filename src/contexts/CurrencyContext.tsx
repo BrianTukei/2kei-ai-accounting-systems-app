@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
+import { exchangeService } from '@/services/exchangeService';
 
 export interface Currency {
   code: string;
@@ -67,13 +68,23 @@ export const CURRENCIES: Currency[] = [
 interface CurrencyContextType {
   selectedCurrency: Currency;
   setCurrency: (currency: Currency) => void;
-  formatCurrency: (amount: number) => string;
+  setAppCurrency: (code: string) => void;
+  formatCurrency: (amount: number, fromCurrency?: string) => string;
   getCurrencySymbol: () => string;
+  convertAmount: (amount: number, from: string, to?: string) => number;
+  formatConverted: (amount: number, fromCurrency: string) => string;
+  exchangeRates: Record<string, number>;
+  ratesSource: string;
+  ratesLastUpdated: string | null;
+  isRatesLoading: boolean;
+  refreshRates: () => Promise<void>;
+  baseCurrency: string;
 }
 
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
 
 const STORAGE_KEY = 'selected-currency';
+const BASE_CURRENCY = 'USD';
 
 interface CurrencyProviderProps {
   children: ReactNode;
@@ -89,39 +100,130 @@ export function CurrencyProvider({ children }: CurrencyProviderProps) {
     return CURRENCIES[0]; // Default to USD
   });
 
+  const [exchangeRates, setExchangeRates] = useState<Record<string, number>>({});
+  const [ratesSource, setRatesSource] = useState<string>('none');
+  const [ratesLastUpdated, setRatesLastUpdated] = useState<string | null>(null);
+  const [isRatesLoading, setIsRatesLoading] = useState(false);
+  const refreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(selectedCurrency));
   }, [selectedCurrency]);
 
-  const setCurrency = (currency: Currency) => {
-    setSelectedCurrency(currency);
-  };
+  // Load exchange rates on mount and refresh every 10 minutes
+  useEffect(() => {
+    const loadRates = async () => {
+      setIsRatesLoading(true);
+      try {
+        const result = await exchangeService.getRates();
+        setExchangeRates(result.rates);
+        setRatesSource(result.source);
+        setRatesLastUpdated(result.lastUpdated);
+      } catch (err) {
+        console.error('[CurrencyContext] Failed to load exchange rates:', err);
+      } finally {
+        setIsRatesLoading(false);
+      }
+    };
 
-  const formatCurrency = (amount: number): string => {
+    loadRates();
+
+    // Auto-refresh every 10 minutes
+    refreshTimerRef.current = setInterval(loadRates, 10 * 60 * 1000);
+    return () => {
+      if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
+    };
+  }, []);
+
+  const setCurrency = useCallback((currency: Currency) => {
+    setSelectedCurrency(currency);
+  }, []);
+
+  const setAppCurrency = useCallback((code: string) => {
+    const found = CURRENCIES.find(c => c.code === code);
+    if (found) setSelectedCurrency(found);
+  }, []);
+
+  /**
+   * Convert an amount from one currency to another using live rates.
+   * Defaults: from = BASE_CURRENCY, to = selectedCurrency.
+   */
+  const convertAmount = useCallback((amount: number, from: string, to?: string): number => {
+    const target = (to || selectedCurrency.code).toUpperCase();
+    const source = from.toUpperCase();
+
+    if (source === target) return amount;
+
+    // Use synchronous conversion from cached rates
+    return exchangeService.convertSync(amount, source, target);
+  }, [selectedCurrency.code]);
+
+  /**
+   * Format a currency amount. If fromCurrency is provided and differs
+   * from selectedCurrency, the amount is auto-converted first.
+   */
+  const formatCurrency = useCallback((amount: number, fromCurrency?: string): string => {
+    let displayAmount = amount;
+
+    // Auto-convert if the amount is in a different currency
+    if (fromCurrency && fromCurrency.toUpperCase() !== selectedCurrency.code.toUpperCase()) {
+      displayAmount = exchangeService.convertSync(amount, fromCurrency, selectedCurrency.code);
+    }
+
     try {
       return new Intl.NumberFormat(selectedCurrency.locale, {
         style: 'currency',
         currency: selectedCurrency.code,
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
-      }).format(amount);
-    } catch (error) {
-      // Fallback if Intl.NumberFormat fails
-      return `${selectedCurrency.symbol}${amount.toFixed(2)}`;
+      }).format(displayAmount);
+    } catch {
+      return `${selectedCurrency.symbol}${displayAmount.toFixed(2)}`;
     }
-  };
+  }, [selectedCurrency]);
 
-  const getCurrencySymbol = (): string => {
+  /**
+   * Format an amount that is in a foreign currency, converting
+   * to the selected display currency automatically.
+   */
+  const formatConverted = useCallback((amount: number, fromCurrency: string): string => {
+    return formatCurrency(amount, fromCurrency);
+  }, [formatCurrency]);
+
+  const getCurrencySymbol = useCallback((): string => {
     return selectedCurrency.symbol;
-  };
+  }, [selectedCurrency]);
+
+  const refreshRates = useCallback(async () => {
+    setIsRatesLoading(true);
+    try {
+      const result = await exchangeService.refreshRates();
+      setExchangeRates(result.rates);
+      setRatesSource(result.source);
+      setRatesLastUpdated(result.lastUpdated);
+    } catch (err) {
+      console.error('[CurrencyContext] Failed to refresh rates:', err);
+    } finally {
+      setIsRatesLoading(false);
+    }
+  }, []);
 
   return (
     <CurrencyContext.Provider
       value={{
         selectedCurrency,
         setCurrency,
+        setAppCurrency,
         formatCurrency,
         getCurrencySymbol,
+        convertAmount,
+        formatConverted,
+        exchangeRates,
+        ratesSource,
+        ratesLastUpdated,
+        isRatesLoading,
+        refreshRates,
+        baseCurrency: BASE_CURRENCY,
       }}
     >
       {children}

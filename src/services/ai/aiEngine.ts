@@ -19,6 +19,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { findNavPages, buildNavigationAction } from '@/ai/navigationMap';
 import { AIAssistantService, type FinancialSnapshot as LegacySnapshot } from '@/services/aiAssistant';
+import { formatCurrency } from '@/lib/utils';
 
 import type {
   AIContext, AIResponse, AIAction, AIMode, AIAlert,
@@ -239,7 +240,7 @@ export class AIEngine {
       const alertCount = analysis.alerts.filter(a => a.severity !== 'info').length;
       message += `**Quick Status:** ${analysis.profitability.rating === 'excellent' ? '🟢' : analysis.profitability.rating === 'good' ? '🟡' : analysis.profitability.rating === 'thin' ? '🟠' : '🔴'} `;
       message += `Margin: ${analysis.profitability.netMargin.toFixed(1)}% | `;
-      message += `Cash: $${analysis.cashflow.balance.toLocaleString()} | `;
+      message += `Cash: ${formatCurrency(analysis.cashflow.balance)} | `;
       message += `Alerts: ${alertCount > 0 ? `⚠️ ${alertCount}` : '✅ None'}`;
     } else {
       message += `Start recording transactions to unlock AI-powered insights!`;

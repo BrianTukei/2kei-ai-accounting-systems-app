@@ -19,6 +19,12 @@
 import type { AIAction, AIActionType, AIContext } from './types';
 import { canExecuteAction } from './roles';
 import { validateAction, logAction } from './safety';
+import { formatCurrency } from '@/lib/utils';
+
+/** Currency-aware formatting */
+function fmtCur(n: number): string {
+  return formatCurrency(n);
+}
 
 // ── Action patterns ─────────────────────────────────────────────────────────
 
@@ -245,19 +251,19 @@ export function detectAction(message: string): AIAction | null {
 function buildActionDescription(type: AIActionType, data: Record<string, any>): string {
   switch (type) {
     case 'create_invoice':
-      return `Create invoice for ${data.client || 'client'}${data.amount ? ` — $${data.amount.toLocaleString()}` : ''}`;
+      return `Create invoice for ${data.client || 'client'}${data.amount ? ` — ${fmtCur(data.amount)}` : ''}`;
     case 'record_expense':
-      return `Record expense: ${data.description || 'item'}${data.amount ? ` — $${data.amount.toLocaleString()}` : ''}`;
+      return `Record expense: ${data.description || 'item'}${data.amount ? ` — ${fmtCur(data.amount)}` : ''}`;
     case 'add_transaction':
-      return `Add ${data.type || 'income'}: ${data.description || 'transaction'}${data.amount ? ` — $${data.amount.toLocaleString()}` : ''}`;
+      return `Add ${data.type || 'income'}: ${data.description || 'transaction'}${data.amount ? ` — ${fmtCur(data.amount)}` : ''}`;
     case 'add_employee':
-      return `Add employee: ${data.name || 'New hire'}${data.salary ? ` — Salary $${data.salary.toLocaleString()}/mo` : ''}`;
+      return `Add employee: ${data.name || 'New hire'}${data.salary ? ` — Salary ${fmtCur(data.salary)}/mo` : ''}`;
     case 'generate_report':
       return `Generate ${(data.reportType || 'financial summary').replace(/_/g, ' ')} report`;
     case 'invite_member':
       return `Invite ${data.name || data.email || 'member'} as ${data.role || 'viewer'}`;
     case 'create_journal_entry':
-      return `Journal entry: DR ${data.debitAccount || '?'} / CR ${data.creditAccount || '?'}${data.amount ? ` — $${data.amount.toLocaleString()}` : ''}`;
+      return `Journal entry: DR ${data.debitAccount || '?'} / CR ${data.creditAccount || '?'}${data.amount ? ` — ${fmtCur(data.amount)}` : ''}`;
     case 'categorize_expense':
       return `Categorize: ${data.description || 'expense'}`;
     default:
@@ -338,7 +344,7 @@ export async function executeAction(
 
         if (err) throw err;
         logAction(action, 'executed', ctx.organizationId);
-        return { success: true, message: `✅ Invoice created for **${client}** — $${(amount || 0).toLocaleString()}. Check the Invoices page to review and send.` };
+        return { success: true, message: `✅ Invoice created for **${client}** — ${fmtCur(amount || 0)}. Check the Invoices page to review and send.` };
       }
 
       case 'record_expense': {
@@ -354,7 +360,7 @@ export async function executeAction(
 
         if (err) throw err;
         logAction(action, 'executed', ctx.organizationId);
-        return { success: true, message: `✅ Expense recorded: **${description || 'item'}** — $${(amount || 0).toLocaleString()}` };
+        return { success: true, message: `✅ Expense recorded: **${description || 'item'}** — ${fmtCur(amount || 0)}` };
       }
 
       case 'add_transaction': {
@@ -370,7 +376,7 @@ export async function executeAction(
 
         if (err) throw err;
         logAction(action, 'executed', ctx.organizationId);
-        return { success: true, message: `✅ ${txType === 'income' ? 'Income' : 'Transaction'} recorded: **${description}** — $${(amount || 0).toLocaleString()}` };
+        return { success: true, message: `✅ ${txType === 'income' ? 'Income' : 'Transaction'} recorded: **${description}** — ${fmtCur(amount || 0)}` };
       }
 
       case 'add_employee': {
@@ -385,7 +391,7 @@ export async function executeAction(
 
         if (err) throw err;
         logAction(action, 'executed', ctx.organizationId);
-        return { success: true, message: `✅ Employee **${name}** added${salary ? ` with salary $${salary.toLocaleString()}/mo` : ''}. Go to Payroll to configure details.` };
+        return { success: true, message: `✅ Employee **${name}** added${salary ? ` with salary ${fmtCur(salary)}/mo` : ''}. Go to Payroll to configure details.` };
       }
 
       case 'invite_member': {

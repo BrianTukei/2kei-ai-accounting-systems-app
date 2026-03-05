@@ -670,7 +670,9 @@ export async function verifyPaymentFromRedirect(
 // Plan pricing helpers
 // ─────────────────────────────────────────
 
-/** Currency exchange rate multipliers (approximate) */
+import { exchangeService } from '@/services/exchangeService';
+
+/** Currency exchange rate multipliers (approximate fallback — live rates used when available) */
 const CURRENCY_RATES: Record<string, number> = {
   USD: 1, EUR: 0.93, GBP: 0.80,
   NGN: 1600, GHS: 15, KES: 155, ZAR: 19,
@@ -678,11 +680,22 @@ const CURRENCY_RATES: Record<string, number> = {
   XOF: 620, XAF: 620, ETB: 57, EGP: 50, MAD: 10,
 };
 
+/** Get exchange rate — prefer live cached rates, fallback to hardcoded */
+function getRate(currency: string): number {
+  const code = currency.toUpperCase();
+  if (code === 'USD') return 1;
+  // Try live rate first
+  const liveRate = exchangeService.getRateSync('USD', code);
+  if (liveRate !== 1 || code === 'USD') return liveRate;
+  // Fallback to hardcoded
+  return CURRENCY_RATES[code] || 1;
+}
+
 /** Return price in the smallest currency unit (kobo, pesewa, cents) */
 export function getPlanAmountKobo(planId: PlanId, cycle: BillingCycle, currency: string = 'USD'): number {
   const plan = PLANS[planId];
   const usdAmount = cycle === 'annual' ? plan.priceAnnual : plan.priceMonthly;
-  const rate = CURRENCY_RATES[currency.toUpperCase()] || 1;
+  const rate = getRate(currency);
   return Math.round(usdAmount * rate * 100);
 }
 
@@ -694,7 +707,7 @@ export function getDisplayPrice(planId: PlanId, cycle: BillingCycle, currency: s
 } {
   const plan = PLANS[planId];
   const usdAmount = cycle === 'annual' ? plan.priceAnnual : plan.priceMonthly;
-  const rate = CURRENCY_RATES[currency.toUpperCase()] || 1;
+  const rate = getRate(currency);
   const amount = Math.round(usdAmount * rate);
 
   const symbols: Record<string, string> = {

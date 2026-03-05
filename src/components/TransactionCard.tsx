@@ -12,6 +12,12 @@ export interface Transaction {
   category: string;
   description: string;
   date: string;
+  currency?: string;                // Currency of this transaction (e.g. 'EUR')
+  original_amount?: number;         // Amount in original currency
+  original_currency?: string;       // Original currency code
+  base_currency_amount?: number;    // Amount converted to base currency (USD)
+  exchange_rate_used?: number;      // Exchange rate at time of creation
+  exchange_rate_date?: string;      // When the rate was captured
   metadata?: {
     vendor?: string;
     items?: Array<{ name: string; price: number; quantity?: number }>;
@@ -35,7 +41,7 @@ export default function TransactionCard({
   onDelete
 }: TransactionCardProps) {
   const { formatCurrency } = useCurrency();
-  const { id, type, amount, category, description, date } = transaction;
+  const { id, type, amount, category, description, date, currency: txCurrency } = transaction;
   const isIncome = type === 'income';
   
   return (
@@ -71,7 +77,7 @@ export default function TransactionCard({
                 "font-semibold",
                 isIncome ? "text-green-600" : "text-red-600"
               )}>
-                {isIncome ? '+' : '-'}{formatCurrency(Math.abs(amount))}
+                {isIncome ? '+' : '-'}{formatCurrency(Math.abs(amount), txCurrency)}
               </p>
               <p className="text-xs text-muted-foreground">{date}</p>
             </div>

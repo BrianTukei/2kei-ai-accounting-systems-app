@@ -12,6 +12,7 @@ import {
   Minimize,
   ShieldAlert,
   Users as UsersIcon,
+  Globe,
 } from 'lucide-react';
 import UserMenu from './UserMenu';
 import NavigationItems, { navItems } from './navigation/NavigationItems';
@@ -30,6 +31,12 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { isOwnerEmail } from '@/lib/adminEmails';
+import { useCurrency, CURRENCIES } from '@/contexts/CurrencyContext';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 
 export default function Navbar() {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -37,9 +44,12 @@ export default function Navbar() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [highlightedItem, setHighlightedItem] = useState<string | null>(null);
+  const [isCurrencyOpen, setIsCurrencyOpen] = useState(false);
+  const [currencySearch, setCurrencySearch] = useState('');
   const [theme, setTheme] = useState<'light' | 'dark'>(() => (localStorage.getItem('theme') as 'light' | 'dark') || 'light');
   const location = useLocation();
   const { user } = useAuth();
+  const { selectedCurrency, setCurrency } = useCurrency();
 
   // ── AI Navigation highlight listener ───────────────────────────────────
   useEffect(() => {
@@ -159,6 +169,58 @@ export default function Navbar() {
 
           {/* Right actions */}
           <div className="flex items-center space-x-2">
+            {/* Currency Selector */}
+            {!isLandingPage && (
+              <Popover open={isCurrencyOpen} onOpenChange={(open) => { setIsCurrencyOpen(open); if (!open) setCurrencySearch(''); }}>
+                <PopoverTrigger asChild>
+                  <button
+                    aria-label="Change currency"
+                    title={`Currency: ${selectedCurrency.code}`}
+                    className="flex items-center gap-1 px-2 py-1.5 rounded-xl text-foreground/60 hover:text-primary hover:bg-primary/5 transition-all duration-300 text-sm font-medium"
+                  >
+                    <Globe className="w-4 h-4" />
+                    <span className="hidden sm:inline">{selectedCurrency.code}</span>
+                    <ChevronDown className="w-3 h-3" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-64 p-2" align="end">
+                  <input
+                    type="text"
+                    placeholder="Search currency..."
+                    value={currencySearch}
+                    onChange={(e) => setCurrencySearch(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border rounded-lg mb-2 bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    autoFocus
+                  />
+                  <div className="max-h-60 overflow-y-auto space-y-0.5">
+                    {CURRENCIES
+                      .filter(c => {
+                        if (!currencySearch) return true;
+                        const s = currencySearch.toUpperCase();
+                        return c.code.includes(s) || c.name.toUpperCase().includes(s) || c.symbol.includes(currencySearch);
+                      })
+                      .map(c => (
+                        <button
+                          key={c.code}
+                          onClick={() => { setCurrency(c); setIsCurrencyOpen(false); setCurrencySearch(''); }}
+                          className={cn(
+                            "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors",
+                            c.code === selectedCurrency.code
+                              ? "bg-primary/10 text-primary font-medium"
+                              : "hover:bg-muted text-foreground/80"
+                          )}
+                        >
+                          <span className="w-6 text-center font-medium">{c.symbol}</span>
+                          <span className="flex-1 text-left">{c.code}</span>
+                          <span className="text-xs text-muted-foreground truncate max-w-[100px]">{c.name}</span>
+                        </button>
+                      ))
+                    }
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
+
             <button
               aria-label="Search (Ctrl+K)"
               title="Search (Ctrl+K)"

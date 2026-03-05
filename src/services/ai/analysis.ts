@@ -14,11 +14,17 @@
  */
 
 import type { FinancialSnapshot, AIAlert } from './types';
+import { formatCurrency } from '@/lib/utils';
 
 // ── Formatting helpers ──────────────────────────────────────────────────────
 
 function fmt(n: number): string {
   return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+/** Currency-aware formatting — replaces hardcoded $ signs */
+function fmtCur(n: number): string {
+  return formatCurrency(n);
 }
 function fmtPct(n: number): string {
   return `${n >= 0 ? '+' : ''}${n.toFixed(1)}%`;
@@ -145,7 +151,7 @@ export function analyzeFinancials(snap: FinancialSnapshot): FinancialAnalysis {
     alerts.push({
       severity: 'critical',
       title: 'Operating at Loss',
-      message: `Net loss of $${fmt(Math.abs(netProfit))}. Expenses exceed revenue by ${Math.abs(netMargin).toFixed(1)}%.`,
+      message: `Net loss of ${fmtCur(Math.abs(netProfit))}. Expenses exceed revenue by ${Math.abs(netMargin).toFixed(1)}%.`,
       category: 'general',
     });
   }
@@ -154,7 +160,7 @@ export function analyzeFinancials(snap: FinancialSnapshot): FinancialAnalysis {
     alerts.push({
       severity: 'critical',
       title: 'Negative Cash Balance',
-      message: `Cash balance is -$${fmt(Math.abs(snap.totalBalance))}. Immediate attention required.`,
+      message: `Cash balance is -${fmtCur(Math.abs(snap.totalBalance))}. Immediate attention required.`,
       category: 'negative_balance',
     });
   }
@@ -163,7 +169,7 @@ export function analyzeFinancials(snap: FinancialSnapshot): FinancialAnalysis {
     alerts.push({
       severity: 'critical',
       title: 'Low Cash Runway',
-      message: `Only ${runway.toFixed(1)} months of cash runway at current burn rate ($${fmt(monthlyBurn)}/mo).`,
+      message: `Only ${runway.toFixed(1)} months of cash runway at current burn rate (${fmtCur(monthlyBurn)}/mo).`,
       category: 'cashflow_risk',
     });
   }
@@ -173,7 +179,7 @@ export function analyzeFinancials(snap: FinancialSnapshot): FinancialAnalysis {
     alerts.push({
       severity: 'warning',
       title: 'Expense Spike Detected',
-      message: `Expenses this month ($${fmt(currentMonthExpense)}) are ${pctIncrease.toFixed(0)}% above average${spikeCategory ? `, driven by ${spikeCategory}` : ''}.`,
+      message: `Expenses this month (${fmtCur(currentMonthExpense)}) are ${pctIncrease.toFixed(0)}% above average${spikeCategory ? `, driven by ${spikeCategory}` : ''}.`,
       category: 'expense_spike',
     });
   }
@@ -191,7 +197,7 @@ export function analyzeFinancials(snap: FinancialSnapshot): FinancialAnalysis {
     alerts.push({
       severity: invSummary.overdueValue > snap.monthlyExpenses ? 'critical' : 'warning',
       title: 'Overdue Invoices',
-      message: `${invSummary.overdue} overdue invoice(s) totaling $${fmt(invSummary.overdueValue)}. Follow up immediately.`,
+      message: `${invSummary.overdue} overdue invoice(s) totaling ${fmtCur(invSummary.overdueValue)}. Follow up immediately.`,
       category: 'overdue_invoice',
     });
   }
@@ -263,19 +269,19 @@ export function generateAnalysisSummary(analysis: FinancialAnalysis): string {
   // Profitability
   const profitEmoji = profitability.rating === 'excellent' ? '🟢' : profitability.rating === 'good' ? '🟡' : profitability.rating === 'thin' ? '🟠' : '🔴';
   summary += `### ${profitEmoji} Profitability: ${profitability.rating.toUpperCase()}\n`;
-  summary += `• Net ${profitability.netProfit >= 0 ? 'Profit' : 'Loss'}: **$${fmt(Math.abs(profitability.netProfit))}** (${profitability.netMargin.toFixed(1)}% margin)\n`;
+  summary += `• Net ${profitability.netProfit >= 0 ? 'Profit' : 'Loss'}: **${fmtCur(Math.abs(profitability.netProfit))}** (${profitability.netMargin.toFixed(1)}% margin)\n`;
   summary += `• Trend: ${profitability.trend.direction === 'up' ? '📈 Improving' : profitability.trend.direction === 'down' ? '📉 Declining' : '➡️ Stable'} (${fmtPct(profitability.trend.changePercent)})\n\n`;
 
   // Revenue
   summary += `### 💰 Revenue\n`;
-  summary += `• Total: **$${fmt(revenue.total)}** | Monthly avg: $${fmt(revenue.monthlyAverage)}\n`;
+  summary += `• Total: **${fmtCur(revenue.total)}** | Monthly avg: ${fmtCur(revenue.monthlyAverage)}\n`;
   summary += `• Trend: ${fmtPct(revenue.trend.changePercent)} ${revenue.declining ? '⚠️ Declining' : '✅'}\n\n`;
 
   // Expenses
   summary += `### 📉 Expenses\n`;
-  summary += `• Total: **$${fmt(expenses.total)}** | Monthly avg: $${fmt(expenses.monthlyAverage)}\n`;
+  summary += `• Total: **${fmtCur(expenses.total)}** | Monthly avg: ${fmtCur(expenses.monthlyAverage)}\n`;
   if (expenses.spikeDetected) {
-    summary += `• ⚠️ **Spike detected** — up from $${fmt(expenses.monthlyAverage)} avg${expenses.spikeCategory ? `, mainly ${expenses.spikeCategory}` : ''}\n`;
+    summary += `• ⚠️ **Spike detected** — up from ${fmtCur(expenses.monthlyAverage)} avg${expenses.spikeCategory ? `, mainly ${expenses.spikeCategory}` : ''}\n`;
   }
   if (expenses.topCategories.length > 0) {
     summary += `• Top: ${expenses.topCategories.slice(0, 3).map(c => `${c.category} (${c.percentage.toFixed(0)}%)`).join(', ')}\n`;
@@ -285,7 +291,7 @@ export function generateAnalysisSummary(analysis: FinancialAnalysis): string {
   // Cash Flow
   const cashEmoji = cashflow.status === 'strong' ? '🟢' : cashflow.status === 'adequate' ? '🟡' : cashflow.status === 'low' ? '🟠' : '🔴';
   summary += `### ${cashEmoji} Cash Flow: ${cashflow.status.toUpperCase()}\n`;
-  summary += `• Balance: **$${fmt(cashflow.balance)}** | Net/mo: $${fmt(cashflow.monthlyNet)}\n`;
+  summary += `• Balance: **${fmtCur(cashflow.balance)}** | Net/mo: ${fmtCur(cashflow.monthlyNet)}\n`;
   summary += `• Runway: **${cashflow.runway.toFixed(1)} months**\n\n`;
 
   // Invoices
@@ -293,7 +299,7 @@ export function generateAnalysisSummary(analysis: FinancialAnalysis): string {
     summary += `### 🧾 Invoices\n`;
     summary += `• Collection rate: **${invoices.collectionRate.toFixed(0)}%**\n`;
     if (invoices.overdueCount > 0) {
-      summary += `• Overdue: **${invoices.overdueCount}** invoices ($${fmt(invoices.overdueAmount)})\n`;
+      summary += `• Overdue: **${invoices.overdueCount}** invoices (${fmtCur(invoices.overdueAmount)})\n`;
     }
     summary += '\n';
   }
@@ -339,9 +345,9 @@ export function generateComparisonInsight(snap: FinancialSnapshot): string {
   let insight = `## 📊 Month-over-Month Comparison\n\n`;
   insight += `| Metric | ${previous.name} | ${current.name} | Change |\n`;
   insight += `|--------|------:|------:|-------:|\n`;
-  insight += `| Revenue | $${fmt(previous.income)} | $${fmt(current.income)} | ${fmtPct(incomeChange)} |\n`;
-  insight += `| Expenses | $${fmt(previous.expenses)} | $${fmt(current.expenses)} | ${fmtPct(expenseChange)} |\n`;
-  insight += `| Net | $${fmt(previousProfit)} | $${fmt(currentProfit)} | ${currentProfit >= previousProfit ? '📈' : '📉'} |\n\n`;
+  insight += `| Revenue | ${fmtCur(previous.income)} | ${fmtCur(current.income)} | ${fmtPct(incomeChange)} |\n`;
+  insight += `| Expenses | ${fmtCur(previous.expenses)} | ${fmtCur(current.expenses)} | ${fmtPct(expenseChange)} |\n`;
+  insight += `| Net | ${fmtCur(previousProfit)} | ${fmtCur(currentProfit)} | ${currentProfit >= previousProfit ? '📈' : '📉'} |\n\n`;
 
   // Key takeaway
   if (incomeChange > 0 && expenseChange <= 0) {

@@ -31,6 +31,7 @@ import Payroll from './pages/Payroll';
 import AIAssistant from './pages/AIAssistant';
 import LocalAIAssistant from './pages/LocalAIAssistant';
 import AIAccountantPage from './pages/AIAccountantPage';
+import AIReceiptScannerPage from './pages/AIReceiptScannerPage';
 import Invoices from './pages/Invoices';
 import BankImport from './pages/BankImport';
 import Journal from './pages/Journal';
@@ -114,6 +115,7 @@ function AppInner() {
       <Route path="/ai-assistant"   element={<ProtectedRoute requireActiveSubscription><AIAssistant /></ProtectedRoute>} />
       <Route path="/local-ai"        element={<ProtectedRoute><LocalAIAssistant /></ProtectedRoute>} />
       <Route path="/ai-accountant"    element={<ProtectedRoute><AIAccountantPage /></ProtectedRoute>} />
+      <Route path="/ai-receipt-scanner" element={<ProtectedRoute><AIReceiptScannerPage /></ProtectedRoute>} />
       <Route path="/team"           element={<ProtectedRoute requireActiveSubscription><Team /></ProtectedRoute>} />
 
       {/* SaaS — billing (exempt from subscription check to avoid loops) */}

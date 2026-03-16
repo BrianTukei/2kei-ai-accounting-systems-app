@@ -7,6 +7,7 @@ import advancedAIRoutes from './routes/advancedAI';
 import enhancedAIRoutes from './routes/enhancedAI';
 import adminMessagingRoutes from './routes/adminMessaging';
 import autonomousBookkeepingRoutes from './routes/autonomousBookkeeping';
+import receiptScanningRoutes from './routes/receiptScanning';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -38,6 +39,7 @@ app.use('/api/advanced-ai', advancedAIRoutes);
 app.use('/api/enhanced-ai', enhancedAIRoutes);
 app.use('/api/admin-messaging', adminMessagingRoutes);
 app.use('/api/autonomous-bookkeeping', autonomousBookkeepingRoutes);
+app.use('/api/receipt-scanning', receiptScanningRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

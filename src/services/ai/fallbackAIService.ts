@@ -29,30 +29,26 @@ class FallbackAIService {
   private lastCheckTime = 0;
   private checkInterval = 30000; // Check every 30 seconds
 
-  async checkRealAIAvailability(): Promise<boolean> {
-    const now = Date.now();
-    
-    // Don't check too frequently
-    if (now - this.lastCheckTime < this.checkInterval) {
-      return this.useRealAI;
-    }
-
+  // Check if real AI is available
+  private async checkRealAIAvailability(): Promise<boolean> {
     try {
-      const isAvailable = await backendAIService.isServiceAvailable();
-      this.useRealAI = isAvailable;
-      this.lastCheckTime = now;
+      // Try to check if Ollama is available and has Llama models
+      const response = await fetch('http://localhost:11434/api/tags', {
+        method: 'GET',
+        signal: AbortSignal.timeout(2000) // 2 second timeout
+      });
       
-      if (isAvailable) {
-        console.log('✅ Real AI (Ollama) is available');
-      } else {
-        console.log('🔄 Using Mock AI service - Ollama not available');
+      if (response.ok) {
+        const data = await response.json();
+        const hasLlama = data.models?.some((model: any) => 
+          model.name.includes('llama') || model.name.includes('llama3')
+        );
+        console.log('[FallbackAIService] Ollama available, has Llama:', hasLlama);
+        return hasLlama;
       }
-      
-      return isAvailable;
+      return false;
     } catch (error) {
-      console.log('❌ Real AI check failed, using Mock service:', error.message);
-      this.useRealAI = false;
-      this.lastCheckTime = now;
+      console.log('[FallbackAIService] Real AI not available:', error);
       return false;
     }
   }
@@ -146,7 +142,7 @@ class FallbackAIService {
     
     if (useReal) {
       try {
-        return await backendAIService.categorizeExpense(description, vendor);
+        return await backendAIService.categorizeExpense(vendor, [description], 0);
       } catch (error) {
         console.log('Real AI categorization failed, using Mock:', error.message);
         return await mockAIService.categorizeExpense(description, vendor);
@@ -165,10 +161,12 @@ class FallbackAIService {
     
     if (useReal) {
       try {
-        return await backendAIService.validateReceipt({
-          text: ocrText,
-          userId: 'system'
-        });
+        const realValidation = await backendAIService.validateReceipt(ocrText);
+        return {
+          isValid: realValidation.isReadable,
+          issues: realValidation.issues,
+          confidence: realValidation.confidence
+        };
       } catch (error) {
         console.log('Real AI validation failed, using Mock:', error.message);
         return await mockAIService.validateReceiptQuality(ocrText);

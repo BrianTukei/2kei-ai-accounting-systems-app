@@ -67,7 +67,10 @@ const SUBSCRIPTION_ACTIVATED_KEY = '2kai-subscription-activated';
 
 export function isInDemoMode(): boolean {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  return !supabaseUrl || supabaseUrl.includes('placeholder');
+  const forceDemo = import.meta.env.VITE_FORCE_DEMO_MODE === 'true';
+  const isDemo = !supabaseUrl || supabaseUrl.includes('placeholder') || supabaseUrl === '' || forceDemo;
+  console.log('[Subscription] Demo mode check:', { supabaseUrl, forceDemo, isDemo });
+  return isDemo;
 }
 
 // ─────────────────────────────────────────
@@ -285,7 +288,14 @@ export async function activateSubscription(
 
   // ── Production: use Edge Function (bypasses RLS) ──
   try {
-    const { data, error } = await supabase.functions.invoke('activate-subscription', {
+    console.log('[Subscription] Attempting Edge Function call...');
+    
+    // Add timeout to prevent hanging
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Edge function timeout')), 5000); // 5 second timeout
+    });
+
+    const edgeFunctionPromise = supabase.functions.invoke('activate-subscription', {
       body: {
         organizationId,
         planId,
@@ -295,6 +305,8 @@ export async function activateSubscription(
         isDowngrade,
       },
     });
+
+    const { data, error } = await Promise.race([edgeFunctionPromise, timeoutPromise]) as any;
 
     if (error) {
       console.error('[Subscription] Edge function error:', error);

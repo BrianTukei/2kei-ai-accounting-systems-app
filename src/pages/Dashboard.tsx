@@ -1,8 +1,9 @@
-
 import { useState, useEffect } from 'react';
 import PageLayout from '@/components/layout/PageLayout';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import DashboardTabs from '@/components/dashboard/DashboardTabs';
+import { toast } from 'sonner';
+import { wasSubscriptionJustActivated, clearActivationFlag } from '@/services/subscription';
 import WelcomeHero from '@/components/dashboard/WelcomeHero';
 import AdminAccessCard from '@/components/dashboard/AdminAccessCard';
 import StatsGrid from '@/components/dashboard/StatsGrid';
@@ -13,7 +14,6 @@ import { Transaction } from '@/components/TransactionCard';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useFinancialStats } from '@/hooks/useFinancialStats';
 import { useOrganization } from '@/contexts/OrganizationContext';
-import { toast } from 'sonner';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 export default function Dashboard() {
@@ -32,16 +32,24 @@ export default function Dashboard() {
     if (paymentStatus === 'success') {
       console.log('[Dashboard] Payment success detected:', { planId });
       
+      // Check if we already showed a notification (from Billing page)
+      const wasActivated = wasSubscriptionJustActivated();
+      
       // Refresh organization data to get updated subscription
       refresh().then(() => {
         console.log('[Dashboard] Organization data refreshed after payment');
       });
       
-      // Show success message
-      toast.success(
-        `Subscription Activated Successfully!${planId ? ` You're now on the ${planId.charAt(0).toUpperCase() + planId.slice(1)} plan.` : ''}`,
-        { duration: 5000 }
-      );
+      // Only show success message if it wasn't already shown in Billing
+      if (!wasActivated) {
+        toast.success(
+          `Subscription Activated Successfully!${planId ? ` You're now on the ${planId.charAt(0).toUpperCase() + planId.slice(1)} plan.` : ''}`,
+          { duration: 5000 }
+        );
+      } else {
+        // Clear the flag so future activations work normally
+        clearActivationFlag();
+      }
       
       // Clean up URL params
       window.history.replaceState({}, '', '/dashboard');

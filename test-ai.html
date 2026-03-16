@@ -190,6 +190,9 @@
             <p>Test the Action AI API directly:</p>
             <button class="test-button" onclick="testActionAI()">Test Action AI Status</button>
             <button class="test-button" onclick="testAIStatus()">Test AI Service</button>
+            <button class="test-button" onclick="testCapabilities()">Test Capabilities</button>
+            <button class="test-button" onclick="testChatAPI()">Test Chat API</button>
+            <button class="test-button" onclick="testAllAPIs()">Test All APIs</button>
             <div id="testResult" class="test-result"></div>
         </div>
 
@@ -213,12 +216,17 @@
             
             try {
                 const response = await fetch('http://localhost:3001/api/action-ai/status');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
                 const data = await response.json();
                 
-                resultDiv.innerHTML = `✅ Action AI Status: ${JSON.stringify(data, null, 2)}`;
+                resultDiv.innerHTML = `✅ Action AI Status: SUCCESS\n\n${JSON.stringify(data, null, 2)}`;
                 resultDiv.className = 'test-result success';
             } catch (error) {
-                resultDiv.innerHTML = `❌ Error: ${error.message}`;
+                resultDiv.innerHTML = `❌ Error: ${error.message}\n\nTroubleshooting:\n1. Check if backend is running on port 3001\n2. Try: npm run dev:backend\n3. Wait 10 seconds and try again`;
                 resultDiv.className = 'test-result error';
             }
         }
@@ -229,14 +237,105 @@
             
             try {
                 const response = await fetch('http://localhost:3001/api/ai-status');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
                 const data = await response.json();
                 
-                resultDiv.innerHTML = `✅ AI Service Status: ${JSON.stringify(data, null, 2)}`;
+                resultDiv.innerHTML = `✅ AI Service Status: SUCCESS\n\n${JSON.stringify(data, null, 2)}`;
                 resultDiv.className = 'test-result success';
             } catch (error) {
-                resultDiv.innerHTML = `❌ Error: ${error.message}`;
+                resultDiv.innerHTML = `❌ Error: ${error.message}\n\nTroubleshooting:\n1. Check if backend is running on port 3001\n2. Try: npm run dev:backend\n3. Wait 10 seconds and try again`;
                 resultDiv.className = 'test-result error';
             }
+        }
+
+        async function testCapabilities() {
+            const resultDiv = document.getElementById('testResult');
+            resultDiv.innerHTML = 'Testing Capabilities...';
+            
+            try {
+                const response = await fetch('http://localhost:3001/api/action-ai/capabilities');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `✅ Capabilities: SUCCESS\n\n${JSON.stringify(data, null, 2)}`;
+                resultDiv.className = 'test-result success';
+            } catch (error) {
+                resultDiv.innerHTML = `❌ Error: ${error.message}\n\nTroubleshooting:\n1. Check if backend is running on port 3001\n2. Try: npm run dev:backend\n3. Wait 10 seconds and try again`;
+                resultDiv.className = 'test-result error';
+            }
+        }
+
+        async function testChatAPI() {
+            const resultDiv = document.getElementById('testResult');
+            resultDiv.innerHTML = 'Testing Chat API...';
+            
+            try {
+                const response = await fetch('http://localhost:3001/api/action-ai/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: 'Create invoice for John for $300'
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `✅ Chat API: SUCCESS\n\n${JSON.stringify(data, null, 2)}`;
+                resultDiv.className = 'test-result success';
+            } catch (error) {
+                resultDiv.innerHTML = `❌ Error: ${error.message}\n\nTroubleshooting:\n1. Check if backend is running on port 3001\n2. Try: npm run dev:backend\n3. Wait 10 seconds and try again`;
+                resultDiv.className = 'test-result error';
+            }
+        }
+
+        async function testAllAPIs() {
+            const resultDiv = document.getElementById('testResult');
+            resultDiv.innerHTML = 'Testing All APIs...';
+            
+            const tests = [
+                { name: 'Action AI Status', url: 'http://localhost:3001/api/action-ai/status' },
+                { name: 'AI Status', url: 'http://localhost:3001/api/ai-status' },
+                { name: 'Capabilities', url: 'http://localhost:3001/api/action-ai/capabilities' },
+                { name: 'Health Check', url: 'http://localhost:3001/health' }
+            ];
+            
+            let results = [];
+            let passed = 0;
+            let failed = 0;
+            
+            for (const test of tests) {
+                try {
+                    const response = await fetch(test.url);
+                    if (response.ok) {
+                        const data = await response.json();
+                        results.push(`✅ ${test.name}: SUCCESS`);
+                        passed++;
+                    } else {
+                        results.push(`❌ ${test.name}: HTTP ${response.status}`);
+                        failed++;
+                    }
+                } catch (error) {
+                    results.push(`❌ ${test.name}: ${error.message}`);
+                    failed++;
+                }
+            }
+            
+            resultDiv.innerHTML = `📊 API Test Results:\n\n${results.join('\n')}\n\n✅ Passed: ${passed}\n❌ Failed: ${failed}\n📈 Success Rate: ${Math.round(passed / tests.length * 100)}%`;
+            resultDiv.className = failed === 0 ? 'test-result success' : 'test-result error';
         }
 
         // Auto-test on page load

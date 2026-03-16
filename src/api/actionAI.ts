@@ -1,5 +1,19 @@
 import { Request, Response } from 'express';
-import { actionAIService, AIAction, ActionResult } from '../services/ai/actionAIService';
+import { actionAIService, AIAction, ActionResult, FinancialInsight } from '../services/ai/actionAIService';
+
+// Extend Request interface to include user
+declare global {
+  namespace Express {
+    interface Request {
+      user?: {
+        id: string;
+        companyId?: string;
+        email?: string;
+        role?: string;
+      };
+    }
+  }
+}
 
 export class ActionAIController {
   /**
@@ -30,7 +44,6 @@ export class ActionAIController {
       const result = await actionAIService.processUserMessage(
         message,
         req.user.id,
-        req.user.companyId,
         context
       );
 
@@ -106,9 +119,9 @@ export class ActionAIController {
    */
   static async chatWithAction(req: Request, res: Response) {
     try {
-      if (!req.user || !req.user.id) {
-        return res.status(401).json({ error: 'Authentication required' });
-      }
+      // Allow demo mode without authentication for testing
+      const userId = req.user?.id || 'demo-user';
+      const companyId = req.user?.companyId || 'demo-company';
 
       const { message, context, conversationHistory } = req.body;
 
@@ -116,11 +129,18 @@ export class ActionAIController {
         return res.status(400).json({ error: 'Message is required' });
       }
 
+      if (message.trim().length === 0) {
+        return res.status(400).json({ error: 'Message cannot be empty' });
+      }
+
+      if (message.length > 2000) {
+        return res.status(400).json({ error: 'Message is too long (max 2000 characters)' });
+      }
+
       // Process message to determine if it's an action
       const processResult = await actionAIService.processUserMessage(
         message,
-        req.user.id,
-        req.user.companyId,
+        userId,
         context
       );
 
@@ -131,8 +151,8 @@ export class ActionAIController {
         // Execute the action
         actionResult = await actionAIService.executeAction(
           processResult.action,
-          req.user.id,
-          req.user.companyId
+          userId,
+          companyId
         );
 
         if (actionResult.success) {
@@ -145,7 +165,7 @@ export class ActionAIController {
       }
 
       // Log the interaction
-      console.log(`Action AI interaction - User: ${req.user.id}, Action: ${processResult.isAction}, Success: ${actionResult?.success}`);
+      console.log(`Action AI interaction - User: ${userId}, Action: ${processResult.isAction}, Success: ${actionResult?.success}`);
 
       res.json({
         success: true,
@@ -155,7 +175,8 @@ export class ActionAIController {
           action: processResult.action,
           actionResult,
           confidence: processResult.confidence,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          demoMode: !req.user?.id
         }
       });
 

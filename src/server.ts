@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import apiRoutes from './routes';
 import advancedAIRoutes from './routes/advancedAI';
+import enhancedAIRoutes from './routes/enhancedAI';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -32,6 +33,7 @@ if (process.env.NODE_ENV === 'production') {
 // API routes
 app.use('/api', apiRoutes);
 app.use('/api/advanced-ai', advancedAIRoutes);
+app.use('/api/enhanced-ai', enhancedAIRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

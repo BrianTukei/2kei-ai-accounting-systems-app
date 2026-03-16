@@ -271,7 +271,7 @@ export class ActionAIController {
       const serviceInfo = actionAIService.getServiceInfo();
       const isAvailable = await actionAIService.processUserMessage(
         "status check",
-        req.user.id
+        req.user?.id || 'demo-user'
       );
 
       res.json({

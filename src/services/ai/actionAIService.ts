@@ -1,4 +1,4 @@
-import { backendAIService } from './backendAIService';
+import { fallbackAIService } from './fallbackAIService';
 
 export interface AIAction {
   action: string;
@@ -196,7 +196,7 @@ Return JSON array of insights:
   }> {
     try {
       // Check if AI service is available
-      const isAvailable = await backendAIService.isServiceAvailable();
+      const isAvailable = await fallbackAIService.isServiceAvailable();
       if (!isAvailable) {
         return {
           isAction: false,
@@ -215,11 +215,7 @@ Return JSON array of insights:
       prompt += `\n\n**User Request:**\n${message}`;
 
       // Get AI response
-      const response = await backendAIService.generateResponse({
-        prompt,
-        temperature: 0.3,
-        max_tokens: 1000
-      });
+      const response = await fallbackAIService.generateResponse(prompt);
 
       const aiOutput = response.response.trim();
 
@@ -586,11 +582,7 @@ ${JSON.stringify(data, null, 2)}
 
 Provide actionable insights for the business owner.`;
 
-      const response = await backendAIService.generateResponse({
-        prompt,
-        temperature: 0.3,
-        max_tokens: 1500
-      });
+      const response = await fallbackAIService.generateResponse(prompt);
 
       // Parse JSON insights
       try {

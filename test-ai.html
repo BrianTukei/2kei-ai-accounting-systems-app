@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2K AI Accounting Systems - Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .status-card {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .status-card h3 {
+            margin-top: 0;
+            color: #4ade80;
+        }
+        .status-card.online {
+            border-color: #4ade80;
+            background: rgba(74, 222, 128, 0.1);
+        }
+        .status-card.offline {
+            border-color: #f87171;
+            background: rgba(248, 113, 113, 0.1);
+        }
+        .status-card.offline h3 {
+            color: #f87171;
+        }
+        .links-section {
+            margin-top: 30px;
+        }
+        .link-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+        }
+        .link-card {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .link-card:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        .link-card h4 {
+            margin: 0 0 10px 0;
+            color: #fbbf24;
+        }
+        .link-card p {
+            margin: 0;
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+        .link-card a {
+            color: white;
+            text-decoration: none;
+            display: block;
+        }
+        .test-section {
+            margin-top: 30px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            border-radius: 15px;
+        }
+        .test-button {
+            background: linear-gradient(45deg, #4ade80, #22d3ee);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1.1em;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+        }
+        .test-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+        .test-result {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .success {
+            color: #4ade80;
+        }
+        .error {
+            color: #f87171;
+        }
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 2K AI Accounting Systems - Test Dashboard</h1>
+        
+        <div class="status-grid">
+            <div class="status-card online">
+                <h3>✅ Frontend</h3>
+                <p>Running on localhost:8080</p>
+            </div>
+            <div class="status-card online">
+                <h3>✅ Backend API</h3>
+                <p>Running on localhost:3001</p>
+            </div>
+            <div class="status-card offline">
+                <h3>🔄 AI Service</h3>
+                <p>Mock AI Active (Ollama not installed)</p>
+            </div>
+        </div>
+
+        <div class="links-section">
+            <h2>🎯 Your AI Features</h2>
+            <div class="link-grid">
+                <div class="link-card pulse">
+                    <a href="http://localhost:8080/action-ai" target="_blank">
+                        <h4>🤖 Action AI</h4>
+                        <p>AI that performs real actions in your system</p>
+                        <p><strong>Try: "Create invoice for John for $300"</strong></p>
+                    </a>
+                </div>
+                <div class="link-card">
+                    <a href="http://localhost:8080/ai-receipt-scanner" target="_blank">
+                        <h4>📸 AI Receipt Scanner</h4>
+                        <p>Scan receipts with AI extraction and categorization</p>
+                    </a>
+                </div>
+                <div class="link-card">
+                    <a href="http://localhost:8080/local-ai" target="_blank">
+                        <h4>🧠 Local AI Assistant</h4>
+                        <p>Accounting guidance and system navigation</p>
+                    </a>
+                </div>
+                <div class="link-card">
+                    <a href="http://localhost:8080/ai-assistant" target="_blank">
+                        <h4>🤖 AI Assistant</h4>
+                        <p>General AI accounting help and advice</p>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🧪 Quick API Test</h2>
+            <p>Test the Action AI API directly:</p>
+            <button class="test-button" onclick="testActionAI()">Test Action AI Status</button>
+            <button class="test-button" onclick="testAIStatus()">Test AI Service</button>
+            <div id="testResult" class="test-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>🎮 Demo Commands</h2>
+            <p>Copy these commands into the Action AI chat:</p>
+            <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px; font-family: monospace;">
+                <p>📄 Create invoice for John for $300</p>
+                <p>💰 Add expense for office supplies $50</p>
+                <p>📊 Show me my financial summary</p>
+                <p>📈 Generate profit loss report</p>
+                <p>👥 Add client Mary with email mary@example.com</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function testActionAI() {
+            const resultDiv = document.getElementById('testResult');
+            resultDiv.innerHTML = 'Testing Action AI...';
+            
+            try {
+                const response = await fetch('http://localhost:3001/api/action-ai/status');
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `✅ Action AI Status: ${JSON.stringify(data, null, 2)}`;
+                resultDiv.className = 'test-result success';
+            } catch (error) {
+                resultDiv.innerHTML = `❌ Error: ${error.message}`;
+                resultDiv.className = 'test-result error';
+            }
+        }
+
+        async function testAIStatus() {
+            const resultDiv = document.getElementById('testResult');
+            resultDiv.innerHTML = 'Testing AI Service...';
+            
+            try {
+                const response = await fetch('http://localhost:3001/api/ai-status');
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `✅ AI Service Status: ${JSON.stringify(data, null, 2)}`;
+                resultDiv.className = 'test-result success';
+            } catch (error) {
+                resultDiv.innerHTML = `❌ Error: ${error.message}`;
+                resultDiv.className = 'test-result error';
+            }
+        }
+
+        // Auto-test on page load
+        window.onload = function() {
+            setTimeout(testActionAI, 1000);
+        };
+    </script>
+</body>
+</html>

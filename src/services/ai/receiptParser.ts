@@ -1,5 +1,4 @@
 import Tesseract from 'tesseract.js';
-import { create } from '@huggingface/transformers';
 
 export interface ReceiptItem {
   name: string;
@@ -31,7 +30,6 @@ class ReceiptParser {
   private currencyRates: Map<string, number> = new Map();
   
   constructor() {
-    this.initializeModel();
     this.loadCurrencyRates();
   }
 
@@ -44,7 +42,7 @@ class ReceiptParser {
     }
   }
 
-  private async loadCurrencyRates() {
+  private loadCurrencyRates() {
     // Sample rates - in production, fetch from live API
     this.currencyRates.set('USD', 1.0);
     this.currencyRates.set('UGX', 0.00027);
@@ -267,20 +265,6 @@ class ReceiptParser {
       total: this.convertToUSD(originalTotal, originalCurrency),
       original_total: originalTotal
     };
-  }
-
-  // AI-powered enhancement (if model is available)
-  private async enhanceWithAI(text: string): Promise<string> {
-    if (!this.model) return text;
-
-    try {
-      // Use AI to clean and structure the text
-      const result = await this.model(text);
-      return result[0]?.generated_text || text;
-    } catch (error) {
-      console.warn('AI enhancement failed:', error);
-      return text;
-    }
   }
 }
 

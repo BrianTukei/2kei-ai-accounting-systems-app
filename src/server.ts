@@ -14,8 +14,10 @@ const PORT = process.env.PORT || 3001;
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
     ? 'https://your-production-domain.com' 
-    : ['http://localhost:3000', 'http://localhost:5173'],
-  credentials: true
+    : ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:8080', 'file://', 'null'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
 app.use(express.json({ limit: '10mb' }));

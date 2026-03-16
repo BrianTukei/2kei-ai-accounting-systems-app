@@ -261,7 +261,8 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       
       // Check if we're in demo mode (no real Supabase URL configured)
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const realSupabaseMode = supabaseUrl && !supabaseUrl.includes('placeholder');
+      const forceDemo = import.meta.env.VITE_FORCE_DEMO_MODE === 'true';
+      const realSupabaseMode = supabaseUrl && !supabaseUrl.includes('placeholder') && !forceDemo;
 
       if (realSupabaseMode) {
         // PRODUCTION: Check Supabase FIRST (DB is source of truth)

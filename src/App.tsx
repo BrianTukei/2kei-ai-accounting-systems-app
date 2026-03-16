@@ -33,6 +33,9 @@ import LocalAIAssistant from './pages/LocalAIAssistant';
 import AIAccountantPage from './pages/AIAccountantPage';
 import AIReceiptScannerPage from './pages/AIReceiptScannerPage';
 import ActionAIPage from './pages/ActionAIPage';
+import { EnhancedAIChat } from './components/ai/EnhancedAIChat';
+import { AdminMessagingPanel } from './components/admin/AdminMessagingPanel';
+import { AutonomousBookkeepingPanel } from './components/admin/AutonomousBookkeepingPanel';
 import Invoices from './pages/Invoices';
 import BankImport from './pages/BankImport';
 import Journal from './pages/Journal';
@@ -46,6 +49,9 @@ import AdminTest from './pages/AdminTest';
 import AdminBilling from './pages/AdminBilling';
 import AdminExchangeRates from './pages/AdminExchangeRates';
 import RecurringTransactions from './pages/RecurringTransactions';
+import EnhancedAIChatPage from './pages/EnhancedAIChatPage';
+import AdminMessagingPage from './pages/AdminMessagingPage';
+import AutonomousBookkeepingPage from './pages/AutonomousBookkeepingPage';
 import { InstallPrompt } from './components/pwa/InstallPrompt';
 
 // Create a client for React Query
@@ -118,6 +124,7 @@ function AppInner() {
       <Route path="/ai-accountant"    element={<ProtectedRoute><AIAccountantPage /></ProtectedRoute>} />
       <Route path="/ai-receipt-scanner" element={<ProtectedRoute><AIReceiptScannerPage /></ProtectedRoute>} />
       <Route path="/action-ai"       element={<ProtectedRoute><ActionAIPage /></ProtectedRoute>} />
+      <Route path="/enhanced-ai-chat" element={<ProtectedRoute><EnhancedAIChatPage /></ProtectedRoute>} />
       <Route path="/team"           element={<ProtectedRoute requireActiveSubscription><Team /></ProtectedRoute>} />
 
       {/* SaaS — billing (exempt from subscription check to avoid loops) */}
@@ -133,6 +140,8 @@ function AppInner() {
       {/* Admin */}
       <Route path="/admin"        element={<ProtectedRoute allowWithoutOrg><AdminDashboard /></ProtectedRoute>} />
       <Route path="/admin/users"  element={<ProtectedRoute allowWithoutOrg><AdminUserManagement /></ProtectedRoute>} />
+      <Route path="/admin/messaging" element={<ProtectedRoute allowWithoutOrg><AdminMessagingPage /></ProtectedRoute>} />
+      <Route path="/admin/autonomous" element={<ProtectedRoute allowWithoutOrg><AutonomousBookkeepingPage /></ProtectedRoute>} />
       <Route path="/super-admin"  element={<ProtectedRoute allowWithoutOrg><SuperAdmin /></ProtectedRoute>} />
       <Route path="/dev-admin"    element={<ProtectedRoute allowWithoutOrg><DeveloperAdminDashboard /></ProtectedRoute>} />
       <Route path="/admin-test"   element={<ProtectedRoute allowWithoutOrg><AdminTest /></ProtectedRoute>} />

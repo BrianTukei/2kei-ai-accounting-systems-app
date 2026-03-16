@@ -74,6 +74,27 @@ export class AutonomousBookkeepingController {
     }
   }
 
+  private async createAccountingEntry(transaction: any): Promise<void> {
+    const action = {
+      type: 'create_expense' as const,
+      parameters: {
+        vendor: transaction.vendor,
+        amount: transaction.amount,
+        category: transaction.category,
+        currency: 'USD',
+        date: transaction.date,
+        description: transaction.description,
+        receipt: transaction.receiptImage
+      },
+      confidence: 0.9
+    };
+
+    // Import actionEngine dynamically to avoid circular dependencies
+    const { actionEngine } = await import('../services/ai/actionEngine');
+    await actionEngine.executeAction(action);
+    console.log(`📝 Accounting entry created: ${transaction.vendor} - $${transaction.amount}`);
+  }
+
   // 3️⃣ AI Duplicate Detection
   async detectDuplicate(req: Request, res: Response) {
     try {

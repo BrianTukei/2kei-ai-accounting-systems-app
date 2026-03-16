@@ -94,42 +94,42 @@ export class AutonomousBookkeepingAI {
   private initializeCategoryMappings() {
     this.categoryMappings = new Map([
       // Transport
-      'uber', 'bolt', 'taxify', 'uber eats', 'bolt food', 'taxify eat', 'ride', 'taxi', 'transport', 'travel', 'fuel', 'shell', 'total', 'engen', 'petrol station', 'gas station',
+      ['uber', 'Transport'], ['bolt', 'Transport'], ['taxify', 'Transport'], ['uber eats', 'Transport'], ['bolt food', 'Transport'], ['taxify eat', 'Transport'], ['ride', 'Transport'], ['taxi', 'Transport'], ['transport', 'Transport'], ['travel', 'Transport'], ['fuel', 'Transport'], ['shell', 'Transport'], ['total', 'Transport'], ['engen', 'Transport'], ['petrol station', 'Transport'], ['gas station', 'Transport'],
       // Food & Restaurants
-      'shoprite', 'nakumatt', 'carrefour', 'naivas', 'tuskys', 'chandarana', 'food', 'restaurant', 'cafe', 'coffee', 'lunch', 'dinner', 'breakfast', 'groceries', 'supermarket',
+      ['shoprite', 'Food'], ['nakumatt', 'Food'], ['carrefour', 'Food'], ['naivas', 'Food'], ['tuskys', 'Food'], ['chandarana', 'Food'], ['food', 'Food'], ['restaurant', 'Food'], ['cafe', 'Food'], ['coffee', 'Food'], ['lunch', 'Food'], ['dinner', 'Food'], ['breakfast', 'Food'], ['groceries', 'Food'], ['supermarket', 'Food'],
       // Office Supplies
-      'amazon', 'jumia', 'kilimall', 'office', 'supplies', 'stationery', 'printer', 'computer', 'laptop', 'software', 'equipment', 'furniture',
+      ['amazon', 'Office Supplies'], ['jumia', 'Office Supplies'], ['kilimall', 'Office Supplies'], ['office', 'Office Supplies'], ['supplies', 'Office Supplies'], ['stationery', 'Office Supplies'], ['printer', 'Office Supplies'], ['computer', 'Office Supplies'], ['laptop', 'Office Supplies'], ['software', 'Office Supplies'], ['equipment', 'Office Supplies'], ['furniture', 'Office Supplies'],
       // Utilities
-      'mtn', 'safaricom', 'airtel', 'telkom', 'kenya power', 'kplc', 'nairobi water', 'water', 'electricity', 'internet', 'phone', 'utilities', 'mobile money',
+      ['mtn', 'Utilities'], ['safaricom', 'Utilities'], ['airtel', 'Utilities'], ['telkom', 'Utilities'], ['kenya power', 'Utilities'], ['kplc', 'Utilities'], ['nairobi water', 'Utilities'], ['water', 'Utilities'], ['electricity', 'Utilities'], ['internet', 'Utilities'], ['phone', 'Utilities'], ['utilities', 'Utilities'], ['mobile money', 'Utilities'],
       // Professional Services
-      'lawyer', 'advocate', 'accountant', 'consultant', 'legal', 'accounting', 'professional services', 'fees',
+      ['lawyer', 'Professional Services'], ['advocate', 'Professional Services'], ['accountant', 'Professional Services'], ['consultant', 'Professional Services'], ['legal', 'Professional Services'], ['accounting', 'Professional Services'], ['professional services', 'Professional Services'], ['fees', 'Professional Services'],
       // Rent & Property
-      'rent', 'lease', 'property', 'landlord', 'building', 'office rent', 'warehouse',
+      ['rent', 'Rent'], ['lease', 'Rent'], ['property', 'Rent'], ['landlord', 'Rent'], ['building', 'Rent'], ['office rent', 'Rent'], ['warehouse', 'Rent'],
       // Subscriptions
-      'netflix', 'spotify', 'microsoft', 'adobe', 'office 365', 'subscription', 'software license',
+      ['netflix', 'Subscriptions'], ['spotify', 'Subscriptions'], ['microsoft', 'Subscriptions'], ['adobe', 'Subscriptions'], ['office 365', 'Subscriptions'], ['subscription', 'Subscriptions'], ['software license', 'Subscriptions'],
       // Banking & Finance
-      'bank', 'mpesa', 'equity', 'kcb', 'cooperative', 'ncba', 'absa', 'standard chartered', ' Barclays', 'citibank', 'chase', 'fees', 'interest',
+      ['bank', 'Banking'], ['mpesa', 'Banking'], ['equity', 'Banking'], ['kcb', 'Banking'], ['cooperative', 'Banking'], ['ncba', 'Banking'], ['absa', 'Banking'], ['standard chartered', 'Banking'], ['Barclays', 'Banking'], ['citibank', 'Banking'], ['chase', 'Banking'], ['fees', 'Banking'], ['interest', 'Banking'],
       // Marketing & Advertising
-      'facebook', 'google', 'instagram', 'twitter', 'linkedin', 'advertising', 'marketing', 'promotion',
+      ['facebook', 'Marketing'], ['google', 'Marketing'], ['instagram', 'Marketing'], ['twitter', 'Marketing'], ['linkedin', 'Marketing'], ['advertising', 'Marketing'], ['marketing', 'Marketing'], ['promotion', 'Marketing'],
       // Healthcare
-      'hospital', 'clinic', 'pharmacy', 'doctor', 'medical', 'health', 'insurance',
+      ['hospital', 'Healthcare'], ['clinic', 'Healthcare'], ['pharmacy', 'Healthcare'], ['doctor', 'Healthcare'], ['medical', 'Healthcare'], ['health', 'Healthcare'], ['insurance', 'Healthcare'],
       // Education
-      'school', 'university', 'college', 'tuition', 'education', 'training',
+      ['school', 'Education'], ['university', 'Education'], ['college', 'Education'], ['tuition', 'Education'], ['education', 'Education'], ['training', 'Education'],
       // Entertainment
-      'cinema', 'movie', 'theatre', 'entertainment', 'recreation'
+      ['cinema', 'Entertainment'], ['movie', 'Entertainment'], ['theatre', 'Entertainment'], ['entertainment', 'Entertainment'], ['recreation', 'Entertainment']
     ]);
   }
 
   private initializeVendorMappings() {
     this.vendorMappings = new Map([
       // Common vendors in Africa
-      'safaricom', 'mtn', 'airtel', 'telkom kenya',
-      'shoprite', 'nakumatt', 'carrefour', 'naivas', 'tuskys', 'chandarana',
-      'kplc', 'nairobi water', 'kenya power',
-      'equity bank', 'kcb', 'cooperative bank', 'ncba', 'absa kenya',
-      'shell', 'total', 'engen', 'petrol station',
-      'uber', 'bolt', 'taxify',
-      'amazon', 'jumia', 'kilimall'
+      ['safaricom', 'Safaricom'], ['mtn', 'MTN'], ['airtel', 'Airtel'], ['telkom kenya', 'Telkom Kenya'],
+      ['shoprite', 'Shoprite'], ['nakumatt', 'Nakumatt'], ['carrefour', 'Carrefour'], ['naivas', 'Naivas'], ['tuskys', 'Tuskys'], ['chandarana', 'Chandarana'],
+      ['kplc', 'KPLC'], ['nairobi water', 'Nairobi Water'], ['kenya power', 'Kenya Power'],
+      ['equity bank', 'Equity Bank'], ['kcb', 'KCB'], ['cooperative bank', 'Cooperative Bank'], ['ncba', 'NCBA'], ['absa kenya', 'Absa Kenya'],
+      ['shell', 'Shell'], ['total', 'Total'], ['engen', 'Engen'], ['petrol station', 'Petrol Station'],
+      ['uber', 'Uber'], ['bolt', 'Bolt'], ['taxify', 'Taxify'],
+      ['amazon', 'Amazon'], ['jumia', 'Jumia'], ['kilimall', 'Kilimall']
     ]);
   }
 
@@ -679,6 +679,8 @@ Be realistic and conservative in your projections.`;
       confidence: 0.9
     };
 
+    // Import actionEngine dynamically to avoid circular dependencies
+    const { actionEngine } = await import('./actionEngine');
     await actionEngine.executeAction(action);
     console.log(`📝 Accounting entry created: ${transaction.vendor} - $${transaction.amount}`);
   }

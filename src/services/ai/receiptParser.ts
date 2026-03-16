@@ -26,20 +26,10 @@ export interface CurrencyInfo {
 }
 
 class ReceiptParser {
-  private model: any = null;
   private currencyRates: Map<string, number> = new Map();
   
   constructor() {
     this.loadCurrencyRates();
-  }
-
-  private async initializeModel() {
-    try {
-      // Initialize a lightweight text classification model
-      this.model = await create('pipeline', 'text-classification', 'distilbert-base-uncased');
-    } catch (error) {
-      console.warn('Failed to initialize AI model, falling back to rule-based parsing:', error);
-    }
   }
 
   private loadCurrencyRates() {

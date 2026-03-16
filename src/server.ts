@@ -11,6 +11,7 @@ import receiptScanningRoutes from './routes/receiptScanning';
 import companyRoutes from './routes/company';
 import subscriptionRoutes from './routes/subscription';
 import forexRoutes from './routes/forex';
+import countryRoutes from './routes/countries';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -46,6 +47,7 @@ app.use('/api/receipt-scanning', receiptScanningRoutes);
 app.use('/api/company', companyRoutes);
 app.use('/api/subscription', subscriptionRoutes);
 app.use('/api/forex', forexRoutes);
+app.use('/api/countries', countryRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

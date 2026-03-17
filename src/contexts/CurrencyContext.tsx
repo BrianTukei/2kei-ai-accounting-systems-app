@@ -154,9 +154,23 @@ export function CurrencyProvider({ children }: CurrencyProviderProps) {
 
     if (source === target) return amount;
 
-    // Use synchronous conversion from cached rates
-    return exchangeService.convertSync(amount, source, target);
-  }, [selectedCurrency.code]);
+    // Use exchangeRates from context (reactive to changes)
+    const rates = exchangeRates;
+    
+    let rate = 1;
+    if (source === 'USD' && rates[target]) {
+      rate = rates[target];
+    } else if (target === 'USD' && rates[source]) {
+      rate = 1 / rates[source];
+    } else if (rates[source] && rates[target]) {
+      rate = rates[target] / rates[source];
+    } else {
+      // Fallback to exchangeService if context rates not available
+      return exchangeService.convertSync(amount, source, target);
+    }
+
+    return Math.round(amount * rate * 100) / 100;
+  }, [selectedCurrency.code, exchangeRates]);
 
   /**
    * Format a currency amount. If fromCurrency is provided and differs
@@ -167,20 +181,29 @@ export function CurrencyProvider({ children }: CurrencyProviderProps) {
 
     // Auto-convert if the amount is in a different currency
     if (fromCurrency && fromCurrency.toUpperCase() !== selectedCurrency.code.toUpperCase()) {
-      displayAmount = exchangeService.convertSync(amount, fromCurrency, selectedCurrency.code);
+      displayAmount = convertAmount(amount, fromCurrency, selectedCurrency.code);
     }
+
+    // Format without decimals for zero-decimal currencies
+    const zeroDecimalCurrencies = ['UGX', 'KES', 'TZS', 'RWF', 'NGN', 'JPY', 'VND', 'IDR'];
+    const minimumFractionDigits = zeroDecimalCurrencies.includes(selectedCurrency.code) ? 0 : 2;
 
     try {
       return new Intl.NumberFormat(selectedCurrency.locale, {
         style: 'currency',
         currency: selectedCurrency.code,
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
+        minimumFractionDigits,
+        maximumFractionDigits: minimumFractionDigits,
       }).format(displayAmount);
     } catch {
-      return `${selectedCurrency.symbol}${displayAmount.toFixed(2)}`;
+      const symbol = selectedCurrency.symbol;
+      const formatted = displayAmount.toLocaleString('en-US', {
+        minimumFractionDigits,
+        maximumFractionDigits: minimumFractionDigits,
+      });
+      return `${symbol}${formatted}`;
     }
-  }, [selectedCurrency]);
+  }, [selectedCurrency, convertAmount]);
 
   /**
    * Format an amount that is in a foreign currency, converting

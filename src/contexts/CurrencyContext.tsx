@@ -90,6 +90,21 @@ interface CurrencyProviderProps {
   children: ReactNode;
 }
 
+// Fallback rates - used immediately and updated when API responds
+const FALLBACK_RATES: Record<string, number> = {
+  USD: 1, EUR: 0.93, GBP: 0.80, JPY: 149.50, CAD: 1.36, AUD: 1.53,
+  CHF: 0.88, CNY: 7.24, INR: 83.12, BRL: 4.97, ZAR: 18.70, KRW: 1320,
+  SGD: 1.34, HKD: 7.82, SEK: 10.42, NOK: 10.55, DKK: 6.92, PLN: 4.02,
+  CZK: 23.15, HUF: 362, RUB: 91.50, TRY: 30.50, MXN: 17.15,
+  ARS: 830, CLP: 920, COP: 3950, PEN: 3.72, UYU: 39.20,
+  EGP: 50.10, MAD: 10.05, NGN: 1580, GHS: 14.80, KES: 153,
+  UGX: 3780, TZS: 2650, ZMW: 26.50, BWP: 13.60,
+  AED: 3.67, SAR: 3.75, QAR: 3.64, KWD: 0.31, BHD: 0.377,
+  OMR: 0.385, JOD: 0.71, LBP: 89500, THB: 35.20, VND: 24850,
+  IDR: 15650, MYR: 4.72, PHP: 56.30, PKR: 278, BDT: 110,
+  LKR: 320, NPR: 133, RWF: 1280, XOF: 610, XAF: 610, ETB: 56.50,
+};
+
 export function CurrencyProvider({ children }: CurrencyProviderProps) {
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>(() => {
     const storedCurrency = localStorage.getItem(STORAGE_KEY);
@@ -100,7 +115,8 @@ export function CurrencyProvider({ children }: CurrencyProviderProps) {
     return CURRENCIES[0]; // Default to USD
   });
 
-  const [exchangeRates, setExchangeRates] = useState<Record<string, number>>({});
+  // Initialize with fallback rates so conversion works immediately
+  const [exchangeRates, setExchangeRates] = useState<Record<string, number>>(FALLBACK_RATES);
   const [ratesSource, setRatesSource] = useState<string>('none');
   const [ratesLastUpdated, setRatesLastUpdated] = useState<string | null>(null);
   const [isRatesLoading, setIsRatesLoading] = useState(false);

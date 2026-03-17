@@ -1,0 +1,9 @@
+7d2ccb8cee1e5c1448d4c98c084a1f96fae60f18 commit	refs/heads/main
+e99ca6cbbfe5ed516fd6c0e0263fa9e34ad37f2c commit	refs/original/refs/heads/main
+d3d4023b408d6e19c2cdeca7f16b8782a3f62418 commit	refs/original/refs/remotes/origin/main
+2a636a5a8035aaeaf36d07e0688bd145c44095da commit	refs/remotes/origin/HEAD
+84f7ebaa81c9c47fa8ec9966a44bade864c455de commit	refs/remotes/origin/fix-currency-formatting
+79b774d08769017a9a02ae86021d5a002cd8eabb commit	refs/remotes/origin/fix-tax-calculation-bug
+2a636a5a8035aaeaf36d07e0688bd145c44095da commit	refs/remotes/origin/main
+25db349feb1564c848331a2fd6c0a74fc1506a41 commit	refs/remotes/origin/remove-lovable-references
+41ae7ba35ca3de3a30044757027fadbf98cb05fb commit	refs/remotes/origin/update/personalize-readme

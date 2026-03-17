@@ -834,7 +834,7 @@ export default function Billing() {
           }
         }
       }}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg overflow-y-auto max-h-[85vh]">
           {selectedUpgradePlan && upgradeStep === 'confirm' && (() => {
             const newPlan = PLANS[selectedUpgradePlan];
             const currentPlanId = plan.id as PlanId;

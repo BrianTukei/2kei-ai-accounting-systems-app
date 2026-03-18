@@ -2,6 +2,7 @@ const express = require('express');
 const { body } = require('express-validator');
 const authController = require('../controllers/authController');
 const { authenticate } = require('../middleware/auth');
+const { passwordLimiter } = require('../middleware/rateLimiter');
 
 const router = express.Router();
 
@@ -125,6 +126,7 @@ router.put(
 router.put(
   '/change-password',
   authenticate,
+  passwordLimiter,
   [
     body('currentPassword')
       .notEmpty()

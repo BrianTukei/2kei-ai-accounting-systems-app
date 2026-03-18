@@ -29,16 +29,6 @@ export function CurrencyProvider({ children }) {
   const [lastUpdated, setLastUpdated] = useState(null);
   const [error, setError] = useState(null);
 
-  // Initialize exchange rates
-  useEffect(() => {
-    fetchExchangeRates();
-    
-    // Refresh rates every hour
-    const interval = setInterval(fetchExchangeRates, 60 * 60 * 1000);
-    
-    return () => clearInterval(interval);
-  }, []);
-
   const fetchExchangeRates = async () => {
     try {
       setLoading(true);
@@ -58,6 +48,18 @@ export function CurrencyProvider({ children }) {
       setLoading(false);
     }
   };
+
+  // Initialize exchange rates
+  useEffect(() => {
+    fetchExchangeRates();
+    
+    // Refresh rates every hour
+    const interval = setInterval(fetchExchangeRates, 60 * 60 * 1000);
+    
+    return () => {
+      clearInterval(interval);
+    };
+  }, []); // Empty dependency array since this should only run once
 
   const convertAmount = (amount, fromCurrency, toCurrency) => {
     if (!amount || fromCurrency === toCurrency) {

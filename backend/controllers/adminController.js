@@ -171,15 +171,10 @@ class AdminController {
       // Generate bulk ID for tracking
       const bulkId = recipients.length > 1 ? uuidv4() : null;
 
-      const results = [];
-      let successCount = 0;
-      let failureCount = 0;
-
-      // Send emails
-      for (let i = 0; i < recipients.length; i++) {
-        const recipient = recipients[i];
-        const userId = userIds[i] || null;
-
+      // Send emails in parallel with proper error isolation
+      const emailPromises = recipients.map(async (recipient, index) => {
+        const userId = userIds[index] || null;
+        
         try {
           const result = await emailService.sendEmail(recipient, subject, message);
           
@@ -202,18 +197,12 @@ class AdminController {
 
           await emailLog.save();
 
-          results.push({
+          return {
             recipient,
             success: result.success,
             error: result.error,
             messageId: result.messageId
-          });
-
-          if (result.success) {
-            successCount++;
-          } else {
-            failureCount++;
-          }
+          };
         } catch (error) {
           logger.error('Failed to send email to recipient:', error);
           
@@ -235,14 +224,28 @@ class AdminController {
 
           await emailLog.save();
 
-          results.push({
+          return {
             recipient,
             success: false,
             error: error.message
-          });
-          failureCount++;
+          };
         }
-      }
+      });
+
+      // Wait for all emails to complete (whether successful or not)
+      const results = await Promise.allSettled(emailPromises);
+      
+      // Extract results and count successes/failures
+      const emailResults = results.map(result => 
+        result.status === 'fulfilled' ? result.value : {
+          success: false,
+          error: 'Promise rejected',
+          recipient: 'unknown'
+        }
+      );
+      
+      const successCount = emailResults.filter(r => r.success).length;
+      const failureCount = emailResults.filter(r => !r.success).length;
 
       logger.info(`Admin email campaign completed`, {
         adminId,
@@ -257,7 +260,7 @@ class AdminController {
         message: `Email sent successfully to ${successCount} recipient${successCount !== 1 ? 's' : ''}${failureCount > 0 ? ` (${failureCount} failed)` : ''}`,
         data: {
           bulkId,
-          results,
+          results: emailResults,
           summary: {
             total: recipients.length,
             success: successCount,

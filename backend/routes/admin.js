@@ -3,6 +3,7 @@ const router = express.Router();
 const { body } = require('express-validator');
 const adminController = require('../controllers/adminController');
 const { isAdmin } = require('../middleware/adminAuth');
+const { emailLimiter } = require('../middleware/rateLimiter');
 
 /**
  * Admin Routes
@@ -34,6 +35,7 @@ router.get('/users/:id', adminController.getUserById);
  */
 router.post(
   '/send-email',
+  emailLimiter,
   [
     body('subject')
       .trim()

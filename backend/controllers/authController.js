@@ -6,6 +6,7 @@ const User = require('../models/User');
 const Company = require('../models/Company');
 const Subscription = require('../models/Subscription');
 const logger = require('../utils/logger');
+const { catchAsync, sendSuccess, sendError, handleValidationErrors } = require('../utils/errorHandler');
 
 /**
  * Auth Controller
@@ -17,14 +18,10 @@ class AuthController {
    * POST /api/auth/register
    */
   async register(req, res) {
-    try {
+    return catchAsync(async () => {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        return res.status(400).json({
-          success: false,
-          message: 'Validation failed',
-          errors: errors.array()
-        });
+        return sendError(res, 'Validation failed', 400, errors.array());
       }
 
       const { 
@@ -39,24 +36,21 @@ class AuthController {
       // Check if user already exists
       const existingUser = await User.findOne({ email });
       if (existingUser) {
-        return res.status(400).json({
-          success: false,
-          message: 'User with this email already exists'
-        });
+        return sendError(res, 'User with this email already exists', 400);
       }
 
-      // Hash password
-      const salt = await bcrypt.genSalt(12);
-      const hashedPassword = await bcrypt.hash(password, salt);
-
-      // Create user
+      // Check if this is the first user (should be admin)
+      const userCount = await User.countDocuments();
+      const isFirstUser = userCount === 0;
+      
+      // Create user (password will be hashed by User model pre-save hook)
       const user = new User({
         firstName,
         lastName,
         email,
-        password: hashedPassword,
+        password, // Plain password - model will hash it
         phone,
-        role: 'admin', // First user is admin
+        role: isFirstUser ? 'admin' : 'viewer', // First user is admin, others are viewers by default
         isActive: true,
         emailVerified: false
       });
@@ -126,21 +120,11 @@ class AuthController {
 
       logger.info(`New user registered: ${email}`);
 
-      return res.status(201).json({
-        success: true,
-        message: 'User registered successfully',
-        data: {
-          user: userResponse,
-          token
-        }
-      });
-    } catch (error) {
-      logger.error('Registration error:', error);
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to register user'
-      });
-    }
+      return sendSuccess(res, {
+        user: userResponse,
+        token
+      }, 'User registered successfully', 201);
+    })(req, res);
   }
 
   /**
@@ -335,12 +319,8 @@ class AuthController {
         });
       }
 
-      // Hash new password
-      const salt = await bcrypt.genSalt(12);
-      const hashedNewPassword = await bcrypt.hash(newPassword, salt);
-
-      // Update password
-      await User.findByIdAndUpdate(userId, { password: hashedNewPassword });
+      // Update password (model will hash it)
+      await User.findByIdAndUpdate(userId, { password: newPassword });
 
       logger.info(`Password changed for user: ${user.email}`);
 

@@ -5,6 +5,9 @@ const morgan = require('morgan');
 const mongoose = require('mongoose');
 require('dotenv').config();
 
+// Import error handler
+const { globalErrorHandler } = require('./utils/errorHandler');
+
 // Import routes
 const authRoutes = require('./routes/auth');
 const companyRoutes = require('./routes/company');
@@ -15,15 +18,47 @@ const adminRoutes = require('./routes/admin');
 
 // Import middleware
 const { authenticate } = require('./middleware/auth');
+const { generalLimiter, authLimiter, passwordLimiter, emailLimiter } = require('./middleware/rateLimiter');
+const { sanitizeInput } = require('./middleware/validation');
 
 // Create Express app
 const app = express();
 
 // Security middleware
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"],
+    },
+  },
+}));
+
+// CORS configuration
+const allowedOrigins = [
+  process.env.FRONTEND_URL || 'http://localhost:3000',
+  'http://localhost:3000',
+  'https://localhost:3000'
+].filter(Boolean);
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['X-Total-Count'],
+  maxAge: 86400 // 24 hours
 }));
 
 // Logging middleware
@@ -32,6 +67,9 @@ app.use(morgan('combined'));
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Input sanitization
+app.use(sanitizeInput);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -43,8 +81,11 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Apply general rate limiting to all API routes
+app.use('/api/', generalLimiter);
+
 // API Routes
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/company', authenticate, companyRoutes);
 app.use('/api/subscription', authenticate, subscriptionRoutes);
 app.use('/api/forex', authenticate, forexRoutes);
@@ -79,50 +120,32 @@ app.use('*', (req, res) => {
 });
 
 // Global error handler
-app.use((error, req, res, next) => {
-  console.error('Global error handler:', error);
+app.use(globalErrorHandler);
+
+// Validate required environment variables
+const validateEnvironment = () => {
+  const requiredVars = ['JWT_SECRET'];
+  const missingVars = requiredVars.filter(varName => !process.env[varName]);
   
-  // Mongoose validation errors
-  if (error.name === 'ValidationError') {
-    const errors = Object.values(error.errors).map(err => err.message);
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors
-    });
+  if (missingVars.length > 0) {
+    console.error('❌ Missing required environment variables:', missingVars.join(', '));
+    console.error('Please check your .env file and restart the server.');
+    process.exit(1);
   }
   
-  // Mongoose duplicate key error
-  if (error.code === 11000) {
-    const field = Object.keys(error.keyValue)[0];
-    return res.status(400).json({
-      success: false,
-      message: `${field} already exists`
-    });
+  // Validate JWT secret strength
+  if (process.env.JWT_SECRET.length < 32) {
+    console.error('❌ JWT_SECRET must be at least 32 characters long for security');
+    process.exit(1);
   }
   
-  // JWT errors
-  if (error.name === 'JsonWebTokenError') {
-    return res.status(401).json({
-      success: false,
-      message: 'Invalid token'
-    });
+  // Warn about development defaults
+  if (process.env.JWT_SECRET === 'your_super_secret_key_here') {
+    console.warn('⚠️  Using default JWT secret. Please change this in production!');
   }
   
-  if (error.name === 'TokenExpiredError') {
-    return res.status(401).json({
-      success: false,
-      message: 'Token expired'
-    });
-  }
-  
-  // Default error
-  res.status(error.status || 500).json({
-    success: false,
-    message: error.message || 'Internal server error',
-    ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
-  });
-});
+  console.log('✅ Environment variables validated');
+};
 
 // Database connection
 const connectDB = async () => {
@@ -143,6 +166,7 @@ const connectDB = async () => {
 const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
+  validateEnvironment();
   await connectDB();
   
   app.listen(PORT, () => {

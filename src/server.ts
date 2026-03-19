@@ -13,6 +13,8 @@ import companyRoutes from './routes/company';
 import subscriptionRoutes from './routes/subscription';
 import forexRoutes from './routes/forex';
 import countryRoutes from './routes/countries';
+import billingRoutes from './routes/billing';
+import adminBillingRoutes from './routes/adminBilling';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -50,6 +52,8 @@ app.use('/api/company', companyRoutes);
 app.use('/api/subscription', subscriptionRoutes);
 app.use('/api/forex', forexRoutes);
 app.use('/api/countries', countryRoutes);
+app.use('/api/billing', billingRoutes);
+app.use('/api/admin/billing', adminBillingRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

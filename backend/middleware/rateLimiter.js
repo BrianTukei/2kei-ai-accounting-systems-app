@@ -18,94 +18,92 @@ const generalLimiter = rateLimit({
   handler: (req, res) => {
     logger.warn('Rate limit exceeded', {
       ip: req.ip,
-      method: req.method,
-      url: req.originalUrl,
-      userAgent: req.get('User-Agent')
-    });
-    res.status(429).json({
-      success: false,
-      message: 'Too many requests from this IP, please try again later.'
+      userAgent: req.get('User-Agent'),
+      path: req.path
     });
   }
 });
 
-// Strict rate limiting for authentication endpoints
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each IP to 5 auth requests per windowMs
-  message: {
-    success: false,
-    message: 'Too many authentication attempts, please try again later.'
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-  skipSuccessfulRequests: true, // Don't count successful requests
-  handler: (req, res) => {
-    logger.warn('Auth rate limit exceeded', {
-      ip: req.ip,
-      method: req.method,
-      url: req.originalUrl,
-      email: req.body?.email || 'unknown',
-      userAgent: req.get('User-Agent')
-    });
-    res.status(429).json({
-      success: false,
-      message: 'Too many authentication attempts, please try again later.'
-    });
-  }
-});
-
-// Password change rate limiting
-const passwordLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 3, // Limit each IP to 3 password changes per hour
-  message: {
-    success: false,
-    message: 'Too many password change attempts, please try again later.'
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-  handler: (req, res) => {
-    logger.warn('Password change rate limit exceeded', {
-      ip: req.ip,
-      method: req.method,
-      url: req.originalUrl,
-      userAgent: req.get('User-Agent')
-    });
-    res.status(429).json({
-      success: false,
-      message: 'Too many password change attempts, please try again later.'
-    });
-  }
-});
-
-// Email sending rate limiting
+// Email rate limiting
 const emailLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 50, // Limit each IP to 50 emails per hour
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 email requests per windowMs
   message: {
     success: false,
-    message: 'Too many email requests, please try again later.'
+    message: 'Too many email requests from this IP, please try again later.'
   },
   standardHeaders: true,
   legacyHeaders: false,
   handler: (req, res) => {
     logger.warn('Email rate limit exceeded', {
       ip: req.ip,
-      method: req.method,
-      url: req.originalUrl,
-      userAgent: req.get('User-Agent')
+      userAgent: req.get('User-Agent'),
+      path: req.path
     });
-    res.status(429).json({
-      success: false,
-      message: 'Too many email requests, please try again later.'
+  }
+});
+
+// Demo booking rate limiting (more restrictive)
+const demoLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5, // Limit each IP to 5 demo bookings per hour
+  message: {
+    success: false,
+    message: 'Too many demo booking requests from this IP, please try again later.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    logger.warn('Demo booking rate limit exceeded', {
+      ip: req.ip,
+      userAgent: req.get('User-Agent'),
+      path: req.path
+    });
+  }
+});
+
+// Auth rate limiting (very restrictive)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Limit each IP to 5 auth requests per windowMs
+  message: {
+    success: false,
+    message: 'Too many authentication attempts from this IP, please try again later.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    logger.warn('Auth rate limit exceeded', {
+      ip: req.ip,
+      userAgent: req.get('User-Agent'),
+      path: req.path
+    });
+  }
+});
+
+// Password reset rate limiting
+const passwordResetLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 3, // Limit each IP to 3 password reset requests per hour
+  message: {
+    success: false,
+    message: 'Too many password reset requests from this IP, please try again later.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    logger.warn('Password reset rate limit exceeded', {
+      ip: req.ip,
+      userAgent: req.get('User-Agent'),
+      path: req.path
     });
   }
 });
 
 module.exports = {
   generalLimiter,
+  emailLimiter,
+  demoLimiter,
   authLimiter,
-  passwordLimiter,
-  emailLimiter
+  passwordResetLimiter
 };

@@ -1,13 +1,7 @@
 const mongoose = require('mongoose');
 
-/**
- * Subscription Schema
- * - Tracks user subscription plans and billing
- * - Supports multiple plans: free, starter, professional, enterprise
- * - Integrates with payment providers (Stripe, Flutterwave, etc.)
- */
 const subscriptionSchema = new mongoose.Schema({
-  // Reference to user
+  // User reference
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -15,126 +9,229 @@ const subscriptionSchema = new mongoose.Schema({
     unique: true
   },
 
-  // Company reference
-  company: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Company'
-  },
-
-  // Plan Details
+  // Plan details
   plan: {
     type: String,
-    enum: ['free', 'starter', 'professional', 'enterprise'],
-    default: 'free'
+    required: true,
+    enum: ['FREE', 'STARTER', 'BUSINESS', 'ENTERPRISE'],
+    default: 'FREE'
   },
   
-  planDetails: {
-    name: String,
-    price: Number,
-    currency: { type: String, default: 'USD' },
-    billingCycle: { type: String, enum: ['monthly', 'annual'], default: 'monthly' },
-    features: [String],
-    limits: {
-      transactions: { type: Number, default: 100 },
-      invoices: { type: Number, default: 10 },
-      users: { type: Number, default: 1 },
-      storage: { type: Number, default: 1 }, // GB
-      aiRequests: { type: Number, default: 50 }
-    }
+  // Billing cycle
+  billingCycle: {
+    type: String,
+    required: true,
+    enum: ['monthly', 'yearly'],
+    default: 'monthly'
   },
 
-  // Billing Information
-  billingInfo: {
-    provider: {
-      type: String,
-      enum: ['stripe', 'flutterwave', 'paystack', 'pesapal', 'manual'],
-      default: 'manual'
-    },
-    customerId: String, // Payment provider customer ID
-    subscriptionId: String, // Payment provider subscription ID
-    paymentMethod: {
-      type: { type: String },
-      last4: String,
-      brand: String,
-      expiryMonth: Number,
-      expiryYear: Number
-    }
+  // Subscription dates
+  startDate: {
+    type: Date,
+    required: true,
+    default: Date.now
+  },
+  
+  endDate: {
+    type: Date,
+    required: true
+  },
+  
+  nextBillingDate: {
+    type: Date,
+    required: true
   },
 
-  // Trial Status
-  trial: {
-    isActive: { type: Boolean, default: false },
-    startedAt: Date,
-    endsAt: Date,
-    daysRemaining: { type: Number, default: 0 }
-  },
-
-  // Subscription Period
-  currentPeriod: {
-    start: Date,
-    end: Date
-  },
-
-  // Status
+  // Status management
   status: {
     type: String,
-    enum: ['active', 'trialing', 'past_due', 'canceled', 'unpaid', 'incomplete'],
+    required: true,
+    enum: ['active', 'inactive', 'cancelled', 'expired', 'suspended', 'trial'],
     default: 'active'
   },
 
-  // Cancellation
-  cancelAtPeriodEnd: {
+  // Grace period
+  gracePeriodEnds: {
+    type: Date
+  },
+  
+  inGracePeriod: {
     type: Boolean,
     default: false
   },
-  canceledAt: {
+
+  // Payment information
+  price: {
+    type: Number,
+    required: true,
+    min: 0
+  },
+  
+  currency: {
+    type: String,
+    required: true,
+    default: 'UGX'
+  },
+
+  // Auto-renewal settings
+  autoRenew: {
+    type: Boolean,
+    default: true
+  },
+
+  // Cancellation information
+  cancelledAt: {
     type: Date
   },
-  cancellationReason: {
+  
+  cancelReason: {
     type: String
   },
+  
+  cancellationEffectiveDate: {
+    type: Date
+  },
 
-  // Payment History
-  payments: [{
-    id: String,
-    amount: Number,
-    currency: String,
-    status: { type: String, enum: ['succeeded', 'pending', 'failed'] },
-    provider: String,
-    providerPaymentId: String,
-    paidAt: Date,
-    receiptUrl: String
+  // Payment method
+  paymentMethod: {
+    type: String,
+    enum: ['mtn_momo', 'airtel_money', 'card', 'bank_transfer', 'manual'],
+    required: true
+  },
+
+  paymentDetails: {
+    phoneNumber: String,
+    cardLast4: String,
+    bankAccount: String,
+    transactionReference: String
+  },
+
+  // Usage tracking
+  currentUsage: {
+    transactions: {
+      type: Number,
+      default: 0
+    },
+    aiCredits: {
+      type: Number,
+      default: 0
+    },
+    users: {
+      type: Number,
+      default: 1
+    },
+    reports: {
+      type: Number,
+      default: 0
+    }
+  },
+
+  // Usage limits (from pricing plan)
+  limits: {
+    maxTransactions: {
+      type: Number,
+      default: 50
+    },
+    maxUsers: {
+      type: Number,
+      default: 1
+    },
+    maxReports: {
+      type: Number,
+      default: 10
+    },
+    aiCredits: {
+      type: Number,
+      default: 0
+    }
+  },
+
+  // AI Credits system
+  aiCredits: {
+    total: {
+      type: Number,
+      default: 0
+    },
+    used: {
+      type: Number,
+      default: 0
+    },
+    available: {
+      type: Number,
+      default: 0
+    },
+    lastUpdated: {
+      type: Date,
+      default: Date.now
+    }
+  },
+
+  // Billing history
+  billingHistory: [{
+    date: {
+      type: Date,
+      required: true
+    },
+    amount: {
+      type: Number,
+      required: true
+    },
+    currency: {
+      type: String,
+      required: true,
+      default: 'UGX'
+    },
+    status: {
+      type: String,
+      enum: ['paid', 'pending', 'failed', 'refunded'],
+      required: true
+    },
+    paymentMethod: {
+      type: String,
+      required: true
+    },
+    transactionId: String,
+    invoiceId: String,
+    description: String
   }],
 
-  // Usage Tracking
-  usage: {
-    transactions: { type: Number, default: 0 },
-    invoices: { type: Number, default: 0 },
-    aiRequests: { type: Number, default: 0 },
-    storageUsed: { type: Number, default: 0 } // MB
+  // Upgrade/Downgrade tracking
+  planChanges: [{
+    fromPlan: String,
+    toPlan: String,
+    changeDate: {
+      type: Date,
+      default: Date.now
+    },
+    reason: String,
+    initiatedBy: {
+      type: String,
+      enum: ['user', 'admin', 'system']
+    }
+  }],
+
+  // Notifications
+  notifications: {
+    lastPaymentReminder: Date,
+    lastExpiryWarning: Date,
+    lastGracePeriodWarning: Date,
+    paymentFailedCount: {
+      type: Number,
+      default: 0
+    }
   },
 
-  // Invoice Settings
-  invoiceSettings: {
-    autoGenerate: { type: Boolean, default: true },
-    sendEmail: { type: Boolean, default: true },
-    billingEmail: String
-  },
-
-  // Grace Period
-  gracePeriod: {
-    isActive: { type: Boolean, default: false },
-    startedAt: Date,
-    endsAt: Date
-  },
-
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
+  // Metadata
+  metadata: {
+    source: {
+      type: String,
+      enum: ['website', 'mobile_app', 'admin', 'api'],
+      default: 'website'
+    },
+    utmSource: String,
+    utmMedium: String,
+    utmCampaign: String,
+    referralCode: String
   }
 }, {
   timestamps: true
@@ -144,90 +241,233 @@ const subscriptionSchema = new mongoose.Schema({
 subscriptionSchema.index({ user: 1 });
 subscriptionSchema.index({ status: 1 });
 subscriptionSchema.index({ plan: 1 });
-subscriptionSchema.index({ 'currentPeriod.end': 1 });
+subscriptionSchema.index({ nextBillingDate: 1 });
+subscriptionSchema.index({ endDate: 1 });
+subscriptionSchema.index({ 'aiCredits.available': 1 });
 
-// Virtual: Is in trial
-subscriptionSchema.virtual('isTrialing').get(function() {
-  if (!this.trial.isActive || !this.trial.endsAt) return false;
-  return new Date() < this.trial.endsAt;
+// Virtual fields
+subscriptionSchema.virtual('isActive').get(function() {
+  const now = new Date();
+  return this.status === 'active' && 
+         this.endDate > now && 
+         (!this.inGracePeriod || this.gracePeriodEnds > now);
 });
 
-// Virtual: Is expired
-subscriptionSchema.virtual('isExpired').get(function() {
-  if (this.status === 'active' || this.status === 'trialing') return false;
-  if (!this.currentPeriod.end) return true;
-  return new Date() > this.currentPeriod.end;
+subscriptionSchema.virtual('daysUntilExpiry').get(function() {
+  const now = new Date();
+  const diffTime = this.endDate - now;
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 });
 
-// Virtual: Days until renewal
-subscriptionSchema.virtual('daysUntilRenewal').get(function() {
-  if (!this.currentPeriod.end) return 0;
-  const diff = this.currentPeriod.end - new Date();
-  return Math.ceil(diff / (1000 * 60 * 60 * 24));
+subscriptionSchema.virtual('isInTrial').get(function() {
+  return this.status === 'trial';
 });
 
-// Method: Check if feature is available
-subscriptionSchema.methods.hasFeature = function(featureName) {
-  const planFeatures = {
-    free: ['basic_accounting', 'invoices', 'reports'],
-    starter: ['basic_accounting', 'invoices', 'reports', 'multi_currency', 'bank_sync'],
-    professional: ['basic_accounting', 'invoices', 'reports', 'multi_currency', 'bank_sync', 'payroll', 'inventory', 'ai_assistant'],
-    enterprise: ['all_features', 'api_access', 'dedicated_support', 'custom_integrations']
-  };
+subscriptionSchema.virtual('needsPayment').get(function() {
+  const now = new Date();
+  return this.nextBillingDate <= now && this.autoRenew;
+});
+
+subscriptionSchema.virtual('usagePercentage').get(function() {
+  const limits = this.limits;
+  const usage = this.currentUsage;
   
-  const features = planFeatures[this.plan] || planFeatures.free;
-  return features.includes(featureName) || features.includes('all_features');
-};
-
-// Method: Check if within limits
-subscriptionSchema.methods.isWithinLimit = function(limitType, currentValue) {
-  const limit = this.planDetails?.limits?.[limitType];
-  if (!limit) return true; // No limit set
-  return currentValue < limit;
-};
-
-// Method: Increment usage
-subscriptionSchema.methods.incrementUsage = async function(type, amount = 1) {
-  if (this.usage[type] !== undefined) {
-    this.usage[type] += amount;
-    await this.save();
-  }
-};
-
-// Method: Can upgrade
-subscriptionSchema.methods.canUpgrade = function(targetPlan) {
-  const planHierarchy = { free: 0, starter: 1, professional: 2, enterprise: 3 };
-  return planHierarchy[targetPlan] > planHierarchy[this.plan];
-};
-
-// Static: Get plan pricing
-subscriptionSchema.statics.getPlanPricing = function() {
-  return {
-    free: {
-      name: 'Free',
-      monthly: 0,
-      annual: 0,
-      features: ['Basic accounting', 'Up to 100 transactions', 'Up to 10 invoices', 'Email support']
-    },
-    starter: {
-      name: 'Starter',
-      monthly: 19,
-      annual: 190,
-      features: ['Everything in Free', 'Unlimited transactions', 'Unlimited invoices', 'Multi-currency', 'Bank sync', 'Priority support']
-    },
-    professional: {
-      name: 'Professional',
-      monthly: 49,
-      annual: 490,
-      features: ['Everything in Starter', 'Payroll', 'Inventory', 'AI Assistant', 'Advanced reports', '5 team members']
-    },
-    enterprise: {
-      name: 'Enterprise',
-      monthly: 99,
-      annual: 990,
-      features: ['Everything in Professional', 'Unlimited team members', 'API access', 'Dedicated support', 'Custom integrations']
+  const percentages = {};
+  for (const key in limits) {
+    if (limits[key] > 0) {
+      percentages[key] = Math.min((usage[key] / limits[key]) * 100, 100);
+    } else {
+      percentages[key] = 0;
     }
+  }
+  
+  return percentages;
+});
+
+// Pre-save middleware
+subscriptionSchema.pre('save', function(next) {
+  // Update available credits
+  this.aiCredits.available = this.aiCredits.total - this.aiCredits.used;
+  
+  // Update grace period status
+  const now = new Date();
+  if (this.endDate <= now && this.status === 'active' && !this.inGracePeriod) {
+    this.inGracePeriod = true;
+    this.gracePeriodEnds = new Date(now.getTime() + (5 * 24 * 60 * 60 * 1000)); // 5 days
+  }
+  
+  // Check if grace period has ended
+  if (this.inGracePeriod && this.gracePeriodEnds <= now) {
+    this.status = 'expired';
+    this.inGracePeriod = false;
+  }
+  
+  next();
+});
+
+// Static methods
+subscriptionSchema.statics.findByUser = function(userId) {
+  return this.findOne({ user: userId }).populate('user');
+};
+
+subscriptionSchema.statics.findActiveSubscriptions = function() {
+  return this.find({ 
+    status: 'active',
+    endDate: { $gt: new Date() }
+  });
+};
+
+subscriptionSchema.statics.findExpiringSoon = function(days = 7) {
+  const futureDate = new Date();
+  futureDate.setDate(futureDate.getDate() + days);
+  
+  return this.find({
+    status: 'active',
+    endDate: { $lte: futureDate, $gt: new Date() },
+    autoRenew: true
+  });
+};
+
+subscriptionSchema.statics.findOverduePayments = function() {
+  return this.find({
+    nextBillingDate: { $lte: new Date() },
+    status: 'active',
+    autoRenew: true
+  });
+};
+
+// Instance methods
+subscriptionSchema.methods.upgradePlan = async function(newPlan, billingCycle = 'monthly') {
+  const oldPlan = this.plan;
+  this.plan = newPlan;
+  this.billingCycle = billingCycle;
+  this.planChanges.push({
+    fromPlan: oldPlan,
+    toPlan: newPlan,
+    changeDate: new Date(),
+    initiatedBy: 'user'
+  });
+  
+  // Update billing dates
+  this.nextBillingDate = new Date();
+  this.endDate = new Date();
+  
+  if (billingCycle === 'yearly') {
+    this.endDate.setFullYear(this.endDate.getFullYear() + 1);
+  } else {
+    this.endDate.setMonth(this.endDate.getMonth() + 1);
+  }
+  
+  return this.save();
+};
+
+subscriptionSchema.methods.downgradePlan = async function(newPlan, effectiveDate = null) {
+  const oldPlan = this.plan;
+  this.plan = newPlan;
+  this.planChanges.push({
+    fromPlan: oldPlan,
+    toPlan: newPlan,
+    changeDate: new Date(),
+    reason: 'User requested downgrade',
+    initiatedBy: 'user'
+  });
+  
+  if (effectiveDate) {
+    this.cancellationEffectiveDate = effectiveDate;
+  }
+  
+  return this.save();
+};
+
+subscriptionSchema.methods.cancel = async function(reason = '') {
+  this.status = 'cancelled';
+  this.cancelledAt = new Date();
+  this.cancelReason = reason;
+  this.autoRenew = false;
+  
+  // Keep active until end of billing period
+  this.cancellationEffectiveDate = this.endDate;
+  
+  return this.save();
+};
+
+subscriptionSchema.methods.addAICredits = async function(credits, description = '') {
+  this.aiCredits.total += credits;
+  this.aiCredits.available += credits;
+  this.aiCredits.lastUpdated = new Date();
+  
+  // Add to billing history if paid
+  if (description && description.includes('purchase')) {
+    this.billingHistory.push({
+      date: new Date(),
+      amount: credits * 500, // 500 UGX per credit
+      currency: 'UGX',
+      status: 'paid',
+      paymentMethod: this.paymentMethod,
+      description: `AI Credits Purchase: ${credits} credits`
+    });
+  }
+  
+  return this.save();
+};
+
+subscriptionSchema.methods.useAICredits = async function(credits) {
+  if (this.aiCredits.available < credits) {
+    throw new Error('Insufficient AI credits');
+  }
+  
+  this.aiCredits.used += credits;
+  this.aiCredits.available -= credits;
+  this.aiCredits.lastUpdated = new Date();
+  
+  return this.save();
+};
+
+subscriptionSchema.methods.checkUsageLimit = function(feature, currentUsage = null) {
+  const usage = currentUsage !== null ? currentUsage : this.currentUsage[feature];
+  const limit = this.limits[feature];
+  
+  if (limit === -1) return { allowed: true, remaining: 'unlimited' };
+  
+  const remaining = Math.max(0, limit - usage);
+  const percentageUsed = (usage / limit) * 100;
+  
+  return {
+    allowed: usage < limit,
+    remaining,
+    percentageUsed,
+    limit,
+    currentUsage: usage
   };
+};
+
+subscriptionSchema.methods.extendSubscription = async function(billingCycle = 'monthly') {
+  const now = new Date();
+  const newEndDate = new Date(this.endDate);
+  
+  if (billingCycle === 'yearly') {
+    newEndDate.setFullYear(newEndDate.getFullYear() + 1);
+  } else {
+    newEndDate.setMonth(newEndDate.getMonth() + 1);
+  }
+  
+  this.endDate = newEndDate;
+  this.nextBillingDate = newEndDate;
+  this.status = 'active';
+  this.inGracePeriod = false;
+  this.gracePeriodEnds = null;
+  
+  // Add to billing history
+  this.billingHistory.push({
+    date: now,
+    amount: this.price,
+    currency: this.currency,
+    status: 'paid',
+    paymentMethod: this.paymentMethod,
+    description: `Subscription renewal - ${this.plan} (${billingCycle})`
+  });
+  
+  return this.save();
 };
 
 module.exports = mongoose.model('Subscription', subscriptionSchema);

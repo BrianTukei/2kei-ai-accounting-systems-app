@@ -1,345 +1,455 @@
 const mongoose = require('mongoose');
 
-/**
- * Transaction Schema
- * - Core accounting transactions (income, expenses, transfers)
- * - Multi-currency support with exchange rates
- * - AI-ready categorization and tagging
- */
 const transactionSchema = new mongoose.Schema({
-  // Transaction Info
-  transactionId: {
-    type: String,
-    unique: true,
-    required: true
-  },
-  
-  type: {
-    type: String,
-    enum: ['income', 'expense', 'transfer', 'refund', 'adjustment'],
-    required: true
-  },
-
-  // Amount & Currency
-  amount: {
-    value: {
-      type: Number,
-      required: true
-    },
-    currency: {
-      code: { type: String, default: 'USD' },
-      symbol: { type: String, default: '$' }
-    }
-  },
-  
-  // Exchange Rate (for multi-currency)
-  exchangeRate: {
-    rate: { type: Number, default: 1 },
-    baseCurrency: { type: String, default: 'USD' },
-    targetCurrency: { type: String, default: 'USD' },
-    convertedAmount: { type: Number },
-    rateDate: Date
-  },
-
-  // Category & Classification
-  category: {
-    type: String,
-    required: true,
-    enum: [
-      // Income
-      'sales', 'services', 'investment', 'interest', 'rental', 'refund', 'other_income',
-      // Expenses
-      'rent', 'utilities', 'salaries', 'marketing', 'office_supplies', 'software', 
-      'travel', 'meals', 'insurance', 'taxes', 'professional_fees', 'equipment',
-      'maintenance', 'inventory', 'shipping', 'bank_fees', 'other_expense',
-      // Transfers
-      'internal_transfer', 'loan_payment', 'investment_transfer'
-    ]
-  },
-  
-  subcategory: {
-    type: String
-  },
-
-  // AI Categorization
-  aiCategorization: {
-    suggestedCategory: String,
-    confidence: { type: Number, min: 0, max: 1 },
-    isConfirmed: { type: Boolean, default: false }
-  },
-
-  // Accounts
-  account: {
+  // User reference
+  user: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Account',
-    required: true
-  },
-  
-  transferAccount: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Account'
-  },
-
-  // Parties
-  counterparty: {
-    name: { type: String, trim: true },
-    email: { type: String, lowercase: true, trim: true },
-    phone: { type: String, trim: true },
-    address: {
-      street: String,
-      city: String,
-      state: String,
-      postalCode: String,
-      country: String
-    }
-  },
-
-  // Description & Notes
-  description: {
-    type: String,
-    required: true,
-    trim: true,
-    maxlength: 500
-  },
-  
-  notes: {
-    type: String,
-    trim: true,
-    maxlength: 1000
-  },
-
-  // Dates
-  transactionDate: {
-    type: Date,
+    ref: 'User',
     required: true,
     index: true
   },
-  
-  valueDate: {
-    type: Date
-  },
-  
-  clearedDate: {
-    type: Date
+
+  // Company reference (for business transactions)
+  company: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Company'
   },
 
-  // Status
+  // Transaction details
+  type: {
+    type: String,
+    required: true,
+    enum: [
+      'subscription_payment',
+      'ai_credit_purchase',
+      'transaction_fee',
+      'refund',
+      'chargeback',
+      'upgrade_payment',
+      'plan_change'
+    ]
+  },
+
+  subtype: {
+    type: String,
+    enum: [
+      'mtn_momo',
+      'airtel_money',
+      'card_payment',
+      'bank_transfer',
+      'cash',
+      'other'
+    ]
+  },
+
+  // Amount information (UGX)
+  amount: {
+    type: Number,
+    required: true,
+    min: 0
+  },
+  
+  currency: {
+    type: String,
+    required: true,
+    default: 'UGX'
+  },
+  
+  // Payment method details
+  paymentMethod: {
+    type: String,
+    required: true,
+    enum: ['mtn_momo', 'airtel_money', 'card', 'bank_transfer', 'cash', 'other']
+  },
+
+  paymentDetails: {
+    phoneNumber: {
+      type: String,
+      required: function() {
+        return ['mtn_momo', 'airtel_money'].includes(this.paymentMethod);
+      }
+    },
+    transactionId: String,
+    reference: String,
+    authorizationCode: String,
+    cardLast4: String,
+    bankAccount: String,
+    bankName: String,
+    receiptNumber: String
+  },
+
+  // Status tracking
   status: {
     type: String,
-    enum: ['pending', 'cleared', 'reconciled', 'void', 'disputed'],
+    required: true,
+    enum: ['pending', 'processing', 'completed', 'failed', 'refunded', 'cancelled'],
     default: 'pending'
   },
 
-  // Reconciliation
-  reconciliation: {
-    isReconciled: { type: Boolean, default: false },
-    reconciledAt: Date,
-    reconciledBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    statementDate: Date,
-    statementBalance: Number
+  // Timestamps
+  initiatedAt: {
+    type: Date,
+    required: true,
+    default: Date.now
   },
-
-  // Receipt & Attachments
-  attachments: [{
-    type: { type: String, enum: ['receipt', 'invoice', 'contract', 'other'] },
-    name: String,
-    url: String,
-    size: Number,
-    uploadedAt: { type: Date, default: Date.now }
-  }],
-
-  // Receipt Scanning (AI)
-  receiptData: {
-    isScanned: { type: Boolean, default: false },
-    scannedAt: Date,
-    merchantName: String,
-    merchantAddress: String,
-    receiptNumber: String,
-    taxAmount: Number,
-    totalAmount: Number,
-    items: [{
-      name: String,
-      quantity: Number,
-      price: Number,
-      total: Number
-    }],
-    ocrText: String,
-    confidence: Number
-  },
-
-  // Tax Information
-  tax: {
-    isTaxable: { type: Boolean, default: true },
-    taxRate: { type: Number, default: 0 },
-    taxAmount: { type: Number, default: 0 },
-    taxCode: String
-  },
-
-  // Tags & Projects
-  tags: [{
-    type: String,
-    trim: true
-  }],
   
-  project: {
+  completedAt: {
+    type: Date
+  },
+  
+  failedAt: {
+    type: Date
+  },
+  
+  refundedAt: {
+    type: Date
+  },
+
+  // Related entities
+  subscription: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Project'
-  },
-  
-  department: {
-    type: String,
-    trim: true
+    ref: 'Subscription'
   },
 
-  // Invoice Link
   invoice: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Invoice'
   },
 
-  // Recurring Transaction
-  recurring: {
-    isRecurring: { type: Boolean, default: false },
-    frequency: { type: String, enum: ['daily', 'weekly', 'monthly', 'quarterly', 'yearly'] },
-    nextDate: Date,
-    endDate: Date,
-    parentId: { type: mongoose.Schema.Types.ObjectId }
-  },
-
-  // AI Insights
-  aiInsights: {
-    anomalies: [{
-      type: String,
-      severity: { type: String, enum: ['low', 'medium', 'high'] },
-      description: String
-    }],
-    patterns: [{
-      type: String,
-      confidence: Number
-    }],
-    forecast: {
-      nextExpectedDate: Date,
-      nextExpectedAmount: Number,
-      probability: Number
-    }
-  },
-
-  // Relationships
-  company: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Company',
-    required: true
-  },
-  
-  createdBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+  // Description and metadata
+  description: {
+    type: String,
     required: true
   },
 
-  // Audit Trail
-  auditLog: [{
-    action: String,
-    performedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    performedAt: { type: Date, default: Date.now },
-    oldValues: mongoose.Schema.Types.Mixed,
-    newValues: mongoose.Schema.Types.Mixed
-  }],
-
-  createdAt: {
-    type: Date,
-    default: Date.now
+  metadata: {
+    // For subscription payments
+    plan: String,
+    billingCycle: String,
+    period: {
+      start: Date,
+      end: Date
+    },
+    
+    // For AI credit purchases
+    creditsPurchased: Number,
+    creditPrice: Number,
+    
+    // For transaction fees
+    originalAmount: Number,
+    feePercentage: Number,
+    feeAmount: Number,
+    
+    // For refunds
+    originalTransaction: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Transaction'
+    },
+    refundReason: String,
+    
+    // Webhook data
+    webhookData: mongoose.Schema.Types.Mixed,
+    
+    // Uganda-specific
+    paymentProvider: {
+      type: String,
+      enum: ['flutterwave', 'mtn_momo_direct', 'airtel_money_direct', 'stripe', 'manual'],
+      default: 'flutterwave'
+    },
+    
+    // Mobile money specific
+    momoTransactionId: String,
+    momoReference: String,
+    momoStatus: String,
+    
+    // Fraud detection
+    ipAddress: String,
+    userAgent: String,
+    riskScore: {
+      type: Number,
+      min: 0,
+      max: 100,
+      default: 0
+    },
+    
+    // Retry information
+    retryCount: {
+      type: Number,
+      default: 0
+    },
+    maxRetries: {
+      type: Number,
+      default: 3
+    },
+    nextRetryAt: Date
   },
-  updatedAt: {
-    type: Date,
-    default: Date.now
-  }
+
+  // Error information
+  error: {
+    code: String,
+    message: String,
+    details: mongoose.Schema.Types.Mixed,
+    providerResponse: mongoose.Schema.Types.Mixed
+  },
+
+  // Admin notes
+  adminNotes: String,
+  reviewed: {
+    type: Boolean,
+    default: false
+  },
+  reviewedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  reviewedAt: Date
 }, {
   timestamps: true
 });
 
 // Indexes
-transactionSchema.index({ company: 1, transactionDate: -1 });
-transactionSchema.index({ company: 1, type: 1 });
-transactionSchema.index({ company: 1, category: 1 });
-transactionSchema.index({ company: 1, status: 1 });
-transactionSchema.index({ transactionId: 1 });
-transactionSchema.index({ 'counterparty.name': 'text', description: 'text' });
+transactionSchema.index({ user: 1, createdAt: -1 });
+transactionSchema.index({ status: 1 });
+transactionSchema.index({ type: 1 });
+transactionSchema.index({ paymentMethod: 1 });
+transactionSchema.index({ 'paymentDetails.phoneNumber': 1 });
+transactionSchema.index({ 'paymentDetails.transactionId': 1 });
+transactionSchema.index({ 'paymentDetails.reference': 1 });
+transactionSchema.index({ initiatedAt: -1 });
+transactionSchema.index({ completedAt: -1 });
+transactionSchema.index({ subscription: 1 });
+transactionSchema.index({ 'metadata.riskScore': 1 });
 
-// Virtual: Is cleared
-transactionSchema.virtual('isCleared').get(function() {
-  return this.status === 'cleared' || this.status === 'reconciled';
+// Virtual fields
+transactionSchema.virtual('isCompleted').get(function() {
+  return this.status === 'completed';
 });
 
-// Virtual: Net amount (after tax)
-transactionSchema.virtual('netAmount').get(function() {
-  return this.amount.value - (this.tax?.taxAmount || 0);
+transactionSchema.virtual('isFailed').get(function() {
+  return this.status === 'failed';
 });
 
-// Method: Get converted amount
-transactionSchema.methods.getConvertedAmount = function(targetCurrency) {
-  if (this.amount.currency.code === targetCurrency) {
-    return this.amount.value;
-  }
-  if (this.exchangeRate && this.exchangeRate.targetCurrency === targetCurrency) {
-    return this.exchangeRate.convertedAmount;
+transactionSchema.virtual('isPending').get(function() {
+  return this.status === 'pending';
+});
+
+transactionSchema.virtual('processingTime').get(function() {
+  if (this.completedAt && this.initiatedAt) {
+    return this.completedAt - this.initiatedAt;
   }
   return null;
+});
+
+transactionSchema.virtual('canRetry').get(function() {
+  return this.isFailed && this.retryCount < this.maxRetries;
+});
+
+// Pre-save middleware
+transactionSchema.pre('save', function(next) {
+  // Set timestamps based on status
+  const now = new Date();
+  
+  if (this.isModified('status')) {
+    if (this.status === 'completed' && !this.completedAt) {
+      this.completedAt = now;
+    } else if (this.status === 'failed' && !this.failedAt) {
+      this.failedAt = now;
+    } else if (this.status === 'refunded' && !this.refundedAt) {
+      this.refundedAt = now;
+    }
+  }
+  
+  // Calculate next retry time for failed transactions
+  if (this.isFailed && this.canRetry && !this.nextRetryAt) {
+    const retryDelay = Math.pow(2, this.retryCount) * 60 * 1000; // Exponential backoff
+    this.nextRetryAt = new Date(Date.now() + retryDelay);
+  }
+  
+  next();
+});
+
+// Static methods
+transactionSchema.statics.findByUser = function(userId, options = {}) {
+  const query = { user: userId };
+  
+  if (options.type) {
+    query.type = options.type;
+  }
+  
+  if (options.status) {
+    query.status = options.status;
+  }
+  
+  if (options.dateFrom || options.dateTo) {
+    query.initiatedAt = {};
+    if (options.dateFrom) {
+      query.initiatedAt.$gte = options.dateFrom;
+    }
+    if (options.dateTo) {
+      query.initiatedAt.$lte = options.dateTo;
+    }
+  }
+  
+  return this.find(query)
+    .sort({ createdAt: -1 })
+    .limit(options.limit || 50);
 };
 
-// Method: Mark as reconciled
-transactionSchema.methods.markReconciled = async function(userId, statementDate, balance) {
-  this.status = 'reconciled';
-  this.reconciliation = {
-    isReconciled: true,
-    reconciledAt: new Date(),
-    reconciledBy: userId,
-    statementDate: statementDate,
-    statementBalance: balance
+transactionSchema.statics.findPending = function() {
+  return this.find({ status: 'pending' });
+};
+
+transactionSchema.statics.findFailed = function() {
+  return this.find({ status: 'failed' });
+};
+
+transactionSchema.statics.findRetryable = function() {
+  return this.find({
+    status: 'failed',
+    retryCount: { $lt: 3 },
+    nextRetryAt: { $lte: new Date() }
+  });
+};
+
+transactionSchema.statics.getRevenueStats = function(dateFrom, dateTo) {
+  const matchStage = {
+    status: 'completed',
+    initiatedAt: {}
   };
-  await this.save();
-};
-
-// Static: Get transaction summary by period
-transactionSchema.statics.getSummaryByPeriod = async function(companyId, startDate, endDate) {
+  
+  if (dateFrom) {
+    matchStage.initiatedAt.$gte = dateFrom;
+  }
+  if (dateTo) {
+    matchStage.initiatedAt.$lte = dateTo;
+  }
+  
   return this.aggregate([
-    {
-      $match: {
-        company: new mongoose.Types.ObjectId(companyId),
-        transactionDate: { $gte: startDate, $lte: endDate },
-        status: { $nin: ['void'] }
-      }
-    },
+    { $match: matchStage },
     {
       $group: {
-        _id: '$type',
-        total: { $sum: '$amount.value' },
-        count: { $sum: 1 }
+        _id: null,
+        totalRevenue: { $sum: '$amount' },
+        totalTransactions: { $sum: 1 },
+        averageTransactionValue: { $avg: '$amount' },
+        revenueByType: {
+          $push: {
+            type: '$type',
+            amount: '$amount'
+          }
+        },
+        revenueByMethod: {
+          $push: {
+            method: '$paymentMethod',
+            amount: '$amount'
+          }
+        }
       }
     }
   ]);
 };
 
-// Static: Get category breakdown
-transactionSchema.statics.getCategoryBreakdown = async function(companyId, type, startDate, endDate) {
+transactionSchema.statics.getUserSpending = function(userId, period = 'month') {
+  const now = new Date();
+  let dateFrom;
+  
+  switch (period) {
+    case 'day':
+      dateFrom = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      break;
+    case 'week':
+      dateFrom = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
+      break;
+    case 'month':
+      dateFrom = new Date(now.getFullYear(), now.getMonth(), 1);
+      break;
+    case 'year':
+      dateFrom = new Date(now.getFullYear(), 0, 1);
+      break;
+    default:
+      dateFrom = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+  }
+  
   return this.aggregate([
     {
       $match: {
-        company: new mongoose.Types.ObjectId(companyId),
-        type: type,
-        transactionDate: { $gte: startDate, $lte: endDate },
-        status: { $nin: ['void'] }
+        user: mongoose.Types.ObjectId(userId),
+        status: 'completed',
+        initiatedAt: { $gte: dateFrom }
       }
     },
     {
       $group: {
-        _id: '$category',
-        total: { $sum: '$amount.value' },
-        count: { $sum: 1 }
+        _id: null,
+        totalSpent: { $sum: '$amount' },
+        transactionCount: { $sum: 1 },
+        averageSpent: { $avg: '$amount' }
       }
-    },
-    { $sort: { total: -1 } }
+    }
   ]);
+};
+
+// Instance methods
+transactionSchema.methods.markCompleted = async function(completedAt = null) {
+  this.status = 'completed';
+  this.completedAt = completedAt || new Date();
+  return this.save();
+};
+
+transactionSchema.methods.markFailed = async function(error = null) {
+  this.status = 'failed';
+  this.failedAt = new Date();
+  this.retryCount += 1;
+  
+  if (error) {
+    this.error = {
+      code: error.code || 'UNKNOWN_ERROR',
+      message: error.message || 'Unknown error occurred',
+      details: error.details || {}
+    };
+  }
+  
+  return this.save();
+};
+
+transactionSchema.methods.retry = async function() {
+  if (!this.canRetry) {
+    throw new Error('Transaction cannot be retried');
+  }
+  
+  this.status = 'pending';
+  this.error = undefined;
+  return this.save();
+};
+
+transactionSchema.methods.refund = async function(reason = '') {
+  if (this.status !== 'completed') {
+    throw new Error('Only completed transactions can be refunded');
+  }
+  
+  this.status = 'refunded';
+  this.refundedAt = new Date();
+  this.metadata.refundReason = reason;
+  
+  return this.save();
+};
+
+transactionSchema.methods.calculateFee = function(feePercentage = 0, fixedFee = 0) {
+  const feeAmount = (this.amount * feePercentage) + fixedFee;
+  const netAmount = this.amount - feeAmount;
+  
+  return {
+    grossAmount: this.amount,
+    feePercentage,
+    fixedFee,
+    feeAmount,
+    netAmount
+  };
+};
+
+transactionSchema.methods.updateRiskScore = function(score) {
+  this.metadata.riskScore = Math.min(100, Math.max(0, score));
+  return this.save();
 };
 
 module.exports = mongoose.model('Transaction', transactionSchema);

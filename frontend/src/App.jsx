@@ -50,10 +50,10 @@ function App() {
               <Route path="billing" element={<Billing />} />
               
               {/* Admin Routes */}
-              <Route path="admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-              <Route path="admin/messaging" element={<AdminRoute><AdminMessagingPanel /></AdminRoute>} />
-              <Route path="admin/email-logs" element={<AdminRoute><EmailLogsDashboard /></AdminRoute>} />
-              <Route path="admin/templates" element={<AdminRoute><EmailTemplates /></AdminRoute>} />
+                <Route path="admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+                <Route path="admin/messaging" element={<AdminRoute><AdminMessagingPage /></AdminRoute>} />
+                <Route path="admin/email-logs" element={<AdminRoute><EmailLogsDashboard /></AdminRoute>} />
+                <Route path="admin/templates" element={<AdminRoute><EmailTemplates /></AdminRoute>} />
             </Route>
 
             {/* Catch all */}

@@ -50,7 +50,6 @@ import AdminBilling from './pages/AdminBilling';
 import AdminExchangeRates from './pages/AdminExchangeRates';
 import RecurringTransactions from './pages/RecurringTransactions';
 import EnhancedAIChatPage from './pages/EnhancedAIChatPage';
-import AdminMessagingPage from './pages/AdminMessagingPage';
 import AutonomousBookkeepingPage from './pages/AutonomousBookkeepingPage';
 import { InstallPrompt } from './components/pwa/InstallPrompt';
 
@@ -140,7 +139,6 @@ function AppInner() {
       {/* Admin */}
       <Route path="/admin"        element={<ProtectedRoute allowWithoutOrg><AdminDashboard /></ProtectedRoute>} />
       <Route path="/admin/users"  element={<ProtectedRoute allowWithoutOrg><AdminUserManagement /></ProtectedRoute>} />
-      <Route path="/admin/messaging" element={<ProtectedRoute allowWithoutOrg><AdminMessagingPage /></ProtectedRoute>} />
       <Route path="/admin/autonomous" element={<ProtectedRoute allowWithoutOrg><AutonomousBookkeepingPage /></ProtectedRoute>} />
       <Route path="/super-admin"  element={<ProtectedRoute allowWithoutOrg><SuperAdmin /></ProtectedRoute>} />
       <Route path="/dev-admin"    element={<ProtectedRoute allowWithoutOrg><DeveloperAdminDashboard /></ProtectedRoute>} />

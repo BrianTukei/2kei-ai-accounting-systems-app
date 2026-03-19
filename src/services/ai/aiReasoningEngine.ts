@@ -1,24 +1,26 @@
 // AI Reasoning Engine - The Brain of 2K AI Accounting Systems
 // Advanced AI SaaS Architecture for Intelligent Financial Management
 
+import type { AIContext as BaseAIContext } from './types';
+
 export interface AIRequest {
   message: string;
   userId: string;
-  context?: AIContext;
+  context?: ExtendedAIContext;
   memory?: AIMemory;
 }
 
-export interface AIContext {
-  businessName?: string;
-  monthlyRevenue?: number;
-  monthlyExpenses?: number;
-  currentBalance?: number;
-  recentTransactions?: any[];
-  unpaidInvoices?: any[];
-  activeClients?: any[];
-}
-
 export interface AIMemory {
+  id: string;
+  userId: string;
+  type: 'preference' | 'pattern' | 'insight' | 'action';
+  key: string;
+  value: any;
+  frequency: number;
+  lastUsed: Date;
+  createdAt: Date;
+  expiresAt?: Date;
+  
   previousChats?: Array<{
     role: string;
     content: string;
@@ -36,6 +38,16 @@ export interface AIMemory {
     profitMargin?: number;
     growthRate?: number;
   };
+}
+
+export interface ExtendedAIContext extends BaseAIContext {
+  businessName?: string;
+  monthlyRevenue?: number;
+  monthlyExpenses?: number;
+  currentBalance?: number;
+  recentTransactions?: any[];
+  unpaidInvoices?: any[];
+  activeClients?: any[];
 }
 
 export interface AIResponse {
@@ -67,56 +79,43 @@ export class AIReasoningEngine {
 
   async processRequest(request: AIRequest): Promise<AIResponse> {
     try {
-      // Step 1: Build enhanced context
-      const enhancedPrompt = this.buildEnhancedPrompt(request);
-      
-      // Step 2: Send to Llama 3 with reasoning capabilities
-      const reasoning = await this.callLlama3(enhancedPrompt);
-      
-      // Step 3: Parse response and extract actions
-      const response = this.parseAIResponse(reasoning);
-      
-      return response;
+      const prompt = this.buildPrompt(request);
+      const reasoning = await this.callLlama3(prompt);
+      return this.parseAIResponse(reasoning);
     } catch (error) {
-      console.error('AI Reasoning Engine error:', error);
-      throw new Error('AI processing failed');
+      console.error('AI processing failed:', error);
+      return {
+        reasoning: 'I apologize, but I encountered an error while processing your request. Please try again.',
+        insights: [],
+        recommendations: []
+      };
     }
   }
 
-  private buildEnhancedPrompt(request: AIRequest): string {
-    const { message, context, memory } = request;
+  private buildPrompt(request: AIRequest): string {
+    const contextStr = this.formatContext(request.context);
+    const memoryStr = this.formatMemory(request.memory);
+    
+    return `You are an advanced AI financial assistant for 2K AI Accounting Systems. You are helping with financial management and accounting tasks.
 
-    let prompt = `You are the advanced AI brain for 2K AI Accounting Systems, an intelligent financial management platform for African businesses.
+CONTEXT:
+${contextStr}
 
-Your capabilities include:
-- Financial analysis and insights
-- Automated bookkeeping
-- Receipt processing and categorization
-- Invoice and expense management
-- Business financial advice
-- Cash flow forecasting
-- Fraud detection
-- Profit optimization
-
-BUSINESS CONTEXT:
-${context ? this.formatContext(context) : 'No business context available'}
-
-MEMORY & HISTORY:
-${memory ? this.formatMemory(memory) : 'No memory available'}
+MEMORY:
+${memoryStr}
 
 USER REQUEST:
-${message}
+${request.message}
 
-Please analyze this request and provide:
-1. Reasoning about what the user wants
-2. Any actions that should be taken
-3. Financial insights based on context
-4. Recommendations for the business
-5. Follow-up questions if needed
+Please provide a detailed response with:
+1. Clear reasoning
+2. Actionable insights
+3. Specific recommendations
+4. Follow-up questions if needed
 
-Respond in this JSON format:
+Format your response as JSON:
 {
-  "reasoning": "Your analysis of the user request",
+  "reasoning": "detailed explanation",
   "action": {
     "type": "action_type",
     "parameters": {},
@@ -130,7 +129,7 @@ Respond in this JSON format:
     return prompt;
   }
 
-  private formatContext(context: AIContext): string {
+  private formatContext(context: ExtendedAIContext): string {
     if (!context) return '';
     
     return `
@@ -143,22 +142,13 @@ Unpaid Invoices: ${context.unpaidInvoices?.length || 0} invoices
 Active Clients: ${context.activeClients?.length || 0} clients`;
   }
 
-  private formatMemory(memory: AIMemory): string {
-    if (!memory) return '';
+  private formatMemory(memory?: AIMemory): string {
+    if (!memory) return 'No previous memory available.';
     
     return `
-Industry: ${memory.userPreferences?.industry || 'Not specified'}
-Business Size: ${memory.userPreferences?.businessSize || 'Not specified'}
-Currency: ${memory.userPreferences?.currency || 'USD'}
-Tax Region: ${memory.userPreferences?.taxRegion || 'Not specified'}
-
-Financial History:
-- Average Monthly Revenue: $${memory.financialHistory?.avgMonthlyRevenue || 0}
-- Average Monthly Expenses: $${memory.financialHistory?.avgMonthlyExpenses || 0}
-- Profit Margin: ${memory.financialHistory?.profitMargin || 0}%
-- Growth Rate: ${memory.financialHistory?.growthRate || 0}%
-
-Recent Chats: ${memory.previousChats?.length || 0} conversations`;
+Previous Chats: ${memory.previousChats?.length || 0} conversations
+User Preferences: ${JSON.stringify(memory.userPreferences || {})}
+Financial History: ${JSON.stringify(memory.financialHistory || {})}`;
   }
 
   private async callLlama3(prompt: string): Promise<string> {
@@ -263,11 +253,16 @@ Recent Chats: ${memory.previousChats?.length || 0} conversations`;
 
   // Advanced AI Capabilities
 
-  async analyzeFinancialHealth(context: AIContext): Promise<AIResponse> {
+  async analyzeFinancialHealth(context: ExtendedAIContext): Promise<AIResponse> {
     const request: AIRequest = {
       message: "Analyze the financial health of this business and provide actionable insights",
       userId: 'system',
-      context
+      context: {
+        ...context,
+        message: "Analyze financial health",
+        role: 'owner',
+        currentPage: '/dashboard'
+      }
     };
 
     return this.processRequest(request);
@@ -277,27 +272,42 @@ Recent Chats: ${memory.previousChats?.length || 0} conversations`;
     const request: AIRequest = {
       message: "Detect any unusual or suspicious transactions in this data",
       userId: 'system',
-      context: { recentTransactions: transactions }
+      context: { 
+        message: "Detect anomalies",
+        role: 'owner',
+        currentPage: '/dashboard',
+        recentTransactions: transactions 
+      }
     };
 
     return this.processRequest(request);
   }
 
-  async forecastCashflow(context: AIContext): Promise<AIResponse> {
+  async forecastCashflow(context: ExtendedAIContext): Promise<AIResponse> {
     const request: AIRequest = {
       message: "Forecast cash flow for the next 3 months based on current trends",
       userId: 'system',
-      context
+      context: {
+        ...context,
+        message: "Forecast cash flow",
+        role: 'owner',
+        currentPage: '/dashboard'
+      }
     };
 
     return this.processRequest(request);
   }
 
-  async optimizeExpenses(context: AIContext): Promise<AIResponse> {
+  async optimizeExpenses(context: ExtendedAIContext): Promise<AIResponse> {
     const request: AIRequest = {
       message: "Identify opportunities to reduce expenses without impacting business operations",
       userId: 'system',
-      context
+      context: {
+        ...context,
+        message: "Optimize expenses",
+        role: 'owner',
+        currentPage: '/dashboard'
+      }
     };
 
     return this.processRequest(request);
@@ -305,3 +315,4 @@ Recent Chats: ${memory.previousChats?.length || 0} conversations`;
 }
 
 export const aiReasoningEngine = new AIReasoningEngine();
+export default aiReasoningEngine;

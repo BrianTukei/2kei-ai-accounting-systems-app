@@ -1,5 +1,5 @@
 import React from 'react';
-import { AdminMessagingPanel } from '../components/admin/AdminMessagingPanel';
+import AdminMessagingPanel from '../components/AdminMessagingPanel';
 
 const AdminMessagingPage: React.FC = () => {
   return (

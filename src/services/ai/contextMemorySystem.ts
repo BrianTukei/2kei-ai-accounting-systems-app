@@ -1,348 +1,241 @@
 // Context + Memory System - Makes AI Very Smart
 // Advanced AI SaaS Memory Management for 2K AI Accounting Systems
 
-import { AIContext, AIMemory } from './aiReasoningEngine';
+import type { AIContext } from './types';
 
 export interface UserFinancialProfile {
   userId: string;
   businessName: string;
   industry: string;
   businessSize: string;
-  currency: string;
-  taxRegion: string;
-  establishedDate: string;
-}
-
-export interface FinancialMetrics {
-  userId: string;
   monthlyRevenue: number;
   monthlyExpenses: number;
-  currentBalance: number;
-  profitMargin: number;
-  growthRate: number;
-  lastUpdated: string;
+  preferredCategories: string[];
+  riskTolerance: 'low' | 'medium' | 'high';
 }
 
-export interface ConversationMemory {
+export interface ContextualMemory {
+  id: string;
   userId: string;
-  sessionId: string;
-  messages: Array<{
-    role: 'user' | 'assistant';
-    content: string;
-    timestamp: string;
-    intent?: string;
-    entities?: Record<string, any>;
-  }>;
-  summary?: string;
-  createdAt: string;
-  updatedAt: string;
+  type: 'preference' | 'pattern' | 'insight' | 'action';
+  key: string;
+  value: any;
+  frequency: number;
+  lastUsed: Date;
+  createdAt: Date;
+  expiresAt?: Date;
 }
 
-export class ContextMemorySystem {
-  private userProfiles: Map<string, UserFinancialProfile> = new Map();
-  private financialMetrics: Map<string, FinancialMetrics> = new Map();
-  private conversationHistory: Map<string, ConversationMemory[]> = new Map();
-  private businessInsights: Map<string, any[]> = new Map();
+export interface MemorySearchResult {
+  memories: ContextualMemory[];
+  confidence: number;
+  matchedTerms: string[];
+}
 
-  constructor() {
-    this.initializeMemory();
+class ContextMemorySystem {
+  private memoryStore = new Map<string, ContextualMemory[]>();
+  private userProfiles = new Map<string, UserFinancialProfile>();
+
+  /**
+   * Store contextual memory
+   */
+  async storeMemory(userId: string, type: ContextualMemory['type'], key: string, value: any): Promise<void> {
+    const memory: ContextualMemory = {
+      id: `mem_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      userId,
+      type,
+      key,
+      value,
+      frequency: 1,
+      lastUsed: new Date(),
+      createdAt: new Date(),
+      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
+    };
+
+    if (!this.memoryStore.has(userId)) {
+      this.memoryStore.set(userId, []);
+    }
+
+    const userMemories = this.memoryStore.get(userId)!;
+    
+    // Check if memory already exists
+    const existingIndex = userMemories.findIndex(m => m.key === key && m.type === type);
+    if (existingIndex >= 0) {
+      userMemories[existingIndex].frequency++;
+      userMemories[existingIndex].lastUsed = new Date();
+      userMemories[existingIndex].value = value;
+    } else {
+      userMemories.push(memory);
+    }
+
+    // Keep only last 100 memories per user
+    if (userMemories.length > 100) {
+      userMemories.sort((a, b) => b.lastUsed.getTime() - a.lastUsed.getTime());
+      userMemories.splice(100);
+    }
   }
 
-  private async initializeMemory() {
-    console.log('🧠 Context + Memory System initialized');
-    // Load existing data from database in production
+  /**
+   * Get contextual memory for user
+   */
+  async getContextualMemory(context: AIContext): Promise<ContextualMemory[]> {
+    const userId = context.organizationId || 'default';
+    const userMemories = this.memoryStore.get(userId) || [];
+    
+    // Filter by relevance to current context
+    const relevantMemories = userMemories.filter(memory => {
+      // Check if memory is still valid
+      if (memory.expiresAt && memory.expiresAt < new Date()) {
+        return false;
+      }
+
+      // Check relevance based on type and context
+      switch (memory.type) {
+        case 'preference':
+          return this.isPreferenceRelevant(memory, context);
+        case 'pattern':
+          return this.isPatternRelevant(memory, context);
+        case 'insight':
+          return this.isInsightRelevant(memory, context);
+        case 'action':
+          return this.isActionRelevant(memory, context);
+        default:
+          return false;
+      }
+    });
+
+    return relevantMemories.sort((a, b) => b.frequency - a.frequency);
   }
 
-  // User Profile Management
+  /**
+   * Search memories by query
+   */
+  async searchMemories(userId: string, query: string): Promise<MemorySearchResult> {
+    const userMemories = this.memoryStore.get(userId) || [];
+    const queryTerms = query.toLowerCase().split(' ');
+    
+    const matchedMemories = userMemories.filter(memory => {
+      const memoryText = `${memory.key} ${JSON.stringify(memory.value)}`.toLowerCase();
+      return queryTerms.some(term => memoryText.includes(term));
+    });
+
+    const confidence = matchedMemories.length > 0 ? 
+      matchedMemories.length / userMemories.length : 0;
+
+    return {
+      memories: matchedMemories,
+      confidence,
+      matchedTerms: queryTerms
+    };
+  }
+
+  /**
+   * Update user profile
+   */
   async updateUserProfile(userId: string, profile: Partial<UserFinancialProfile>): Promise<void> {
     const existing = this.userProfiles.get(userId) || {
       userId,
       businessName: '',
       industry: '',
       businessSize: '',
-      currency: 'USD',
-      taxRegion: '',
-      establishedDate: ''
+      monthlyRevenue: 0,
+      monthlyExpenses: 0,
+      preferredCategories: [],
+      riskTolerance: 'medium'
     };
 
-    const updated = { ...existing, ...profile };
-    this.userProfiles.set(userId, updated);
-    console.log(`📝 Updated profile for user: ${userId}`);
+    this.userProfiles.set(userId, { ...existing, ...profile });
   }
 
+  /**
+   * Get user profile
+   */
   async getUserProfile(userId: string): Promise<UserFinancialProfile | null> {
     return this.userProfiles.get(userId) || null;
   }
 
-  // Financial Metrics Management
-  async updateFinancialMetrics(userId: string, metrics: Partial<FinancialMetrics>): Promise<void> {
-    const existing = this.financialMetrics.get(userId) || {
-      userId,
-      monthlyRevenue: 0,
-      monthlyExpenses: 0,
-      currentBalance: 0,
-      profitMargin: 0,
-      growthRate: 0,
-      lastUpdated: new Date().toISOString()
-    };
-
-    const updated = { 
-      ...existing, 
-      ...metrics,
-      lastUpdated: new Date().toISOString()
-    };
-    this.financialMetrics.set(userId, updated);
-    console.log(`📊 Updated financial metrics for user: ${userId}`);
-  }
-
-  async getFinancialMetrics(userId: string): Promise<FinancialMetrics | null> {
-    return this.financialMetrics.get(userId) || null;
-  }
-
-  // Conversation Memory Management
-  async addConversationMessage(
-    userId: string, 
-    sessionId: string, 
-    role: 'user' | 'assistant', 
-    content: string,
-    intent?: string,
-    entities?: Record<string, any>
-  ): Promise<void> {
-    const userConversations = this.conversationHistory.get(userId) || [];
+  /**
+   * Clean up expired memories
+   */
+  async cleanupExpiredMemories(): Promise<void> {
+    const now = new Date();
     
-    let conversation = userConversations.find(c => c.sessionId === sessionId);
-    
-    if (!conversation) {
-      conversation = {
-        userId,
-        sessionId,
-        messages: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      userConversations.push(conversation);
-      this.conversationHistory.set(userId, userConversations);
+    for (const [userId, memories] of this.memoryStore.entries()) {
+      const validMemories = memories.filter(memory => 
+        !memory.expiresAt || memory.expiresAt > now
+      );
+      this.memoryStore.set(userId, validMemories);
     }
-
-    conversation.messages.push({
-      role,
-      content,
-      timestamp: new Date().toISOString(),
-      intent,
-      entities
-    });
-
-    conversation.updatedAt = new Date().toISOString();
-
-    // Keep only last 50 messages per conversation
-    if (conversation.messages.length > 50) {
-      conversation.messages = conversation.messages.slice(-50);
-    }
-
-    console.log(`💬 Added message to conversation ${sessionId} for user: ${userId}`);
   }
 
-  async getConversationHistory(userId: string, limit: number = 10): Promise<ConversationMemory[]> {
-    const conversations = this.conversationHistory.get(userId) || [];
-    return conversations
-      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-      .slice(0, limit);
-  }
-
-  async getRecentMessages(userId: string, limit: number = 5): Promise<any[]> {
-    const conversations = await this.getConversationHistory(userId, 5);
-    const allMessages: any[] = [];
+  /**
+   * Get memory statistics
+   */
+  async getMemoryStats(userId: string): Promise<{
+    totalMemories: number;
+    memoriesByType: Record<string, number>;
+    averageFrequency: number;
+  }> {
+    const userMemories = this.memoryStore.get(userId) || [];
     
-    conversations.forEach(conv => {
-      allMessages.push(...conv.messages);
-    });
+    const memoriesByType = userMemories.reduce((acc, memory) => {
+      acc[memory.type] = (acc[memory.type] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
 
-    return allMessages
-      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-      .slice(0, limit);
-  }
-
-  // Business Insights Management
-  async addBusinessInsight(userId: string, insight: any): Promise<void> {
-    const insights = this.businessInsights.get(userId) || [];
-    insights.push({
-      ...insight,
-      timestamp: new Date().toISOString()
-    });
-    
-    // Keep only last 100 insights
-    if (insights.length > 100) {
-      insights.splice(0, insights.length - 100);
-    }
-    
-    this.businessInsights.set(userId, insights);
-    console.log(`💡 Added business insight for user: ${userId}`);
-  }
-
-  async getBusinessInsights(userId: string): Promise<any[]> {
-    return this.businessInsights.get(userId) || [];
-  }
-
-  // Context Building
-  async buildAIContext(userId: string): Promise<AIContext> {
-    const profile = await this.getUserProfile(userId);
-    const metrics = await this.getFinancialMetrics(userId);
-    const insights = await this.getBusinessInsights(userId);
-
-    // In production, fetch real data from database
-    const recentTransactions = await this.getRecentTransactions(userId);
-    const unpaidInvoices = await this.getUnpaidInvoices(userId);
-    const activeClients = await this.getActiveClients(userId);
+    const averageFrequency = userMemories.length > 0 
+      ? userMemories.reduce((sum, m) => sum + m.frequency, 0) / userMemories.length
+      : 0;
 
     return {
-      businessName: profile?.businessName || '',
-      monthlyRevenue: metrics?.monthlyRevenue || 0,
-      monthlyExpenses: metrics?.monthlyExpenses || 0,
-      currentBalance: metrics?.currentBalance || 0,
-      recentTransactions,
-      unpaidInvoices,
-      activeClients
+      totalMemories: userMemories.length,
+      memoriesByType,
+      averageFrequency
     };
   }
 
-  async buildAIMemory(userId: string): Promise<AIMemory> {
-    const profile = await this.getUserProfile(userId);
-    const metrics = await this.getFinancialMetrics(userId);
-    const recentMessages = await this.getRecentMessages(userId, 10);
-
-    return {
-      previousChats: recentMessages,
-      userPreferences: {
-        industry: profile?.industry || '',
-        businessSize: profile?.businessSize || '',
-        currency: profile?.currency || 'USD',
-        taxRegion: profile?.taxRegion || ''
-      },
-      financialHistory: {
-        avgMonthlyRevenue: metrics?.monthlyRevenue || 0,
-        avgMonthlyExpenses: metrics?.monthlyExpenses || 0,
-        profitMargin: metrics?.profitMargin || 0,
-        growthRate: metrics?.growthRate || 0
-      }
-    };
-  }
-
-  // Advanced Memory Features
-
-  async extractIntent(message: string): Promise<string> {
-    // Simple intent extraction - can be enhanced with AI
-    const intents = {
-      'create_invoice': ['create invoice', 'new invoice', 'bill', 'charge'],
-      'create_expense': ['add expense', 'new expense', 'spent', 'paid'],
-      'scan_receipt': ['scan receipt', 'upload receipt', 'receipt'],
-      'generate_report': ['report', 'summary', 'analytics', 'insights'],
-      'financial_analysis': ['analyze', 'profit', 'loss', 'performance'],
-      'cash_flow': ['cash flow', 'forecast', 'prediction'],
-      'tax': ['tax', 'vat', 'deduction'],
-      'client': ['client', 'customer', 'invoice']
-    };
-
-    for (const [intent, keywords] of Object.entries(intents)) {
-      if (keywords.some(keyword => message.toLowerCase().includes(keyword))) {
-        return intent;
-      }
-    }
-
-    return 'general';
-  }
-
-  async extractEntities(message: string): Promise<Record<string, any>> {
-    const entities: Record<string, any> = {};
-
-    // Extract amounts
-    const amountMatch = message.match(/\$?(\d+(?:,\d+)*(?:\.\d+)?)/g);
-    if (amountMatch) {
-      entities.amounts = amountMatch.map(a => parseFloat(a.replace(/[$,]/g, '')));
-    }
-
-    // Extract dates
-    const dateMatch = message.match(/\b(\d{1,2}\/\d{1,2}\/\d{4}|\d{4}-\d{2}-\d{2})\b/g);
-    if (dateMatch) {
-      entities.dates = dateMatch;
-    }
-
-    // Extract client names (simple pattern)
-    const clientMatch = message.match(/\b([A-Z][a-z]+(?:\s[A-Z][a-z]+)*)\b/g);
-    if (clientMatch && clientMatch.length > 0) {
-      entities.clients = clientMatch.slice(0, 3); // Limit to 3 potential clients
-    }
-
-    return entities;
-  }
-
-  async rememberInteraction(userId: string, sessionId: string, userMessage: string, aiResponse: string): Promise<void> {
-    const intent = await this.extractIntent(userMessage);
-    const entities = await this.extractEntities(userMessage);
-
-    await this.addConversationMessage(userId, sessionId, 'user', userMessage, intent, entities);
-    await this.addConversationMessage(userId, sessionId, 'assistant', aiResponse);
-  }
-
-  // Data fetching methods (mock for now, connect to real database)
-  private async getRecentTransactions(userId: string): Promise<any[]> {
-    // Mock data - replace with real database query
-    return [
-      { id: 1, description: 'Office Supplies', amount: 150, date: '2024-03-15', category: 'Office' },
-      { id: 2, description: 'Client Payment', amount: 2000, date: '2024-03-14', category: 'Income' }
-    ];
-  }
-
-  private async getUnpaidInvoices(userId: string): Promise<any[]> {
-    // Mock data - replace with real database query
-    return [
-      { id: 1, client: 'John Doe', amount: 500, dueDate: '2024-03-20', daysOverdue: 0 },
-      { id: 2, client: 'Jane Smith', amount: 750, dueDate: '2024-03-10', daysOverdue: 5 }
-    ];
-  }
-
-  private async getActiveClients(userId: string): Promise<any[]> {
-    // Mock data - replace with real database query
-    return [
-      { id: 1, name: 'John Doe', totalInvoiced: 5000, paid: 4500 },
-      { id: 2, name: 'Jane Smith', totalInvoiced: 3000, paid: 3000 }
-    ];
-  }
-
-  // Memory Analytics
-  async getMemoryAnalytics(userId: string): Promise<any> {
-    const conversations = await this.getConversationHistory(userId);
-    const insights = await this.getBusinessInsights(userId);
-    const metrics = await this.getFinancialMetrics(userId);
-
-    return {
-      totalConversations: conversations.length,
-      totalMessages: conversations.reduce((sum, conv) => sum + conv.messages.length, 0),
-      totalInsights: insights.length,
-      financialHealth: {
-        revenue: metrics?.monthlyRevenue || 0,
-        expenses: metrics?.monthlyExpenses || 0,
-        profitMargin: metrics?.profitMargin || 0
-      },
-      mostCommonIntents: this.getMostCommonIntents(conversations)
-    };
-  }
-
-  private getMostCommonIntents(conversations: ConversationMemory[]): string[] {
-    const intentCounts: Record<string, number> = {};
+  private isPreferenceRelevant(memory: ContextualMemory, context: AIContext): boolean {
+    // Check if preference relates to current page or role
+    const preferenceKey = memory.key.toLowerCase();
+    const currentPage = context.currentPage.toLowerCase();
+    const userRole = context.role.toLowerCase();
     
-    conversations.forEach(conv => {
-      conv.messages.forEach(msg => {
-        if (msg.intent) {
-          intentCounts[msg.intent] = (intentCounts[msg.intent] || 0) + 1;
-        }
-      });
-    });
+    return preferenceKey.includes(currentPage) || 
+           preferenceKey.includes(userRole) ||
+           preferenceKey.includes('general');
+  }
 
-    return Object.entries(intentCounts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(([intent]) => intent);
+  private isPatternRelevant(memory: ContextualMemory, context: AIContext): boolean {
+    // Check if pattern matches current query context
+    const pattern = memory.key.toLowerCase();
+    const message = context.message.toLowerCase();
+    
+    return message.includes(pattern) || pattern.includes('general');
+  }
+
+  private isInsightRelevant(memory: ContextualMemory, context: AIContext): boolean {
+    // Check if insight is relevant to current financial context
+    if (!context.financialSnapshot) return false;
+    
+    const insightKey = memory.key.toLowerCase();
+    return insightKey.includes('revenue') || 
+           insightKey.includes('expense') ||
+           insightKey.includes('profit') ||
+           insightKey.includes('cash');
+  }
+
+  private isActionRelevant(memory: ContextualMemory, context: AIContext): boolean {
+    // Check if action relates to current intent
+    const actionKey = memory.key.toLowerCase();
+    const message = context.message.toLowerCase();
+    
+    return message.includes('create') || 
+           message.includes('add') ||
+           message.includes('send') ||
+           actionKey.includes('recent');
   }
 }
 
+// Export singleton instance
 export const contextMemorySystem = new ContextMemorySystem();
+export default contextMemorySystem;

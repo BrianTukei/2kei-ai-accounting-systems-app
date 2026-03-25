@@ -1,6 +1,6 @@
 import express from 'express';
 import { body, param, query } from 'express-validator';
-import billingController from '../controllers/billingController';
+import billingController from '../controllers/billingController.js';
 import authMiddleware from '../middleware/authMiddleware';
 import rateLimiter from '../middleware/rateLimiter';
 

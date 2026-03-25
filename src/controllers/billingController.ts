@@ -4,8 +4,8 @@ import Subscription from '../models/Subscription';
 import Transaction from '../models/Transaction';
 import AIUsage from '../models/AIUsage';
 import User from '../models/User';
-import subscriptionService from '../services/subscriptionService';
-import mobileMoneyService from '../services/mobileMoneyService';
+import subscriptionService from '../services/subscriptionService.js';
+import mobileMoneyService from '../services/mobileMoneyService.js';
 import logger from '../utils/logger';
 
 class BillingController {

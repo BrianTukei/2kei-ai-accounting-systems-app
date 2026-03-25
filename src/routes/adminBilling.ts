@@ -1,6 +1,6 @@
 import express from 'express';
 import { body, param, query } from 'express-validator';
-import adminBillingController from '../controllers/adminBillingController';
+import adminBillingController from '../controllers/adminBillingController.js';
 import authMiddleware from '../middleware/authMiddleware';
 import isAdmin from '../middleware/isAdmin';
 

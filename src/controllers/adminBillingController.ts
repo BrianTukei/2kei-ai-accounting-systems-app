@@ -4,7 +4,7 @@ import Transaction from '../models/Transaction';
 import AIUsage from '../models/AIUsage';
 import User from '../models/User';
 import PricingPlan from '../models/PricingPlan';
-import subscriptionService from '../services/subscriptionService';
+import subscriptionService from '../services/subscriptionService.js';
 import logger from '../utils/logger';
 
 class AdminBillingController {

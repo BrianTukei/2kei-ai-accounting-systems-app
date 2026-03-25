@@ -41,20 +41,20 @@ export default function Billing() {
       setLoading(true);
       
       // Fetch current subscription
-      const subResponse = await api.get('/subscription');
+      const subResponse = await api.get('/billing/subscription/status');
       
       // Fetch available plans
-      const plansResponse = await api.get('/subscription/plans');
+      const plansResponse = await api.get('/billing/plans');
       
       // Fetch usage
-      const usageResponse = await api.get('/subscription/usage');
+      const usageResponse = await api.get('/billing/usage/check/transactions');
       
       if (subResponse.data.success) {
-        setCurrentPlan(subResponse.data.data.subscription);
+        setCurrentPlan(subResponse.data.data);
       }
       
       if (plansResponse.data.success) {
-        setAvailablePlans(plansResponse.data.data.plans);
+        setAvailablePlans(plansResponse.data.data);
       }
       
       if (usageResponse.data.success) {

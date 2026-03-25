@@ -13,7 +13,7 @@ import companyRoutes from './routes/company';
 import subscriptionRoutes from './routes/subscription';
 import forexRoutes from './routes/forex';
 import countryRoutes from './routes/countries';
-import billingRoutes from './routes/billing';
+import billingRoutes from './routes/billing-working';
 import adminBillingRoutes from './routes/adminBilling';
 
 const __filename = fileURLToPath(import.meta.url);

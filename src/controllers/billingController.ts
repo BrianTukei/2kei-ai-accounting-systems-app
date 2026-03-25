@@ -6,7 +6,7 @@ import AIUsage from '../models/AIUsage';
 import User from '../models/User';
 import subscriptionService from '../services/subscriptionService.js';
 import mobileMoneyService from '../services/mobileMoneyService.js';
-import logger from '../utils/logger';
+import logger from '../utils/logger.js';
 
 class BillingController {
   /**

@@ -1,8 +1,10 @@
 import express from 'express';
 import { body, param, query } from 'express-validator';
-import billingController from '../controllers/billingController.js';
-import authMiddleware from '../middleware/authMiddleware.js';
-import rateLimiter from '../middleware/rateLimiter.js';
+
+// Import JavaScript controllers directly
+const billingController = require('../controllers/billingController');
+const authMiddleware = require('../middleware/authMiddleware');
+const rateLimiter = require('../middleware/rateLimiter');
 
 const router = express.Router();
 

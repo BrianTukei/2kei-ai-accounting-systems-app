@@ -1,8 +1,8 @@
 import express from 'express';
 import { body, param, query } from 'express-validator';
 import adminBillingController from '../controllers/adminBillingController.js';
-import authMiddleware from '../middleware/authMiddleware';
-import isAdmin from '../middleware/isAdmin';
+import authMiddleware from '../middleware/authMiddleware.js';
+import isAdmin from '../middleware/isAdmin.js';
 
 const router = express.Router();
 

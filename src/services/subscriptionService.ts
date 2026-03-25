@@ -1,4 +1,5 @@
 import { supabase } from './supabaseBackend';
+import logger from '../utils/logger.js';
 
 export interface Subscription {
   id: string;

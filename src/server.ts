@@ -14,7 +14,7 @@ import subscriptionRoutes from './routes/subscription';
 import forexRoutes from './routes/forex';
 import countryRoutes from './routes/countries';
 import billingRoutes from './routes/billing-working';
-import adminBillingRoutes from './routes/adminBilling';
+import adminBillingRoutes from './routes/adminBilling-working';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

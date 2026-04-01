@@ -14,10 +14,9 @@ const TIMEZONES = [
   { value: 'AEST', label: 'AEST (Australian Eastern Standard Time)' }
 ];
 
-export default function DemoBookingForm({ data, availableSlots, loading, onChange, onSubmit, onDateChange }) {
+export default function DemoBookingForm({ data, availableSlots, loadingSlots, submitting, onChange, onSubmit, onDateChange }) {
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
-  const [submitting, setSubmitting] = useState(false);
 
   // Validate form
   const validateForm = () => {
@@ -88,19 +87,17 @@ export default function DemoBookingForm({ data, availableSlots, loading, onChang
     setTouched(prev => ({ ...prev, [field]: true }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
+    
+    // Prevent double submission
+    if (submitting) return;
     
     const newErrors = validateForm();
     setErrors(newErrors);
     
     if (Object.keys(newErrors).length === 0) {
-      setSubmitting(true);
-      try {
-        await onSubmit(data);
-      } finally {
-        setSubmitting(false);
-      }
+      onSubmit(data);
     }
   };
 
@@ -146,7 +143,7 @@ export default function DemoBookingForm({ data, availableSlots, loading, onChang
                   errors.name && touched.name ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="John Doe"
-                disabled={loading || submitting}
+                disabled={loadingSlots || submitting}
               />
             </div>
             {errors.name && touched.name && (
@@ -172,7 +169,7 @@ export default function DemoBookingForm({ data, availableSlots, loading, onChang
                   errors.email && touched.email ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="john@example.com"
-                disabled={loading || submitting}
+                disabled={loadingSlots || submitting}
               />
             </div>
             {errors.email && touched.email && (
@@ -198,7 +195,7 @@ export default function DemoBookingForm({ data, availableSlots, loading, onChang
                   errors.company && touched.company ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="Acme Corporation"
-                disabled={loading || submitting}
+                disabled={loadingSlots || submitting}
               />
             </div>
             {errors.company && touched.company && (
@@ -225,7 +222,7 @@ export default function DemoBookingForm({ data, availableSlots, loading, onChang
                     errors.phone && touched.phone ? 'border-red-500' : 'border-gray-300'
                   }`}
                   placeholder="+1 (555) 123-4567"
-                  disabled={loading || submitting}
+                  disabled={loadingSlots || submitting}
                 />
               </div>
               {errors.phone && touched.phone && (
@@ -251,7 +248,7 @@ export default function DemoBookingForm({ data, availableSlots, loading, onChang
                     errors.website && touched.website ? 'border-red-500' : 'border-gray-300'
                   }`}
                   placeholder="https://example.com"
-                  disabled={loading || submitting}
+                  disabled={loadingSlots || submitting}
                 />
               </div>
               {errors.website && touched.website && (
@@ -291,7 +288,7 @@ export default function DemoBookingForm({ data, availableSlots, loading, onChang
                 className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                   errors.preferredDate && touched.preferredDate ? 'border-red-500' : 'border-gray-300'
                 }`}
-                disabled={loading || submitting}
+                disabled={loadingSlots || submitting}
               />
             </div>
             {errors.preferredDate && touched.preferredDate && (
@@ -315,7 +312,7 @@ export default function DemoBookingForm({ data, availableSlots, loading, onChang
                 className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                   errors.preferredTime && touched.preferredTime ? 'border-red-500' : 'border-gray-300'
                 }`}
-                disabled={loading || submitting}
+                disabled={loadingSlots || submitting}
               >
                 <option value="">Select a time</option>
                 {availableTimeSlots.map((slot) => (
@@ -346,7 +343,7 @@ export default function DemoBookingForm({ data, availableSlots, loading, onChang
               value={data.timezone}
               onChange={(e) => handleInputChange('timezone', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              disabled={loading || submitting}
+              disabled={loadingSlots || submitting}
             >
               {TIMEZONES.map((tz) => (
                 <option key={tz.value} value={tz.value}>
@@ -380,7 +377,7 @@ export default function DemoBookingForm({ data, availableSlots, loading, onChang
                 errors.message && touched.message ? 'border-red-500' : 'border-gray-300'
               }`}
               placeholder="Tell us about your accounting challenges and what you'd like to see in the demo..."
-              disabled={loading || submitting}
+              disabled={loadingSlots || submitting}
             />
           </div>
           <div className="mt-1 text-right">
@@ -403,7 +400,7 @@ export default function DemoBookingForm({ data, availableSlots, loading, onChang
       <div className="pt-6">
         <button
           type="submit"
-          disabled={loading || submitting || availableTimeSlots.length === 0}
+          disabled={loadingSlots || submitting || availableTimeSlots.length === 0}
           className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-700 focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
         >
           {submitting ? (

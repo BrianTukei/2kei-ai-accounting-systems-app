@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Calendar, Clock, User, Building, Mail, Phone, MessageSquare, CheckCircle, AlertCircle } from 'lucide-react';
 import DemoBookingForm from '../components/demo/DemoBookingForm';
 import BookingSuccess from '../components/demo/BookingSuccess';
@@ -19,13 +19,14 @@ export default function BookDemo() {
     source: 'website'
   });
   const [availableSlots, setAvailableSlots] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [submittingForm, setSubmittingForm] = useState(false);
   const [error, setError] = useState('');
   const [bookingComplete, setBookingComplete] = useState(false);
   const [bookingResult, setBookingResult] = useState(null);
 
+  // Initialize with tomorrow's date
   useEffect(() => {
-    // Set default date to tomorrow
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     setBookingData(prev => ({
@@ -34,11 +35,34 @@ export default function BookDemo() {
     }));
   }, []);
 
+  // Fetch slots when date changes (with proper memoization)
+  const fetchAvailableSlots = useCallback(async (date) => {
+    if (!date) return;
+
+    try {
+      setLoadingSlots(true);
+      setError('');
+      
+      const response = await getAvailableSlots(date);
+      
+      if (response.success) {
+        setAvailableSlots(response.data.availableSlots);
+      } else {
+        setError('Failed to fetch available time slots');
+      }
+    } catch (err) {
+      setError('Failed to fetch available time slots');
+      console.error('Error fetching slots:', err);
+    } finally {
+      setLoadingSlots(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (bookingData.preferredDate) {
-      fetchAvailableSlots();
+      fetchAvailableSlots(bookingData.preferredDate);
     }
-  }, [bookingData.preferredDate]);
+  }, [bookingData.preferredDate, fetchAvailableSlots]);
 
   const fetchAvailableSlots = async () => {
     if (!bookingData.preferredDate) return;
@@ -75,8 +99,11 @@ export default function BookDemo() {
   };
 
   const handleSubmit = async (formData) => {
+    // Prevent double submission
+    if (submittingForm) return;
+    
     try {
-      setLoading(true);
+      setSubmittingForm(true);
       setError('');
 
       const response = await fetch('/api/demo/book', {
@@ -100,7 +127,7 @@ export default function BookDemo() {
       setError('Failed to book demo. Please try again.');
       console.error('Booking error:', err);
     } finally {
-      setLoading(false);
+      setSubmittingForm(false);
     }
   };
 
@@ -283,7 +310,8 @@ export default function BookDemo() {
               <DemoBookingForm
                 data={bookingData}
                 availableSlots={availableSlots}
-                loading={loading}
+                loadingSlots={loadingSlots}
+                submitting={submittingForm}
                 onChange={handleInputChange}
                 onSubmit={handleSubmit}
                 onDateChange={(date) => handleInputChange('preferredDate', date)}

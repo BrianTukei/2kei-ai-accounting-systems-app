@@ -33,14 +33,27 @@ class DemoController {
         source
       } = req.body;
 
-      // Check if time slot is available
-      const existingBooking = await DemoBooking.findOne({
+      // 🔴 Check 1: Prevent duplicate bookings for same email (duplicate user protection)
+      const existingUserBooking = await DemoBooking.findOne({
+        email: email.toLowerCase(),
+        status: { $in: ['pending', 'confirmed'] }
+      });
+
+      if (existingUserBooking) {
+        return res.status(409).json({
+          success: false,
+          error: `You already have a demo scheduled for ${new Date(existingUserBooking.preferredDate).toLocaleDateString()} at ${existingUserBooking.preferredTime}. Please contact us if you need to reschedule.`
+        });
+      }
+
+      // 🔴 Check 2: Prevent booking same time slot twice (slot collision)
+      const existingSlotBooking = await DemoBooking.findOne({
         preferredDate: new Date(preferredDate),
         preferredTime,
         status: { $in: ['pending', 'confirmed'] }
       });
 
-      if (existingBooking) {
+      if (existingSlotBooking) {
         return res.status(409).json({
           success: false,
           error: 'This time slot is already booked. Please select a different time.'

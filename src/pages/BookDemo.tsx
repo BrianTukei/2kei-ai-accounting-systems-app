@@ -142,17 +142,23 @@ export default function BookDemo() {
 
   if (bookingComplete) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4 py-12">
-        <div className="absolute top-6 left-6">
-          <button
-            onClick={() => navigate(-1)}
-            className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-gray-900 hover:bg-white/80 rounded-lg transition"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            Back
-          </button>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+        {/* Header with Back Button - Always Visible */}
+        <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm">
+          <div className="max-w-4xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
+            <button
+              onClick={() => navigate(-1)}
+              className="inline-flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all font-medium text-sm"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              Back to Previous Page
+            </button>
+          </div>
         </div>
-        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
+
+        {/* Success Content */}
+        <div className="flex items-center justify-center min-h-[calc(100vh-80px)] px-4 py-12">
+          <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
           <div className="flex justify-center mb-4">
             <div className="p-3 bg-green-100 rounded-full">
               <CheckCircle className="w-12 h-12 text-green-600" />
@@ -189,6 +195,7 @@ export default function BookDemo() {
             Book Another Demo
           </button>
         </div>
+        </div>
       </div>
     );
   }
@@ -200,10 +207,10 @@ export default function BookDemo() {
         <div className="mb-8">
           <button
             onClick={() => navigate(-1)}
-            className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-gray-900 hover:bg-white/60 rounded-lg transition"
+            className="inline-flex items-center gap-2 px-5 py-2.5 text-gray-700 hover:text-gray-900 bg-white/80 hover:bg-white rounded-lg transition-all font-medium border border-gray-200 hover:border-gray-300 shadow-sm hover:shadow-md"
           >
             <ArrowLeft className="w-5 h-5" />
-            Back
+            Back to Previous Page
           </button>
         </div>
 

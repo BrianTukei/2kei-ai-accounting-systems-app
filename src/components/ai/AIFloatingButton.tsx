@@ -44,7 +44,7 @@ export const AIFloatingButton: React.FC<AIFloatingButtonProps> = ({
     <>
       {/* Floating Button */}
       {(!isChatOpen || isMinimized) && (
-        <div className="fixed bottom-6 sm:bottom-8 right-6 sm:right-8 z-40 group pointer-events-auto">
+        <div className="fixed bottom-6 sm:bottom-8 left-6 sm:left-8 z-40 group pointer-events-auto">
           <Button
             onClick={(e) => {
               e.preventDefault();
@@ -63,9 +63,9 @@ export const AIFloatingButton: React.FC<AIFloatingButtonProps> = ({
           
           {/* Tooltip */}
           {!isMinimized && (
-            <div className="absolute bottom-[calc(100%+8px)] right-0 bg-card text-foreground text-xs font-medium px-3 py-1.5 rounded-lg shadow-card border border-border/50 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+            <div className="absolute bottom-[calc(100%+8px)] left-0 bg-card text-foreground text-xs font-medium px-3 py-1.5 rounded-lg shadow-card border border-border/50 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
               AI Assistant
-              <div className="absolute -bottom-1 right-4 w-2 h-2 bg-card border-r border-b border-border/50 rotate-45" />
+              <div className="absolute -bottom-1 left-4 w-2 h-2 bg-card border-r border-b border-border/50 rotate-45" />
             </div>
           )}
         </div>
@@ -73,7 +73,7 @@ export const AIFloatingButton: React.FC<AIFloatingButtonProps> = ({
 
       {/* Chat Window */}
       {isChatOpen && (
-        <div className="fixed bottom-6 right-6 z-40 pointer-events-auto">
+        <div className="fixed bottom-6 sm:bottom-8 left-6 sm:left-8 z-40 pointer-events-auto">
           <AIChat
             contextType={contextType}
             contextData={contextData}

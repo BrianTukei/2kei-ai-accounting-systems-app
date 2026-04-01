@@ -51,6 +51,7 @@ import AdminExchangeRates from './pages/AdminExchangeRates';
 import RecurringTransactions from './pages/RecurringTransactions';
 import EnhancedAIChatPage from './pages/EnhancedAIChatPage';
 import AutonomousBookkeepingPage from './pages/AutonomousBookkeepingPage';
+import BookDemo from './pages/BookDemo';
 import { InstallPrompt } from './components/pwa/InstallPrompt';
 
 // Create a client for React Query
@@ -100,6 +101,7 @@ function AppInner() {
       <Route path="/email-confirmation" element={<EmailConfirmation />} />
       <Route path="/verify-email"       element={<VerifyEmail />} />
       <Route path="/accept-invite"      element={<AcceptInvite />} />
+      <Route path="/book-demo"          element={<BookDemo />} />
 
       {/* Onboarding (protected but no org required) */}
       <Route path="/onboarding" element={<ProtectedRoute allowWithoutOrg><Onboarding /></ProtectedRoute>} />

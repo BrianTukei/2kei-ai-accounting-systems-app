@@ -158,6 +158,12 @@ export default function Navbar() {
                     {section}
                   </button>
                 ))}
+                <Link
+                  to="/book-demo"
+                  className="px-3 py-2 text-sm font-medium text-foreground/70 hover:text-primary rounded-lg hover:bg-primary/5 transition-all duration-300"
+                >
+                  📅 Book Demo
+                </Link>
                 <Button asChild size="sm" className="rounded-full ml-2 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 border-0 shadow-sm hover:shadow-elegant transition-all duration-400">
                   <Link to="/auth?action=signup">Sign Up</Link>
                 </Button>

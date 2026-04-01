@@ -59,6 +59,11 @@ const CTASection = () => {
                 </Link>
               </Button>
               <Button asChild variant="outline" size="lg" className="rounded-full px-8 py-6 text-base font-medium border-border/60 hover:border-primary/30 transition-all duration-400">
+                <Link to="/book-demo">
+                  📅 Book a Demo
+                </Link>
+              </Button>
+              <Button asChild variant="outline" size="lg" className="rounded-full px-8 py-6 text-base font-medium border-border/60 hover:border-primary/30 transition-all duration-400">
                 <Link to="/auth?action=signin">
                   Already a Member? Sign In
                 </Link>

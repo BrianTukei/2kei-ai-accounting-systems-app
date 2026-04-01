@@ -111,6 +111,12 @@ const HeroSection = ({ featuresRef }: HeroSectionProps) => {
               </Link>
             </Button>
             
+            <Button asChild variant="outline" size="lg" className="rounded-full px-8 py-6 text-base font-medium bg-background/60 backdrop-blur-md border-border/60 hover:bg-background/80 hover:border-primary/30 transition-all duration-400">
+              <Link to="/book-demo">
+                📅 Book a Demo
+              </Link>
+            </Button>
+            
             <Popover open={isOpen} onOpenChange={setIsOpen}>
               <PopoverTrigger asChild>
                 <Button

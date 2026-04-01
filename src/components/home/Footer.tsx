@@ -30,6 +30,12 @@ const Footer = () => {
               <h4 className="text-xs font-semibold uppercase tracking-wider text-foreground mb-4">Legal</h4>
               <ul className="space-y-3">
                 <li>
+                  <Link to="/book-demo" className="text-sm text-muted-foreground hover:text-primary transition-colors inline-flex items-center gap-1.5 group">
+                    📅 Book Demo
+                    <ArrowUpRight size={11} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </Link>
+                </li>
+                <li>
                   <Link to="/terms" className="text-sm text-muted-foreground hover:text-primary transition-colors inline-flex items-center gap-1.5 group">
                     <FileText size={13} />
                     Terms

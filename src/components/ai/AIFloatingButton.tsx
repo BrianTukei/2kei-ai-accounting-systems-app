@@ -44,11 +44,15 @@ export const AIFloatingButton: React.FC<AIFloatingButtonProps> = ({
     <>
       {/* Floating Button */}
       {(!isChatOpen || isMinimized) && (
-        <div className="fixed bottom-6 right-6 z-50 group">
+        <div className="fixed bottom-6 sm:bottom-8 right-6 sm:right-8 z-40 group pointer-events-auto">
           <Button
-            onClick={handleToggleChat}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleToggleChat();
+            }}
             size="lg"
-            className="h-14 w-14 rounded-full shadow-float bg-gradient-to-br from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white border-0 transition-all duration-400 hover:scale-110 hover:shadow-glow animate-breathe"
+            className="h-14 w-14 rounded-full shadow-float bg-gradient-to-br from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white border-0 transition-all duration-400 hover:scale-110 hover:shadow-glow animate-breathe active:scale-95"
           >
             {isMinimized ? (
               <MessageCircle className="w-6 h-6" />
@@ -69,7 +73,7 @@ export const AIFloatingButton: React.FC<AIFloatingButtonProps> = ({
 
       {/* Chat Window */}
       {isChatOpen && (
-        <div className="fixed bottom-6 right-6 z-50">
+        <div className="fixed bottom-6 right-6 z-40 pointer-events-auto">
           <AIChat
             contextType={contextType}
             contextData={contextData}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, User, CheckCircle, AlertCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Calendar, Clock, User, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
 
 interface BookingData {
   name: string;
@@ -15,6 +16,7 @@ interface BookingData {
 }
 
 export default function BookDemo() {
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [bookingData, setBookingData] = useState<BookingData>({
     name: '',
@@ -141,6 +143,15 @@ export default function BookDemo() {
   if (bookingComplete) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4 py-12">
+        <div className="absolute top-6 left-6">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-gray-900 hover:bg-white/80 rounded-lg transition"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            Back
+          </button>
+        </div>
         <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
           <div className="flex justify-center mb-4">
             <div className="p-3 bg-green-100 rounded-full">
@@ -185,6 +196,17 @@ export default function BookDemo() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="max-w-4xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
+        {/* Back Button */}
+        <div className="mb-8">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-gray-900 hover:bg-white/60 rounded-lg transition"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            Back
+          </button>
+        </div>
+
         {/* Header */}
         <div className="text-center mb-12">
           <div className="flex justify-center items-center mb-4">

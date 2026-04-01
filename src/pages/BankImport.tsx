@@ -79,9 +79,9 @@ function StepBar({ current }: { current: string }) {
 // ─────────────────────────────────────────
 // Upload Step
 // ─────────────────────────────────────────
-function UploadStep({ onFile, error }: { onFile: (f: File) => void; error: string | null }) {
+function UploadStep({ onFile, error }: { onFile: (f: File) => Promise<void>; error: string | null }) {
   const handleFileUpload = async (file: File) => {
-    onFile(file);
+    await onFile(file);
   };
 
   return (

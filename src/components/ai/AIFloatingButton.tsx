@@ -44,7 +44,7 @@ export const AIFloatingButton: React.FC<AIFloatingButtonProps> = ({
     <>
       {/* Floating Button - Bottom Left */}
       {(!isChatOpen || isMinimized) && (
-        <div className="fixed bottom-6 left-6 top-auto z-40 group pointer-events-auto">
+        <div className="fixed !bottom-6 !left-6 !top-auto z-40 group pointer-events-auto">
           <Button
             onClick={(e) => {
               e.preventDefault();
@@ -73,7 +73,7 @@ export const AIFloatingButton: React.FC<AIFloatingButtonProps> = ({
 
       {/* Chat Window - Bottom Left */}
       {isChatOpen && (
-        <div className="fixed bottom-20 left-6 top-auto z-40 pointer-events-auto max-h-[calc(100vh-120px)] sm:max-h-[520px]">
+        <div className="fixed !bottom-20 !left-6 !top-auto z-40 pointer-events-auto max-h-[calc(100vh-120px)] sm:max-h-[520px]">
           <AIChat
             contextType={contextType}
             contextData={contextData}

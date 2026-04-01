@@ -34,6 +34,9 @@ const DEFAULT_ACCEPTED_TYPES = [
   'image/jpeg',
   'image/jpg',
   'image/png',
+  'image/gif',
+  'image/bmp',
+  'image/webp',
   'text/csv',
   'application/vnd.ms-excel',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -44,6 +47,9 @@ const FILE_TYPE_LABELS: Record<string, string> = {
   'image/jpeg': 'JPG',
   'image/jpg': 'JPG',
   'image/png': 'PNG',
+  'image/gif': 'GIF',
+  'image/bmp': 'BMP',
+  'image/webp': 'WebP',
   'text/csv': 'CSV',
   'application/vnd.ms-excel': 'Excel (XLS)',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'Excel (XLSX)',
@@ -280,9 +286,10 @@ export const EnhancedFileUpload: React.FC<EnhancedFileUploadProps> = ({
           <div className="space-y-1">
             <p className="font-medium text-slate-600 dark:text-slate-300">Tips:</p>
             <ul className="space-y-1 list-disc list-inside">
-              <li>For best results, use CSV or Excel files exported from your bank</li>
-              <li>Ensure your file has columns for Date, Description, and Amount</li>
-              <li>PDF files should be converted to CSV/Excel first</li>
+              <li><strong>CSV/Excel:</strong> Best option - exports directly from your bank</li>
+              <li><strong>PDF:</strong> Bank statement PDFs are automatically converted</li>
+              <li><strong>Screenshots/Images (JPG, PNG):</strong> Bank statement screenshots are scanned using AI OCR</li>
+              <li>Ensure your file contains Date, Description, and Amount columns</li>
             </ul>
           </div>
         </div>

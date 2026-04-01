@@ -3,7 +3,7 @@
  * ----------------
  * Handles the full bank-statement import wizard:
  *   Step 1 – file upload
- *   Step 2 – parsing (CSV / Excel)
+ *   Step 2 – parsing (CSV / Excel / PDF / Images with OCR)
  *   Step 3 – AI categorisation
  *   Step 4 – review & edit
  *   Step 5 – post to transactions
@@ -14,6 +14,7 @@ import Papa from 'papaparse';
 import ExcelJS from 'exceljs';
 import { categoriseBatch, CategorisedRow } from '@/services/invoiceAI';
 import { v4 as uuidv4 } from 'uuid';
+import Tesseract from 'tesseract.js';
 
 // ─────────────────────────────────────────
 // Types
@@ -169,6 +170,102 @@ async function parseExcel(file: File): Promise<RawRow[]> {
   return rows;
 }
 
+/**
+ * Parse image (JPG, PNG) using Tesseract OCR
+ * Extracts text from screenshot/image and attempts to parse as CSV
+ */
+async function parseImage(file: File): Promise<RawRow[]> {
+  try {
+    const reader = new FileReader();
+    const imageData = await new Promise<string>((resolve, reject) => {
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(new Error('Failed to read image'));
+      reader.readAsDataURL(file);
+    });
+
+    // Use Tesseract to extract text from image
+    const worker = await Tesseract.createWorker();
+    const result = await worker.recognize(imageData);
+    const extractedText = result.data.text;
+    await worker.terminate();
+
+    if (!extractedText || extractedText.trim().length === 0) {
+      throw new Error('No text could be extracted from the image. Please ensure the image is clear and contains transaction data.');
+    }
+
+    // Try to parse the extracted text as CSV
+    return new Promise((resolve, reject) => {
+      Papa.parse<RawRow>(extractedText, {
+        header: true,
+        skipEmptyLines: true,
+        dynamicTyping: false,
+        complete: (results) => {
+          if (!results.data || results.data.length === 0) {
+            reject(new Error('Could not parse extracted text as transactions. Please ensure the image contains table data.'));
+          } else {
+            resolve(results.data);
+          }
+        },
+        error: (err) => reject(new Error(`Failed to parse OCR text: ${err.message}`)),
+      });
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Image processing failed';
+    throw new Error(`OCR Error: ${msg}`);
+  }
+}
+
+/**
+ * Parse PDF using Tesseract OCR
+ * Converts PDF to images and extracts text
+ */
+async function parsePDF(file: File): Promise<RawRow[]> {
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    
+    // Dynamic import of PDF.js
+    const pdfjsLib = await import('pdfjs-dist');
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+    
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let fullText = '';
+
+    // Extract text from first page (most bank statements are single page)
+    for (let i = 1; i <= Math.min(pdf.numPages, 5); i++) {
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items
+        .map((item: any) => (typeof item.str === 'string' ? item.str : ''))
+        .join(' ');
+      fullText += pageText + '\n';
+    }
+
+    if (!fullText || fullText.trim().length === 0) {
+      throw new Error('No text could be extracted from the PDF. Attempting OCR fallback...');
+    }
+
+    // Parse the extracted text as CSV
+    return new Promise((resolve, reject) => {
+      Papa.parse<RawRow>(fullText, {
+        header: true,
+        skipEmptyLines: true,
+        dynamicTyping: false,
+        complete: (results) => {
+          if (!results.data || results.data.length === 0) {
+            reject(new Error('Could not parse PDF as transactions. Please ensure the PDF contains table data.'));
+          } else {
+            resolve(results.data);
+          }
+        },
+        error: (err) => reject(new Error(`Failed to parse PDF text: ${err.message}`)),
+      });
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'PDF processing failed';
+    throw new Error(`PDF Error: ${msg}`);
+  }
+}
+
 // ─────────────────────────────────────────
 // Hook
 // ─────────────────────────────────────────
@@ -206,14 +303,19 @@ export function useBankImport() {
 
       setProgress(15);
 
+      // Parse based on file type
       if (ext === 'csv') {
         raw = await parseCSV(file);
       } else if (['xlsx','xls','ods'].includes(ext)) {
         raw = await parseExcel(file);
       } else if (ext === 'pdf') {
-        throw new Error('PDF import: please export your bank statement as CSV or Excel for automatic parsing. PDF text extraction is not supported in the browser.');
+        setProgress(25); // PDF parsing takes longer
+        raw = await parsePDF(file);
+      } else if (['jpg','jpeg','png','gif','bmp','webp'].includes(ext)) {
+        setProgress(25); // Image OCR takes longer
+        raw = await parseImage(file);
       } else {
-        throw new Error(`Unsupported file type: .${ext}. Please upload a CSV or Excel file.`);
+        throw new Error(`Unsupported file type: .${ext}. Please upload CSV, Excel, PDF, or image files (JPG, PNG, etc.).`);
       }
 
       if (!raw || raw.length === 0) {

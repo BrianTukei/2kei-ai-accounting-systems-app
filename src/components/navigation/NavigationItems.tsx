@@ -20,6 +20,7 @@ import {
   BookMarked,
   RefreshCw,
   Banknote,
+  Calendar,
 } from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
 
@@ -58,6 +59,7 @@ export const navItems: NavItem[] = [
   // ── SaaS / Account ──
   { name: 'Team',         path: '/team',         icon: Users,           iconGradient: 'from-sky-500/20 to-blue-500/20',      iconColor: 'text-sky-600 dark:text-sky-400',        group: 'saas' },
   { name: 'Billing',      path: '/billing',      icon: Wallet,          iconGradient: 'from-purple-500/20 to-violet-500/20',  iconColor: 'text-purple-600 dark:text-purple-400',  group: 'saas' },
+  { name: 'Book a Demo',  path: '/book-demo',    icon: Calendar,        iconGradient: 'from-pink-500/20 to-rose-500/20',      iconColor: 'text-pink-600 dark:text-pink-400',      group: 'saas' },
   { name: 'Settings',     path: '/settings',     icon: Settings,        iconGradient: 'from-slate-500/20 to-gray-500/20',     iconColor: 'text-slate-600 dark:text-slate-400',    group: 'saas' },
 ];
 

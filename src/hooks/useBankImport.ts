@@ -194,26 +194,40 @@ export function useBankImport() {
   const processFile = useCallback(async (file: File) => {
     setError(null);
     setStep('processing');
-    setProgress(10);
+    setProgress(5);
 
     try {
+      if (!file) {
+        throw new Error('No file selected');
+      }
+
       const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
       let raw: RawRow[] = [];
+
+      setProgress(15);
 
       if (ext === 'csv') {
         raw = await parseCSV(file);
       } else if (['xlsx','xls','ods'].includes(ext)) {
         raw = await parseExcel(file);
       } else if (ext === 'pdf') {
-        // PDF: guide user to convert to CSV
         throw new Error('PDF import: please export your bank statement as CSV or Excel for automatic parsing. PDF text extraction is not supported in the browser.');
       } else {
         throw new Error(`Unsupported file type: .${ext}. Please upload a CSV or Excel file.`);
       }
 
-      setProgress(40);
+      if (!raw || raw.length === 0) {
+        throw new Error('No data found in file. Please check your file format.');
+      }
+
+      setProgress(45);
 
       const mapped = mapRows(raw);
+      
+      if (mapped.length === 0) {
+        throw new Error('No valid transaction rows found. Ensure your file has Date, Description, and Amount columns.');
+      }
+
       setProgress(60);
 
       const categorised = categoriseBatch(mapped);
@@ -237,10 +251,15 @@ export function useBankImport() {
       setSession(newSession);
       setRows(importedRows);
       setProgress(100);
-      setStep('review');
+      
+      // Delay step change to show 100% progress
+      setTimeout(() => setStep('review'), 500);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to parse file.');
+      const errorMsg = e instanceof Error ? e.message : 'Failed to parse file. Please check the file format and try again.';
+      setError(errorMsg);
       setStep('upload');
+      setProgress(0);
+      console.error('[BankImport] Processing error:', errorMsg, e);
     }
   }, []);
 

@@ -10,6 +10,7 @@ import { SubscriptionGuard } from '@/components/SubscriptionGuard';
 import { ScrollableContent } from '@/components/ui/ScrollableContent';
 import { useBankImport, ImportedRow } from '@/hooks/useBankImport';
 import { useTransactions } from '@/hooks/useTransactions';
+import { EnhancedFileUpload } from '@/components/FileUpload/EnhancedFileUpload';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -79,14 +80,8 @@ function StepBar({ current }: { current: string }) {
 // Upload Step
 // ─────────────────────────────────────────
 function UploadStep({ onFile, error }: { onFile: (f: File) => void; error: string | null }) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [dragging, setDragging] = useState(false);
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragging(false);
-    const file = e.dataTransfer.files[0];
-    if (file) onFile(file);
+  const handleFileUpload = async (file: File) => {
+    onFile(file);
   };
 
   return (
@@ -110,39 +105,21 @@ function UploadStep({ onFile, error }: { onFile: (f: File) => void; error: strin
         ))}
       </div>
 
-      {/* Drop zone */}
-      <div
-        onDragEnter={(e) => { e.preventDefault(); setDragging(true); }}
-        onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={handleDrop}
-        onClick={() => inputRef.current?.click()}
-        className={cn(
-          'border-2 border-dashed rounded-xl p-14 text-center cursor-pointer transition-all',
-          dragging
-            ? 'border-primary bg-primary/5 scale-[1.01]'
-            : 'border-slate-300 dark:border-slate-600 hover:border-primary hover:bg-primary/5'
-        )}
-      >
-        <Upload className="w-12 h-12 mx-auto text-slate-400 mb-4" />
-        <p className="font-semibold text-slate-700 dark:text-slate-200">
-          Drop your bank statement here
-        </p>
-        <p className="text-sm text-slate-400 mt-1">
-          or <span className="text-primary underline underline-offset-2">browse</span> to select a file
-        </p>
-        <p className="text-xs text-slate-400 mt-3">
-          Supported: .csv, .xlsx, .xls, .ods
-        </p>
-        <input
-          ref={inputRef}
-          type="file"
-          accept=".csv,.xlsx,.xls,.ods"
-          aria-label="Upload bank statement file"
-          className="hidden"
-          onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); }}
-        />
-      </div>
+      {/* Enhanced File Upload Component */}
+      <EnhancedFileUpload
+        onFileSelect={handleFileUpload}
+        acceptedTypes={[
+          'application/pdf',
+          'image/jpeg',
+          'image/jpg',
+          'image/png',
+          'text/csv',
+          'application/vnd.ms-excel',
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]}
+        maxSize={10 * 1024 * 1024}
+        maxSizeLabel="10MB"
+      />
 
       {error && (
         <div className="flex items-start gap-3 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-sm">
@@ -150,14 +127,6 @@ function UploadStep({ onFile, error }: { onFile: (f: File) => void; error: strin
           {error}
         </div>
       )}
-
-      {/* Tips */}
-      <div className="text-xs text-slate-400 space-y-1 border rounded-lg p-4 dark:border-slate-700">
-        <p className="font-semibold text-slate-500 mb-2">Tips for best results:</p>
-        <p>• Your CSV/Excel should have columns for <strong>Date</strong>, <strong>Description</strong>, and either <strong>Debit/Credit</strong> or a single <strong>Amount</strong> column.</p>
-        <p>• Column names are auto-detected — most bank exports work out of the box.</p>
-        <p>• PDF files are not supported; export to CSV/Excel from your banking app first.</p>
-      </div>
     </div>
   );
 }

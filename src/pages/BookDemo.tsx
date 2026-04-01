@@ -314,7 +314,7 @@ export default function BookDemo() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 {/* Name */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-bold text-gray-900 mb-1">
                     Full Name *
                   </label>
                   <input
@@ -328,7 +328,7 @@ export default function BookDemo() {
 
                 {/* Email */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-bold text-gray-900 mb-1">
                     Email Address *
                   </label>
                   <input
@@ -342,7 +342,7 @@ export default function BookDemo() {
 
                 {/* Company */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-bold text-gray-900 mb-1">
                     Company Name *
                   </label>
                   <input
@@ -356,7 +356,7 @@ export default function BookDemo() {
 
                 {/* Phone */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-bold text-gray-900 mb-1">
                     Phone Number *
                   </label>
                   <input
@@ -370,7 +370,7 @@ export default function BookDemo() {
 
                 {/* Website */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-bold text-gray-900 mb-1">
                     Website
                   </label>
                   <input
@@ -384,7 +384,7 @@ export default function BookDemo() {
 
                 {/* Date */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-bold text-gray-900 mb-1">
                     Preferred Date *
                   </label>
                   <input
@@ -398,7 +398,7 @@ export default function BookDemo() {
 
                 {/* Time */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-bold text-gray-900 mb-1">
                     Preferred Time *
                   </label>
                   <select
@@ -418,7 +418,7 @@ export default function BookDemo() {
 
                 {/* Timezone */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-bold text-gray-900 mb-1">
                     Timezone
                   </label>
                   <select
@@ -439,7 +439,7 @@ export default function BookDemo() {
 
                 {/* Message */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-bold text-gray-900 mb-1">
                     Message
                   </label>
                   <textarea

@@ -132,26 +132,45 @@ app.use(globalErrorHandler);
 
 // Validate required environment variables
 const validateEnvironment = () => {
-  const requiredVars = ['JWT_SECRET'];
-  const missingVars = requiredVars.filter(varName => !process.env[varName]);
-  
-  if (missingVars.length > 0) {
-    console.error('❌ Missing required environment variables:', missingVars.join(', '));
-    console.error('Please check your .env file and restart the server.');
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  const requiredInAllEnvs = ['JWT_SECRET'];
+  const requiredInProduction = ['MONGODB_URI'];
+  const optionalIntegrations = ['SUPABASE_URL', 'SUPABASE_SERVICE_KEY'];
+
+  const missingRequired = requiredInAllEnvs.filter((varName) => !process.env[varName]);
+  const missingProdOnly = isProduction
+    ? requiredInProduction.filter((varName) => !process.env[varName])
+    : [];
+
+  if (missingRequired.length > 0 || missingProdOnly.length > 0) {
+    const missing = [...missingRequired, ...missingProdOnly];
+    console.error('❌ Missing required environment variables:', missing.join(', '));
+    console.error('Set these in your environment and redeploy/restart.');
     process.exit(1);
   }
-  
-  // Validate JWT secret strength
-  if (process.env.JWT_SECRET.length < 32) {
-    console.error('❌ JWT_SECRET must be at least 32 characters long for security');
+
+  // Validate JWT secret strength in production (keep dev flexible)
+  if (isProduction && process.env.JWT_SECRET.length < 32) {
+    console.error('❌ JWT_SECRET must be at least 32 characters long in production');
     process.exit(1);
   }
-  
+
   // Warn about development defaults
   if (process.env.JWT_SECRET === 'your_super_secret_key_here') {
-    console.warn('⚠️  Using default JWT secret. Please change this in production!');
+    if (isProduction) {
+      console.error('❌ Default JWT_SECRET is not allowed in production');
+      process.exit(1);
+    }
+    console.warn('⚠️  Using default JWT secret in development');
   }
-  
+
+  const missingOptional = optionalIntegrations.filter((varName) => !process.env[varName]);
+  if (missingOptional.length > 0) {
+    console.warn('⚠️ Optional integrations not configured:', missingOptional.join(', '));
+    console.warn('   Supabase-dependent features may be unavailable.');
+  }
+
   console.log('✅ Environment variables validated');
 };
 

@@ -339,7 +339,144 @@ import TransactionForexDisplay from '@/components/dashboard/TransactionForexDisp
 
 ---
 
-## 4. Database Schema
+## 4. Transaction Forex Integration
+
+### How It Works
+
+The forex integration is seamlessly built into the transaction display system:
+
+1. **TransactionCard** (`src/components/TransactionCard.tsx`)
+   - Displays original amount and currency
+   - Shows converted USD amount when forex data is available
+   - Displays exchange rate used
+   - Badge showing "Stale" if data is older than 30 minutes
+
+2. **TransactionList** (`src/components/transactions/TransactionList.tsx`)
+   - Fetches forex rates for all transactions via `updateTransactionsBatch()`
+   - Shows "Refresh Rates" button for manual updates
+   - Displays converted totals in summary
+   - Auto-updates on mount and when transactions change
+
+3. **TransactionSummary** (`src/components/transactions/TransactionSummary.tsx`)
+   - Shows original income/expense totals
+   - Displays USD-converted totals when forex data available
+   - Color-coded for easy distinction
+
+4. **TransactionDetail** (`src/components/transactions/TransactionDetail.tsx`)
+   - Full transaction view with detailed forex information
+   - 7-day exchange rate trend chart
+   - Item-level breakdown when available
+   - Manual refresh button
+
+### Hook: useForexTransactions
+
+**File:** `src/hooks/useForexTransactions.ts`
+
+```typescript
+const {
+  loading,
+  error,
+  updateTransactionRates,      // Single transaction
+  updateTransactionsBatch,     // Multiple transactions
+  getForexTrend,              // 7-day historical data
+  getForexStats,              // Dashboard statistics
+  isTransactionDataStale,     // Check if data > 30min old
+} = useForexTransactions();
+```
+
+**Usage Examples:**
+
+```typescript
+// Update single transaction
+const updated = await updateTransactionRates(
+  { amount: 1000, currency: 'UGX' },
+  'USD'
+);
+
+// Batch update multiple
+const updated = await updateTransactionsBatch(
+  transactions,
+  'USD'
+);
+
+// Get 7-day trend
+const trend = await getForexTrend('UGX', 'USD', 7);
+
+// Check if stale
+const isStale = isTransactionDataStale(transaction);
+```
+
+### Component Usage
+
+#### In TransactionList
+```tsx
+<TransactionList 
+  transactions={transactions}
+  showForexRates={true}
+  targetCurrency="USD"
+  onEditTransaction={handleEdit}
+  onDeleteTransaction={handleDelete}
+/>
+```
+
+#### In TransactionDetail Modal
+```tsx
+import TransactionDetail from '@/components/transactions/TransactionDetail';
+
+<TransactionDetail 
+  transaction={selectedTransaction}
+  onClose={() => setShowDetail(false)}
+/>
+```
+
+### Real-World Example Flow
+
+1. User navigates to Transactions page
+2. `TransactionList` loads 20 transactions
+3. `updateTransactionsBatch()` fetches forex rates for all 20 in parallel
+4. Each `TransactionCard` displays:
+   - Original: "1,000 UGX"
+   - Converted: "= -0.27 USD"
+   - Rate: "@ 0.00027"
+5. User clicks "Refresh Rates" button
+6. All rates updated with current market data
+7. If > 30 minutes old, "Stale" badge appears
+8. User clicks transaction → Opens `TransactionDetail`
+9. Shows 7-day trend chart for UGX/USD
+10. User can see how exchange rate changed over week
+
+---
+
+### Transaction Data Structure
+
+```typescript
+interface Transaction {
+  id: string;
+  amount: number;              // Amount in transaction currency
+  type: 'income' | 'expense';
+  category: string;
+  description: string;
+  date: string;
+  currency?: string;           // Transaction currency (EUR, UGX, etc)
+  original_amount?: number;    // Amount in original currency
+  original_currency?: string;  // Original currency code
+  
+  // Forex fields (populated by updateTransactionRates)
+  convertedAmount?: number;    // Amount converted to USD
+  conversionRate?: number;     // Rate used (e.g., 0.00027)
+  lastUpdated?: string;        // ISO timestamp of last update
+  
+  // Additional data
+  metadata?: {
+    vendor?: string;
+    items?: Array<{ name: string; price: number; quantity?: number }>;
+    taxAmount?: number;
+    subtotal?: number;
+  };
+}
+```
+
+---
 
 ### admin_messages Table
 ```sql

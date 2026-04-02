@@ -1,8 +1,9 @@
 
 import { cn } from '@/lib/utils';
-import { ArrowUpRight, ArrowDownLeft, Pencil, Trash2 } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, Pencil, Trash2, TrendingUp } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { useCurrency } from '@/contexts/CurrencyContext';
 
 export interface Transaction {
@@ -44,6 +45,12 @@ export default function TransactionCard({
   const { id, type, amount, category, description, date, currency: txCurrency } = transaction;
   const isIncome = type === 'income';
   
+  // Check if we have forex conversion data
+  const hasForexData = transaction.convertedAmount !== undefined && transaction.conversionRate !== undefined;
+  const isStaleData = hasForexData && transaction.lastUpdated 
+    ? Date.now() - new Date(transaction.lastUpdated).getTime() > 30 * 60 * 1000
+    : false;
+  
   return (
     <Card 
       className={cn(
@@ -53,9 +60,9 @@ export default function TransactionCard({
     >
       <CardContent className="p-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-3 flex-1">
             <div className={cn(
-              "w-10 h-10 rounded-full flex items-center justify-center",
+              "w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0",
               isIncome ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"
             )}>
               {isIncome ? (
@@ -65,24 +72,47 @@ export default function TransactionCard({
               )}
             </div>
             
-            <div>
-              <h3 className="font-medium text-sm">{category}</h3>
-              <p className="text-xs text-muted-foreground">{description}</p>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <h3 className="font-medium text-sm">{category}</h3>
+                {hasForexData && (
+                  <Badge variant="secondary" className="text-xs flex items-center gap-1">
+                    <TrendingUp className="w-3 h-3" />
+                    {transaction.original_currency || txCurrency || 'USD'}
+                  </Badge>
+                )}
+                {isStaleData && (
+                  <Badge variant="outline" className="text-xs text-yellow-600 dark:text-yellow-400">
+                    Stale
+                  </Badge>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground truncate">{description}</p>
+              {hasForexData && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  @ {transaction.conversionRate?.toFixed(6)} rate
+                </p>
+              )}
             </div>
           </div>
           
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 flex-shrink-0">
             <div className="text-right">
               <p className={cn(
-                "font-semibold",
+                "font-semibold text-sm",
                 isIncome ? "text-green-600" : "text-red-600"
               )}>
                 {isIncome ? '+' : '-'}{formatCurrency(Math.abs(amount), txCurrency)}
               </p>
+              {hasForexData && (
+                <p className="text-xs font-medium text-blue-600 dark:text-blue-400">
+                  = {isIncome ? '+' : '-'}{formatCurrency(Math.abs(transaction.convertedAmount || 0), 'USD')}
+                </p>
+              )}
               <p className="text-xs text-muted-foreground">{date}</p>
             </div>
             
-            <div className="flex">
+            <div className="flex gap-1">
               {onEdit && (
                 <Button
                   variant="ghost"

@@ -130,4 +130,160 @@ router.post('/format', (req, res) => {
   }
 });
 
+/**
+ * @route   POST /api/forex/update-transaction
+ * @desc    Update transaction with current forex rates
+ * @access  Private
+ */
+router.post('/update-transaction', async (req, res) => {
+  try {
+    const { amount, fromCurrency, toCurrency = 'USD' } = req.body;
+
+    if (!amount || !fromCurrency) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields: amount, fromCurrency'
+      });
+    }
+
+    const transaction = {
+      amount,
+      currency: fromCurrency,
+    };
+
+    const updated = await forexService.updateTransactionWithCurrentRates(
+      transaction,
+      toCurrency
+    );
+
+    if (!updated) {
+      return res.status(503).json({
+        success: false,
+        message: 'Unable to fetch current rates'
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        amount: updated.amount,
+        currency: updated.currency,
+        convertedAmount: updated.convertedAmount,
+        conversionRate: updated.conversionRate,
+        lastUpdated: updated.lastUpdated,
+      }
+    });
+  } catch (error) {
+    logger.error('Error updating transaction with rates:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to update transaction rates'
+    });
+  }
+});
+
+/**
+ * @route   POST /api/forex/batch-update
+ * @desc    Batch update multiple transactions with current rates
+ * @access  Private
+ */
+router.post('/batch-update', async (req, res) => {
+  try {
+    const { transactions, toCurrency = 'USD' } = req.body;
+
+    if (!Array.isArray(transactions) || transactions.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid transactions array'
+      });
+    }
+
+    const updated = await forexService.batchUpdateTransactions(
+      transactions,
+      toCurrency
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        count: updated.length,
+        transactions: updated,
+        timestamp: new Date().toISOString(),
+      }
+    });
+  } catch (error) {
+    logger.error('Error batch updating transactions:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to batch update transactions'
+    });
+  }
+});
+
+/**
+ * @route   GET /api/forex/trend
+ * @desc    Get historical exchange rate trend data
+ * @access  Private
+ */
+router.get('/trend', async (req, res) => {
+  try {
+    const { from = 'USD', to = 'UGX', days = 7 } = req.query;
+
+    if (!from || !to) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing currency parameters (from, to)'
+      });
+    }
+
+    const trend = await forexService.getExchangeRateTrend(
+      from,
+      to,
+      parseInt(days)
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        from,
+        to,
+        days: parseInt(days),
+        trend,
+        timestamp: new Date().toISOString(),
+      }
+    });
+  } catch (error) {
+    logger.error('Error fetching exchange rate trend:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch exchange rate trend'
+    });
+  }
+});
+
+/**
+ * @route   GET /api/forex/stats
+ * @desc    Get dashboard statistics for currency pairs
+ * @access  Private
+ */
+router.get('/stats', async (req, res) => {
+  try {
+    const stats = await forexService.getForexStats();
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        ...stats,
+        timestamp: new Date().toISOString(),
+      }
+    });
+  } catch (error) {
+    logger.error('Error fetching forex stats:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch forex statistics'
+    });
+  }
+});
+
 module.exports = router;

@@ -16,6 +16,7 @@ const forexRoutes = require('./routes/forex');
 const transactionRoutes = require('./routes/transactions');
 const adminRoutes = require('./routes/admin');
 const billingRoutes = require('./routes/billingRoutes');
+const adminMessagingRoutes = require('./routes/adminMessaging');
 
 // Import subscription jobs
 const { initializeSubscriptionJobs } = require('./jobs/subscriptionJobs');
@@ -95,6 +96,7 @@ app.use('/api/subscription', authenticate, subscriptionRoutes);
 app.use('/api/forex', authenticate, forexRoutes);
 app.use('/api/transactions', authenticate, transactionRoutes);
 app.use('/api/billing', authenticate, billingRoutes); // Billing routes with auth protection
+app.use('/api/admin/messages', adminMessagingRoutes); // Admin messaging routes
 app.use('/api/admin', adminRoutes); // Admin routes have their own auth middleware
 
 // API documentation endpoint

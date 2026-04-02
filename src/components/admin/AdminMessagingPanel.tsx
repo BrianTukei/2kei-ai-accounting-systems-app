@@ -163,24 +163,26 @@ export const AdminMessagingPanel: React.FC = () => {
 
   const sendMessage = async (message: Message) => {
     try {
-      const response = await fetch('/api/admin-messaging/send', {
+      const response = await fetch('/api/admin/messages/send', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          message: message,
-          targetAudience: message.targetAudience,
-          sendImmediately: true
+          title: message.title,
+          message: message.body,
+          link: message.action?.link,
+          recipientType: message.targetAudience || 'all',
+          specificUserIds: [],
         })
       });
 
       const data = await response.json();
-      if (data.success) {
-        toast.success('Message sent successfully');
-        setMessages(prev => [data.data, ...prev]);
+      if (data.success || data.sentTo !== undefined) {
+        toast.success(`Message sent successfully to ${data.sentTo || 'users'}`);
+        setMessages(prev => [{ ...message, id: Date.now().toString() }, ...prev]);
       } else {
-        throw new Error(data.error || 'Failed to send message');
+        throw new Error(data.message || 'Failed to send message');
       }
     } catch (error) {
       console.error('Failed to send message:', error);

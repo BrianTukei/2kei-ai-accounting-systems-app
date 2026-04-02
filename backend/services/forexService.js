@@ -390,6 +390,184 @@ class ForexService {
     this.cache.flushAll();
     logger.info('Forex cache cleared');
   }
+
+  /**
+   * Real-time update transaction amounts based on current forex
+   * Used when displaying transactions to apply latest exchange rates
+   */
+  async updateTransactionWithCurrentRates(transaction) {
+    if (!transaction.baseCurrency || !transaction.displayCurrency) {
+      return transaction;
+    }
+
+    try {
+      const rate = await this.getExchangeRate(
+        transaction.baseCurrency,
+        transaction.displayCurrency
+      );
+
+      const convertedAmount = transaction.amount * rate;
+
+      return {
+        ...transaction,
+        convertedAmount: this.formatCurrency(convertedAmount, transaction.displayCurrency),
+        currentRate: rate,
+        lastUpdated: new Date().toISOString(),
+      };
+    } catch (error) {
+      logger.warn('[Forex] Error updating transaction rates', { error: error.message });
+      return transaction;
+    }
+  }
+
+  /**
+   * Batch update multiple transactions with current forex rates
+   * Optimized for displaying lists of transactions
+   */
+  async batchUpdateTransactions(transactions) {
+    const updates = await Promise.all(
+      transactions.map(tx => this.updateTransactionWithCurrentRates(tx))
+    );
+    return updates;
+  }
+
+  /**
+   * Get forex rate trend (last N days)
+   * Returns historical rate data for charts
+   */
+  async getExchangeRateTrend(fromCurrency, toCurrency, days = 7) {
+    const key = `trend:${fromCurrency}:${toCurrency}:${days}`;
+    const cached = this.cache.get(key);
+    if (cached) return cached;
+
+    try {
+      // Generate trend data (in production, fetch from forex API with historical data)
+      const rates = [];
+      const now = new Date();
+
+      for (let i = days - 1; i >= 0; i--) {
+        const date = new Date(now);
+        date.setDate(date.getDate() - i);
+
+        // Add slight variation to simulate trend
+        const baseRate = await this.getExchangeRate(fromCurrency, toCurrency);
+        const variation = (Math.random() - 0.5) * baseRate * 0.02; // ±1% variation
+        
+        rates.push({
+          date: date.toISOString().split('T')[0],
+          rate: baseRate + variation,
+          timestamp: date.getTime(),
+        });
+      }
+
+      this.cache.set(key, rates, 3600); // Cache for 1 hour
+      return rates;
+    } catch (error) {
+      logger.error('[Forex] Error getting trend', { error: error.message });
+      return [];
+    }
+  }
+
+  /**
+   * Subscribe to real-time forex updates
+   * Periodically fetches and updates rates
+   */
+  subscribeToRealTimeUpdates(callback, interval = 60000) {
+    const updateInterval = setInterval(async () => {
+      try {
+        // Update major currency pairs
+        const pairs = [
+          ['USD', 'UGX'],
+          ['USD', 'EUR'],
+          ['USD', 'GBP'],
+          ['EUR', 'GBP'],
+          ['USD', 'KES'],
+          ['USD', 'TZS'],
+        ];
+
+        const rates = {};
+
+        for (const [from, to] of pairs) {
+          const rate = await this.getExchangeRate(from, to);
+          const key = `${from}/${to}`;
+          rates[key] = rate;
+        }
+
+        callback({
+          timestamp: new Date().toISOString(),
+          rates,
+        });
+      } catch (error) {
+        logger.error('[Forex] Real-time update error', { error: error.message });
+      }
+    }, interval);
+
+    // Return unsubscribe function
+    return () => clearInterval(updateInterval);
+  }
+
+  /**
+   * Get forex statistics for dashboard
+   * Returns summary data about forex changes
+   */
+  async getForexStats() {
+    try {
+      const stats = {
+        timestamp: new Date().toISOString(),
+        majorPairs: {},
+        africaCurrencies: {},
+      };
+
+      // Major pairs
+      const majorPairs = [
+        ['USD', 'EUR'],
+        ['USD', 'GBP'],
+        ['EUR', 'GBP'],
+      ];
+
+      for (const [from, to] of majorPairs) {
+        const rate = await this.getExchangeRate(from, to);
+        const trend = await this.getExchangeRateTrend(from, to, 7);
+        const change = trend.length > 1 
+          ? ((trend[trend.length - 1].rate - trend[0].rate) / trend[0].rate * 100).toFixed(2)
+          : '0.00';
+
+        stats.majorPairs[`${from}/${to}`] = {
+          rate,
+          change: parseFloat(change),
+          trend: trend.map(t => t.rate),
+        };
+      }
+
+      // Africa currencies
+      const africaPairs = [
+        ['USD', 'UGX'],
+        ['USD', 'KES'],
+        ['USD', 'TZS'],
+        ['USD', 'NGN'],
+        ['USD', 'ZAR'],
+      ];
+
+      for (const [from, to] of africaPairs) {
+        const rate = await this.getExchangeRate(from, to);
+        const trend = await this.getExchangeRateTrend(from, to, 7);
+        const change = trend.length > 1
+          ? ((trend[trend.length - 1].rate - trend[0].rate) / trend[0].rate * 100).toFixed(2)
+          : '0.00';
+
+        stats.africaCurrencies[`${from}/${to}`] = {
+          rate,
+          change: parseFloat(change),
+          trend: trend.map(t => t.rate),
+        };
+      }
+
+      return stats;
+    } catch (error) {
+      logger.error('[Forex] Error getting stats', { error: error.message });
+      return null;
+    }
+  }
 }
 
 // Export singleton instance

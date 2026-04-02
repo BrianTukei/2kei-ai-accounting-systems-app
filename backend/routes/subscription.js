@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { body } = require('express-validator');
 const subscriptionController = require('../controllers/subscriptionController');
-const authMiddleware = require('../middleware/auth');
+const { authenticate } = require('../middleware/auth');
 
 /**
  * Subscription Routes
@@ -10,7 +10,7 @@ const authMiddleware = require('../middleware/auth');
  */
 
 // All routes require authentication
-router.use(authMiddleware);
+router.use(authenticate);
 
 /**
  * @route   GET /api/subscription

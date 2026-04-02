@@ -8,12 +8,22 @@ const { auth, admin } = require('../middleware/auth');
 const { createClient } = require('@supabase/supabase-js');
 const logger = require('../utils/logger');
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-);
+const hasSupabaseConfig = Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY);
+const supabase = hasSupabaseConfig
+  ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY)
+  : null;
 
 const router = express.Router();
+
+router.use((req, res, next) => {
+  if (!supabase) {
+    return res.status(503).json({
+      success: false,
+      error: 'Admin messaging is unavailable: Supabase configuration missing.'
+    });
+  }
+  next();
+});
 
 // ─────────────────────────────────────────
 // SEND MESSAGE TO USER/USERS

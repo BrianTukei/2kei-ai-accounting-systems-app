@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const forexService = require('../services/forexService');
-const authMiddleware = require('../middleware/auth');
+const { authenticate } = require('../middleware/auth');
 const logger = require('../utils/logger');
 
 /**
@@ -9,7 +9,7 @@ const logger = require('../utils/logger');
  * Base path: /api/forex
  */
 
-router.use(authMiddleware);
+router.use(authenticate);
 
 /**
  * @route   GET /api/forex/rates

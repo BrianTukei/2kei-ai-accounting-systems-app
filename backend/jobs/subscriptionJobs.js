@@ -12,10 +12,10 @@ const cron = require('node-cron');
 const { createClient } = require('@supabase/supabase-js');
 const logger = require('../utils/logger');
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-);
+const hasSupabaseConfig = Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY);
+const supabase = hasSupabaseConfig
+  ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY)
+  : null;
 
 // Job configuration
 const GRACE_PERIOD_DAYS = parseInt(process.env.GRACE_PERIOD_DAYS || '5');
@@ -347,6 +347,11 @@ const retryFailedRenewals = async () => {
  */
 exports.initializeSubscriptionJobs = () => {
   try {
+    if (!supabase) {
+      logger.warn('Skipping subscription jobs: Supabase configuration missing.');
+      return;
+    }
+
     logger.info('📅 Initializing subscription jobs...\n');
 
     // Subscription expiry check - Daily at 1:00 AM

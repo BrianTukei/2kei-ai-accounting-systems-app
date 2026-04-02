@@ -15,7 +15,7 @@ const subscriptionRoutes = require('./routes/subscription');
 const forexRoutes = require('./routes/forex');
 const transactionRoutes = require('./routes/transactions');
 const adminRoutes = require('./routes/admin');
-const billingRoutes = require('./routes/billingRoutes');
+const billingRoutes = require('./routes/billing');
 const adminMessagingRoutes = require('./routes/adminMessaging');
 
 // Import subscription jobs

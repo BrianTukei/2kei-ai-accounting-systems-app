@@ -100,10 +100,36 @@ const passwordResetLimiter = rateLimit({
   }
 });
 
+// Generic factory used by legacy routes
+const createRateLimiter = ({ windowMs, max, message }) => rateLimit({
+  windowMs,
+  max,
+  message: {
+    success: false,
+    message: message || 'Too many requests, please try again later.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    logger.warn('Custom rate limit exceeded', {
+      ip: req.ip,
+      userAgent: req.get('User-Agent'),
+      path: req.path
+    });
+    return res.status(429).json({
+      success: false,
+      message: message || 'Too many requests, please try again later.'
+    });
+  }
+});
+
 module.exports = {
   generalLimiter,
   emailLimiter,
   demoLimiter,
   authLimiter,
-  passwordResetLimiter
+  passwordResetLimiter,
+  // Backward-compatible alias used by auth routes
+  passwordLimiter: passwordResetLimiter,
+  createRateLimiter
 };

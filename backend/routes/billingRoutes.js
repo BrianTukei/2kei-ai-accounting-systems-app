@@ -472,4 +472,35 @@ router.post('/admin/users/:userId/upgrade', admin, async (req, res) => {
   }
 });
 
+// ─────────────────────────────────────────
+// WEBHOOKS (No Auth Required)
+// ─────────────────────────────────────────
+
+const {
+  handleFlutterwaveWebhook,
+  handleMTNWebhook,
+  handleAirtelWebhook,
+} = require('../webhooks/flutterwave');
+
+/**
+ * Handle Flutterwave payment webhook
+ * POST /api/billing/webhooks/flutterwave
+ * - Verifies webhook signature
+ * - Updates payment status
+ * - Activates subscription on success
+ */
+router.post('/webhooks/flutterwave', handleFlutterwaveWebhook);
+
+/**
+ * Handle MTN Mobile Money webhook
+ * POST /api/billing/webhooks/mtn
+ */
+router.post('/webhooks/mtn', handleMTNWebhook);
+
+/**
+ * Handle Airtel Money webhook
+ * POST /api/billing/webhooks/airtel
+ */
+router.post('/webhooks/airtel', handleAirtelWebhook);
+
 module.exports = router;

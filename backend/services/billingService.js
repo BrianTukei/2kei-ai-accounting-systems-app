@@ -142,6 +142,95 @@ export async function cancelSubscription(userId: string) {
   await logBillingHistory(userId, currentSub.id, 'canceled', currentSub.plan.slug, null);
 }
 
+/**
+ * Activate a subscription after successful payment
+ * Called by: Webhook handler on payment success
+ */
+export async function activateSubscription(userId: string, planId: string) {
+  try {
+    const plan = await supabase
+      .from('pricing_plans')
+      .select('slug')
+      .eq('id', planId)
+      .single();
+
+    if (plan.error) throw plan.error;
+
+    // Get or create subscription
+    const currentSub = await getUserSubscription(userId);
+    
+    const startDate = new Date();
+    const endDate = new Date();
+    endDate.setMonth(endDate.getMonth() + 1); // Monthly cycle
+
+    if (currentSub) {
+      // Update existing subscription
+      const { error } = await supabase
+        .from('subscriptions')
+        .update({
+          plan_id: planId,
+          status: 'active',
+          start_date: startDate.toISOString().split('T')[0],
+          end_date: endDate.toISOString().split('T')[0],
+          grace_period_end: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', currentSub.id);
+
+      if (error) throw error;
+
+      await logBillingHistory(userId, currentSub.id, 'upgraded', currentSub.plan.slug, plan.data.slug);
+    } else {
+      // Create new subscription
+      const { error } = await supabase
+        .from('subscriptions')
+        .insert({
+          user_id: userId,
+          plan_id: planId,
+          billing_cycle: 'monthly',
+          start_date: startDate.toISOString().split('T')[0],
+          end_date: endDate.toISOString().split('T')[0],
+          status: 'active',
+          auto_renew: true,
+        });
+
+      if (error) throw error;
+
+      await logBillingHistory(userId, null, 'created', null, plan.data.slug);
+    }
+
+    // Initialize AI credits if not exists
+    const existingCredits = await supabase
+      .from('ai_credits')
+      .select('id')
+      .eq('user_id', userId)
+      .single();
+
+    if (existingCredits.error && existingCredits.error.code === 'PGRST116') {
+      // Don't have credits yet - initialize based on plan
+      const creditMap: Record<string, number> = {
+        free: 0,
+        starter: 100000,
+        business: 1000000,
+        enterprise: 5000000,
+      };
+
+      const credits = creditMap[plan.data.slug] || 0;
+
+      await supabase.from('ai_credits').insert({
+        user_id: userId,
+        balance: credits,
+        total_purchased: credits > 0 ? credits : 0,
+        total_used: 0,
+      });
+    }
+
+    return true;
+  } catch (error) {
+    throw new Error(`Failed to activate subscription: ${error.message}`);
+  }
+}
+
 // ─────────────────────────────────────────
 // PAYMENT PROCESSING
 // ─────────────────────────────────────────

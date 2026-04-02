@@ -15,6 +15,10 @@ const subscriptionRoutes = require('./routes/subscription');
 const forexRoutes = require('./routes/forex');
 const transactionRoutes = require('./routes/transactions');
 const adminRoutes = require('./routes/admin');
+const billingRoutes = require('./routes/billingRoutes');
+
+// Import subscription jobs
+const { initializeSubscriptionJobs } = require('./jobs/subscriptionJobs');
 
 // Import middleware
 const { authenticate } = require('./middleware/auth');
@@ -90,6 +94,7 @@ app.use('/api/company', authenticate, companyRoutes);
 app.use('/api/subscription', authenticate, subscriptionRoutes);
 app.use('/api/forex', authenticate, forexRoutes);
 app.use('/api/transactions', authenticate, transactionRoutes);
+app.use('/api/billing', authenticate, billingRoutes); // Billing routes with auth protection
 app.use('/api/admin', adminRoutes); // Admin routes have their own auth middleware
 
 // API documentation endpoint
@@ -104,6 +109,7 @@ app.get('/api', (req, res) => {
       subscription: '/api/subscription',
       forex: '/api/forex',
       transactions: '/api/transactions',
+      billing: '/api/billing',
       admin: '/api/admin'
     },
     documentation: 'https://github.com/BrianTukei/2kei-ai-accounting-systems-app'
@@ -168,6 +174,11 @@ const PORT = process.env.PORT || 5000;
 const startServer = async () => {
   validateEnvironment();
   await connectDB();
+  
+  // Initialize subscription management jobs
+  if (process.env.ENABLE_BILLING === 'true') {
+    initializeSubscriptionJobs();
+  }
   
   app.listen(PORT, () => {
     console.log(`

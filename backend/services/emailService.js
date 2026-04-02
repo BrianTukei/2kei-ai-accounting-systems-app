@@ -272,6 +272,123 @@ class EmailService {
       return { success: false, error: error.message };
     }
   }
+
+  // ─────────────────────────────────────────
+  // BILLING-SPECIFIC EMAIL TEMPLATES
+  // ─────────────────────────────────────────
+
+  /**
+   * Send payment confirmation email
+   */
+  async sendPaymentConfirmation(email, payment, plan) {
+    const subject = '✅ Payment Confirmation - 2K AI Accounting';
+    const message = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px; text-align: center; border-radius: 8px 8px 0 0;">
+          <h1 style="margin: 0; font-size: 28px;">Payment Confirmed ✓</h1>
+        </div>
+        <div style="padding: 40px; background: #f9f9f9;">
+          <p>Hello,</p>
+          <p>Thank you for your payment! Your subscription has been activated.</p>
+          <div style="background: white; padding: 20px; border-left: 4px solid #667eea; margin: 20px 0;">
+            <h3 style="margin-top: 0;">Payment Details</h3>
+            <p><strong>Amount:</strong> UGX ${payment.amount?.toLocaleString()}</p>
+            <p><strong>Plan:</strong> ${plan?.name || 'Premium'}</p>
+            <p><strong>Transaction ID:</strong> ${payment.transaction_reference}</p>
+          </div>
+          <div style="text-align: center; margin-top: 30px;">
+            <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/billing" style="display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold;">View Subscription</a>
+          </div>
+        </div>
+      </div>
+    `;
+    return await this.sendEmail(email, subject, message);
+  }
+
+  /**
+   * Send usage warning email
+   */
+  async sendUsageWarning(email, used, limit, percentage) {
+    const subject = `⚠️ Usage Limit Approaching - ${percentage}% Used`;
+    const message = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: #f59e0b; color: white; padding: 40px; text-align: center; border-radius: 8px 8px 0 0;">
+          <h1 style="margin: 0; font-size: 28px;">Usage Limit Warning ⚠️</h1>
+        </div>
+        <div style="padding: 40px; background: #f9f9f9;">
+          <p>Hello,</p>
+          <p>You've used ${percentage}% of your monthly transaction limit.</p>
+          <div style="background: white; padding: 20px; border-left: 4px solid #f59e0b; margin: 20px 0;">
+            <h3 style="margin-top: 0;">Usage Status</h3>
+            <div style="background: #e5e7eb; border-radius: 8px; height: 30px; margin: 15px 0;">
+              <div style="background: #f59e0b; height: 100%; width: ${percentage}%; border-radius: 8px;"></div>
+            </div>
+            <p><strong>Used:</strong> ${used.toLocaleString()} / ${limit.toLocaleString()} transactions</p>
+          </div>
+          <div style="text-align: center; margin-top: 30px;">
+            <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/pricing" style="display: inline-block; background: #f59e0b; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold;">Upgrade Plan</a>
+          </div>
+        </div>
+      </div>
+    `;
+    return await this.sendEmail(email, subject, message);
+  }
+
+  /**
+   * Send demo booking confirmation to admin
+   */
+  async sendDemoBookingNotification(adminEmail, booking) {
+    const subject = `🎉 New Demo Booking - ${booking.business_name}`;
+    const message = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: #667eea; color: white; padding: 40px; text-align: center; border-radius: 8px 8px 0 0;">
+          <h1 style="margin: 0; font-size: 28px;">New Demo Booking 🎉</h1>
+        </div>
+        <div style="padding: 40px; background: #f9f9f9;">
+          <p>You have a new demo booking request!</p>
+          <div style="background: white; padding: 20px; border-left: 4px solid #667eea; margin: 20px 0;">
+            <h3 style="margin-top: 0;">Booking Details</h3>
+            <p><strong>Business:</strong> ${booking.business_name}</p>
+            <p><strong>Contact:</strong> ${booking.name}</p>
+            <p><strong>Email:</strong> ${booking.email}</p>
+            <p><strong>Phone:</strong> ${booking.phone}</p>
+            <p><strong>Preferred Date:</strong> ${booking.preferred_date}</p>
+          </div>
+          <div style="text-align: center; margin-top: 30px;">
+            <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/admin/demo-bookings" style="display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold;">Review Booking</a>
+          </div>
+        </div>
+      </div>
+    `;
+    return await this.sendEmail(adminEmail, subject, message);
+  }
+
+  /**
+   * Send grace period notification
+   */
+  async sendGracePeriodStarted(email, graceUntil) {
+    const subject = 'Your Plan Has Expired (Grace Period Active)';
+    const message = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: #f59e0b; color: white; padding: 40px; text-align: center; border-radius: 8px 8px 0 0;">
+          <h1 style="margin: 0; font-size: 28px;">Grace Period Active</h1>
+        </div>
+        <div style="padding: 40px; background: #f9f9f9;">
+          <p>Hello,</p>
+          <p>Your subscription has expired, but you have a grace period to renew.</p>
+          <div style="background: #fef3c7; padding: 20px; border-left: 4px solid #f59e0b; margin: 20px 0; border-radius: 4px;">
+            <h3 style="margin-top: 0;">Grace Period Information</h3>
+            <p><strong>Valid Until:</strong> ${new Date(graceUntil).toLocaleDateString()}</p>
+            <p>Service continues to work during this period. Renew before the grace period ends!</p>
+          </div>
+          <div style="text-align: center; margin-top: 30px;">
+            <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/billing/payment" style="display: inline-block; background: #f59e0b; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold;">Renew Now</a>
+          </div>
+        </div>
+      </div>
+    `;
+    return await this.sendEmail(email, subject, message);
+  }
 }
 
 // Export singleton instance

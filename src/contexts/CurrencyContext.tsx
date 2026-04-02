@@ -208,15 +208,16 @@ export function CurrencyProvider({ children }: CurrencyProviderProps) {
   }, [selectedCurrency.code, exchangeRates]);
 
   /**
-   * Format a currency amount. If fromCurrency is provided and differs
-   * from selectedCurrency, the amount is auto-converted first.
+   * Format a currency amount.
+   * If source currency is not provided, assume BASE_CURRENCY (USD)
+   * so figures convert app-wide instead of only swapping symbols.
    */
   const formatCurrency = useCallback((amount: number, fromCurrency?: string): string => {
+    const sourceCurrency = (fromCurrency || BASE_CURRENCY).toUpperCase();
     let displayAmount = amount;
 
-    // Auto-convert if the amount is in a different currency
-    if (fromCurrency && fromCurrency.toUpperCase() !== selectedCurrency.code.toUpperCase()) {
-      displayAmount = convertAmount(amount, fromCurrency, selectedCurrency.code);
+    if (sourceCurrency !== selectedCurrency.code.toUpperCase()) {
+      displayAmount = convertAmount(amount, sourceCurrency, selectedCurrency.code);
     }
 
     // Format without decimals for zero-decimal currencies

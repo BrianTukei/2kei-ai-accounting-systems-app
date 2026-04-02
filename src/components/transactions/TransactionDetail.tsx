@@ -19,7 +19,7 @@ interface TransactionDetailProps {
 }
 
 export default function TransactionDetail({ transaction, onClose }: TransactionDetailProps) {
-  const { formatCurrency } = useCurrency();
+  const { formatCurrency, selectedCurrency } = useCurrency();
   const { updateTransactionRates, getForexTrend, isTransactionDataStale, loading } = useForexTransactions();
   const [currentTransaction, setCurrentTransaction] = useState<Transaction & { convertedAmount?: number; conversionRate?: number; lastUpdated?: string }>(transaction);
   const [trendData, setTrendData] = useState<Array<{ date: string; rate: number }> | null>(null);
@@ -29,7 +29,7 @@ export default function TransactionDetail({ transaction, onClose }: TransactionD
   useEffect(() => {
     const fetchData = async () => {
       const baseCurrency = transaction.original_currency || transaction.currency || 'USD';
-      const targetCurrency = 'USD';
+      const targetCurrency = selectedCurrency.code;
 
       // Fetch updated rates
       const updated = await updateTransactionRates(transaction, targetCurrency);
@@ -47,14 +47,14 @@ export default function TransactionDetail({ transaction, onClose }: TransactionD
     };
 
     fetchData();
-  }, [transaction, updateTransactionRates, getForexTrend]);
+  }, [transaction, updateTransactionRates, getForexTrend, selectedCurrency.code]);
 
   const isStale = isTransactionDataStale(currentTransaction);
   const isIncome = transaction.type === 'income';
   const baseCurrency = transaction.original_currency || transaction.currency || 'USD';
 
   const handleRefresh = async () => {
-    const updated = await updateTransactionRates(currentTransaction, 'USD');
+    const updated = await updateTransactionRates(currentTransaction, selectedCurrency.code);
     if (updated) {
       setCurrentTransaction(updated);
     }
@@ -96,9 +96,9 @@ export default function TransactionDetail({ transaction, onClose }: TransactionD
             {/* Converted Amount */}
             {currentTransaction.convertedAmount !== undefined && (
               <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
-                <p className="text-sm text-muted-foreground mb-1">Converted to USD</p>
+                <p className="text-sm text-muted-foreground mb-1">Converted to {selectedCurrency.code}</p>
                 <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                  {isIncome ? '+' : '-'}{formatCurrency(Math.abs(currentTransaction.convertedAmount), 'USD')}
+                  {isIncome ? '+' : '-'}{formatCurrency(Math.abs(currentTransaction.convertedAmount), selectedCurrency.code)}
                 </p>
                 <p className="text-xs text-muted-foreground mt-2">
                   Rate: {currentTransaction.conversionRate?.toFixed(6)}
@@ -168,7 +168,7 @@ export default function TransactionDetail({ transaction, onClose }: TransactionD
               7-Day Exchange Rate Trend
             </CardTitle>
             <CardDescription>
-              {baseCurrency} to USD over the past week
+              {baseCurrency} to {selectedCurrency.code} over the past week
             </CardDescription>
           </CardHeader>
           <CardContent>

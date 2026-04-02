@@ -6,6 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { RefreshCw, AlertCircle } from 'lucide-react';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface Transaction {
   amount: number;
@@ -25,11 +26,13 @@ interface ForexDisplayProps {
 
 export default function TransactionForexDisplay({
   transaction,
-  targetCurrency = 'USD',
+  targetCurrency,
   showRate = true,
   showLastUpdated = true,
   compact = false,
 }: ForexDisplayProps) {
+  const { selectedCurrency, displayAmount } = useCurrency();
+  const resolvedTargetCurrency = targetCurrency || selectedCurrency.code;
   const [updated, setUpdated] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -43,7 +46,7 @@ export default function TransactionForexDisplay({
         body: JSON.stringify({
           amount: transaction.amount,
           fromCurrency: transaction.currency,
-          toCurrency: targetCurrency,
+          toCurrency: resolvedTargetCurrency,
         }),
       });
 
@@ -65,7 +68,7 @@ export default function TransactionForexDisplay({
       <div className="flex items-center gap-2">
         <div>
           <div className="text-sm font-semibold">
-            {transaction.convertedAmount?.toFixed(2)} {targetCurrency}
+            {displayAmount(transaction.convertedAmount || 0, resolvedTargetCurrency, resolvedTargetCurrency)}
           </div>
           {showRate && (
             <div className="text-xs text-muted-foreground">
@@ -91,7 +94,7 @@ export default function TransactionForexDisplay({
         <div>
           <div className="text-xs text-muted-foreground mb-1">Original Amount</div>
           <div className="text-xl font-bold">
-            {transaction.amount?.toFixed(2)} {transaction.currency}
+            {displayAmount(transaction.amount || 0, transaction.currency, transaction.currency)}
           </div>
         </div>
         <button
@@ -116,7 +119,7 @@ export default function TransactionForexDisplay({
         <div className="bg-slate-50 dark:bg-slate-900 rounded p-3 mb-3">
           <div className="text-xs text-muted-foreground mb-1">Exchange Rate</div>
           <div className="text-lg font-semibold">
-            1 {transaction.currency} = {transaction.conversionRate.toFixed(4)} {targetCurrency}
+            1 {transaction.currency} = {transaction.conversionRate.toFixed(4)} {resolvedTargetCurrency}
           </div>
         </div>
       )}
@@ -125,7 +128,7 @@ export default function TransactionForexDisplay({
       <div className="bg-slate-50 dark:bg-slate-900 rounded p-3 mb-3">
         <div className="text-xs text-muted-foreground mb-1">Converted Amount</div>
         <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-          {transaction.convertedAmount?.toFixed(2)} {targetCurrency}
+          {displayAmount(transaction.convertedAmount || 0, resolvedTargetCurrency, resolvedTargetCurrency)}
         </div>
       </div>
 

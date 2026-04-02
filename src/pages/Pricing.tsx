@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface PricingPlan {
   id: string;
@@ -38,6 +39,7 @@ interface PricingPlan {
 
 export default function PricingPage() {
   const { user } = useAuth();
+  const { formatCurrency, convertAmount, selectedCurrency } = useCurrency();
   const navigate = useNavigate();
   const [plans, setPlans] = useState<PricingPlan[]>([]);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
@@ -87,7 +89,7 @@ export default function PricingPage() {
   };
 
   const getPricePerDay = (plan: PricingPlan) => {
-    const price = getPrice(plan);
+    const price = convertAmount(getPrice(plan), 'UGX', selectedCurrency.code);
     const daysInCycle = billingCycle === 'monthly' ? 30 : 365;
     return (price / daysInCycle).toFixed(0);
   };
@@ -176,14 +178,10 @@ export default function PricingPage() {
                       ) : (
                         <div>
                           <div className="text-3xl font-bold">
-                            {getPrice(plan).toLocaleString('en-UG', {
-                              style: 'currency',
-                              currency: 'UGX',
-                              minimumFractionDigits: 0,
-                            })}
+                            {formatCurrency(getPrice(plan), 'UGX')}
                           </div>
                           <p className="text-xs text-slate-500 mt-1">
-                            ≈{getPricePerDay(plan)} UGX/day
+                            ≈{formatCurrency(Number(getPricePerDay(plan)), selectedCurrency.code)}/day
                           </p>
                         </div>
                       )}

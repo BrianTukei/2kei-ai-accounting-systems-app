@@ -9,7 +9,7 @@ export function cn(...inputs: ClassValue[]) {
 /**
  * Unified currency formatting utility.
  * Reads user's selected currency from localStorage when no target code given.
- * If `fromCurrency` is provided, auto-converts the amount before formatting.
+ * If `fromCurrency` is omitted, assume USD source for app-wide consistency.
  */
 export function formatCurrency(
   amount: number,
@@ -31,9 +31,10 @@ export function formatCurrency(
   locale = locale || 'en-US';
 
   // Auto-convert if amount is in a different currency
+  const sourceCurrency = (fromCurrency || 'USD').toUpperCase();
   let displayAmount = amount;
-  if (fromCurrency && fromCurrency.toUpperCase() !== currencyCode.toUpperCase()) {
-    displayAmount = exchangeService.convertSync(amount, fromCurrency, currencyCode);
+  if (sourceCurrency !== currencyCode.toUpperCase()) {
+    displayAmount = exchangeService.convertSync(amount, sourceCurrency, currencyCode);
   }
 
   try {

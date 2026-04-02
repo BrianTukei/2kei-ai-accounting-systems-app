@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface PaymentState {
   planSlug: string;
@@ -28,6 +29,7 @@ export default function PaymentPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { formatCurrency } = useCurrency();
 
   const state = (location.state as PaymentState) || {};
   const { planSlug = 'starter', billingCycle = 'monthly' } = state;
@@ -145,7 +147,7 @@ export default function PaymentPage() {
                 <div className="border-t pt-2 flex justify-between">
                   <span className="font-semibold">Total</span>
                   <span className="text-xl font-bold text-primary">
-                    {amount.toLocaleString('en-UG', { style: 'currency', currency: 'UGX' })}
+                    {formatCurrency(amount, 'UGX')}
                   </span>
                 </div>
               </div>
@@ -253,7 +255,7 @@ export default function PaymentPage() {
                     </>
                   ) : (
                     <>
-                      Pay {amount.toLocaleString('en-UG', { style: 'currency', currency: 'UGX' })}
+                      Pay {formatCurrency(amount, 'UGX')}
                     </>
                   )}
                 </Button>

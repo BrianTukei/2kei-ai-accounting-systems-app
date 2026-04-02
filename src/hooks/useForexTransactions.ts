@@ -41,19 +41,27 @@ export function useForexTransactions() {
         });
 
         if (!response.ok) {
-          throw new Error('Failed to fetch forex rates');
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.message || 'Failed to fetch forex rates');
         }
 
         const data = await response.json();
+        
+        // Handle both success: true and success: false responses
+        if (data.success === false) {
+          throw new Error(data.message || 'Forex service returned an error');
+        }
+
         return {
           ...transaction,
-          convertedAmount: data.data?.convertedAmount,
-          conversionRate: data.data?.conversionRate,
-          lastUpdated: data.data?.lastUpdated,
+          convertedAmount: data.data?.convertedAmount || data.convertedAmount,
+          conversionRate: data.data?.conversionRate || data.conversionRate,
+          lastUpdated: data.data?.lastUpdated || data.lastUpdated,
         };
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Unknown error';
         setError(message);
+        console.error('Error updating transaction rates:', message);
         return null;
       } finally {
         setLoading(false);
@@ -74,6 +82,11 @@ export function useForexTransactions() {
         setLoading(true);
         setError(null);
 
+        // Return early if no transactions
+        if (!transactions || transactions.length === 0) {
+          return [];
+        }
+
         const transactionsToUpdate = transactions.map((tx) => ({
           amount: tx.amount,
           currency: tx.currency || tx.original_currency || 'USD',
@@ -91,15 +104,39 @@ export function useForexTransactions() {
         });
 
         if (!response.ok) {
-          throw new Error('Failed to batch update forex rates');
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.message || 'Failed to batch update forex rates');
         }
 
         const data = await response.json();
         
-        return transactions.map((tx, idx) => ({
-          ...tx,
-          convertedAmount: data.data?.transactions?.[idx]?.convertedAmount,
-          conversionRate: data.data?.transactions?.[idx]?.conversionRate,
+        // Handle error response
+        if (data.success === false) {
+          console.error('Forex batch update error:', data.message);
+          return transactions; // Return original transactions if batch update fails
+        }
+
+        // Map updated data back to original transaction objects
+        const updatedTransactions = transactions.map((tx, idx) => {
+          const updatedData = data.data?.transactions?.[idx] || {};
+          return {
+            ...tx,
+            convertedAmount: updatedData.convertedAmount,
+            conversionRate: updatedData.conversionRate,
+            lastUpdated: updatedData.lastUpdated,
+          } as UpdatedTransaction;
+        });
+
+        return updatedTransactions;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        setError(message);
+        console.error('Error batch updating transaction rates:', message);
+        // Return original transactions if update fails
+        return transactions;
+      } finally {
+        setLoading(false);
+      }
           lastUpdated: data.data?.transactions?.[idx]?.lastUpdated,
         }));
       } catch (err) {

@@ -21,14 +21,18 @@ export default function TransactionList({
   showForexRates = true,
   targetCurrency = 'USD'
 }: TransactionListProps) {
-  const { updateTransactionsBatch, loading } = useForexTransactions();
+  const { updateTransactionsBatch, loading, error } = useForexTransactions();
   const [transactionsWithForex, setTransactionsWithForex] = useState<Transaction[]>(transactions);
 
   // Update transactions with forex rates on mount and when transactions change
   useEffect(() => {
     if (showForexRates && transactions.length > 0) {
       updateTransactionsBatch(transactions, targetCurrency).then(updated => {
-        setTransactionsWithForex(updated);
+        setTransactionsWithForex(updated || transactions);
+      }).catch(err => {
+        console.error('Failed to fetch forex rates:', err);
+        // Fall back to original transactions if forex fetch fails
+        setTransactionsWithForex(transactions);
       });
     } else {
       setTransactionsWithForex(transactions);
@@ -37,8 +41,12 @@ export default function TransactionList({
 
   const handleRefreshRates = async () => {
     if (transactionsWithForex.length > 0) {
-      const updated = await updateTransactionsBatch(transactionsWithForex, targetCurrency);
-      setTransactionsWithForex(updated);
+      try {
+        const updated = await updateTransactionsBatch(transactionsWithForex, targetCurrency);
+        setTransactionsWithForex(updated || transactionsWithForex);
+      } catch (err) {
+        console.error('Failed to refresh forex rates:', err);
+      }
     }
   };
 

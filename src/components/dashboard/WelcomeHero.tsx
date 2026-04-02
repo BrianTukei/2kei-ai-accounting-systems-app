@@ -43,8 +43,10 @@ export default function WelcomeHero() {
         if (data && !error) {
           setAdminMessage(data);
         }
+        // Silently fail if table doesn't exist yet
       } catch (error) {
-        // No message available
+        // Table might not exist yet - this is OK
+        console.debug('Admin messages not available yet');
       }
     };
 

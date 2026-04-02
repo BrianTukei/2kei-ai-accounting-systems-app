@@ -395,27 +395,42 @@ class ForexService {
    * Real-time update transaction amounts based on current forex
    * Used when displaying transactions to apply latest exchange rates
    */
-  async updateTransactionWithCurrentRates(transaction) {
-    if (!transaction.baseCurrency || !transaction.displayCurrency) {
+  async updateTransactionWithCurrentRates(transaction, targetCurrency = 'USD') {
+    if (!transaction.amount) {
       return transaction;
     }
 
+    const fromCurrency = transaction.currency || transaction.baseCurrency || 'USD';
+    const toCurrency = targetCurrency || transaction.displayCurrency || 'USD';
+
+    // If same currency, return as-is
+    if (fromCurrency === toCurrency) {
+      return {
+        ...transaction,
+        convertedAmount: transaction.amount,
+        conversionRate: 1,
+        lastUpdated: new Date().toISOString(),
+      };
+    }
+
     try {
-      const rate = await this.getExchangeRate(
-        transaction.baseCurrency,
-        transaction.displayCurrency
-      );
+      const rate = await this.getExchangeRate(fromCurrency, toCurrency);
+
+      if (!rate) {
+        logger.warn('[Forex] Could not get rate for', { fromCurrency, toCurrency });
+        return transaction;
+      }
 
       const convertedAmount = transaction.amount * rate;
 
       return {
         ...transaction,
-        convertedAmount: this.formatCurrency(convertedAmount, transaction.displayCurrency),
-        currentRate: rate,
+        convertedAmount: Number(convertedAmount.toFixed(8)),
+        conversionRate: rate,
         lastUpdated: new Date().toISOString(),
       };
     } catch (error) {
-      logger.warn('[Forex] Error updating transaction rates', { error: error.message });
+      logger.warn('[Forex] Error updating transaction rates', { error: error.message, fromCurrency, toCurrency });
       return transaction;
     }
   }
@@ -424,10 +439,15 @@ class ForexService {
    * Batch update multiple transactions with current forex rates
    * Optimized for displaying lists of transactions
    */
-  async batchUpdateTransactions(transactions) {
+  async batchUpdateTransactions(transactions, targetCurrency = 'USD') {
+    if (!transactions || transactions.length === 0) {
+      return [];
+    }
+
     const updates = await Promise.all(
-      transactions.map(tx => this.updateTransactionWithCurrentRates(tx))
+      transactions.map(tx => this.updateTransactionWithCurrentRates(tx, targetCurrency))
     );
+
     return updates;
   }
 
@@ -567,6 +587,31 @@ class ForexService {
       logger.error('[Forex] Error getting stats', { error: error.message });
       return null;
     }
+  }
+
+  /**
+   * Subscribe to real-time forex updates
+   * Returns unsubscribe function to stop polling
+   */
+  subscribeToRealTimeUpdates(callback, interval = 60000) {
+    // Fetch initial rates
+    this.getForexStats().then(stats => {
+      if (stats) callback(stats);
+    }).catch(err => {
+      logger.error('[Forex] Error fetching initial stats', err);
+    });
+
+    // Set up interval to fetch updates
+    const intervalId = setInterval(() => {
+      this.getForexStats().then(stats => {
+        if (stats) callback(stats);
+      }).catch(err => {
+        logger.error('[Forex] Error in subscription update', err);
+      });
+    }, interval);
+
+    // Return unsubscribe function
+    return () => clearInterval(intervalId);
   }
 }
 

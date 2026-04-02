@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useCurrency } from '@/contexts/CurrencyContext';
+import { useMemo } from 'react';
 
 export interface Transaction {
   id: string;
@@ -41,7 +42,7 @@ export default function TransactionCard({
   onEdit,
   onDelete
 }: TransactionCardProps) {
-  const { formatCurrency } = useCurrency();
+  const { formatCurrency, convertAmount, selectedCurrency, exchangeRates } = useCurrency();
   const { id, type, amount, category, description, date, currency: txCurrency } = transaction;
   const isIncome = type === 'income';
   
@@ -50,6 +51,37 @@ export default function TransactionCard({
   const isStaleData = hasForexData && transaction.lastUpdated 
     ? Date.now() - new Date(transaction.lastUpdated).getTime() > 30 * 60 * 1000
     : false;
+
+  // Dynamically calculate converted amount based on selected currency
+  const convertedAmount = useMemo(() => {
+    if (!txCurrency || txCurrency === selectedCurrency.code) {
+      return amount; // Already in selected currency
+    }
+    // Use convertAmount hook to dynamically convert based on available rates
+    return convertAmount(amount, txCurrency, selectedCurrency.code);
+  }, [amount, txCurrency, selectedCurrency.code, convertAmount]);
+
+  // Format the amount: show original in tx currency + converted in selected currency
+  const displayOriginal = useMemo(() => {
+    return formatCurrency(Math.abs(amount), txCurrency);
+  }, [amount, txCurrency, formatCurrency]);
+
+  const displayConverted = useMemo(() => {
+    // Show the converted amount in the selected currency
+    const zeroDecimalCurrencies = ['UGX', 'KES', 'TZS', 'RWF', 'NGN', 'JPY', 'VND', 'IDR'];
+    const decimals = zeroDecimalCurrencies.includes(selectedCurrency.code) ? 0 : 2;
+    
+    try {
+      return new Intl.NumberFormat(selectedCurrency.locale, {
+        style: 'currency',
+        currency: selectedCurrency.code,
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals,
+      }).format(Math.abs(convertedAmount));
+    } catch {
+      return formatCurrency(Math.abs(convertedAmount));
+    }
+  }, [convertedAmount, selectedCurrency, formatCurrency]);
   
   return (
     <Card 
@@ -75,6 +107,12 @@ export default function TransactionCard({
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <h3 className="font-medium text-sm">{category}</h3>
+                {txCurrency && txCurrency !== selectedCurrency.code && (
+                  <Badge variant="secondary" className="text-xs flex items-center gap-1">
+                    <TrendingUp className="w-3 h-3" />
+                    {txCurrency}
+                  </Badge>
+                )}
                 {hasForexData && (
                   <Badge variant="secondary" className="text-xs flex items-center gap-1">
                     <TrendingUp className="w-3 h-3" />
@@ -102,11 +140,16 @@ export default function TransactionCard({
                 "font-semibold text-sm",
                 isIncome ? "text-green-600" : "text-red-600"
               )}>
-                {isIncome ? '+' : '-'}{formatCurrency(Math.abs(amount), txCurrency)}
+                {isIncome ? '+' : '-'}{displayConverted}
               </p>
+              {txCurrency && txCurrency !== selectedCurrency.code && (
+                <p className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                  (orig: {displayOriginal})
+                </p>
+              )}
               {hasForexData && (
-                <p className="text-xs font-medium text-blue-600 dark:text-blue-400">
-                  = {isIncome ? '+' : '-'}{formatCurrency(Math.abs(transaction.convertedAmount || 0), 'USD')}
+                <p className="text-xs text-muted-foreground mt-1">
+                  @ {transaction.conversionRate?.toFixed(6)} rate
                 </p>
               )}
               <p className="text-xs text-muted-foreground">{date}</p>

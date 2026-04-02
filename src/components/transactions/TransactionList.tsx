@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import TransactionCard, { Transaction } from '@/components/TransactionCard';
 import { RefreshCw } from 'lucide-react';
 import { useForexTransactions } from '@/hooks/useForexTransactions';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { useState, useEffect } from 'react';
 
 interface TransactionListProps {
@@ -19,12 +20,16 @@ export default function TransactionList({
   onEditTransaction,
   onDeleteTransaction,
   showForexRates = true,
-  targetCurrency = 'USD'
+  targetCurrency: propTargetCurrency
 }: TransactionListProps) {
+  const { selectedCurrency } = useCurrency();
   const { updateTransactionsBatch, loading, error } = useForexTransactions();
   const [transactionsWithForex, setTransactionsWithForex] = useState<Transaction[]>(transactions);
 
-  // Update transactions with forex rates on mount and when transactions change
+  // Use selectedCurrency from context if targetCurrency prop not provided
+  const targetCurrency = propTargetCurrency || selectedCurrency.code;
+
+  // Update transactions with forex rates on mount and when transactions or target currency changes
   useEffect(() => {
     if (showForexRates && transactions.length > 0) {
       updateTransactionsBatch(transactions, targetCurrency).then(updated => {

@@ -174,18 +174,28 @@ export function CurrencyProvider({ children }: CurrencyProviderProps) {
     const rates = exchangeRates;
     
     let rate = 1;
+    let found = false;
+
     if (source === 'USD' && rates[target]) {
       rate = rates[target];
+      found = true;
     } else if (target === 'USD' && rates[source]) {
       rate = 1 / rates[source];
+      found = true;
     } else if (rates[source] && rates[target]) {
+      // Both source and target are in rates (relative to USD)
       rate = rates[target] / rates[source];
-    } else {
-      // Fallback to exchangeService if context rates not available
-      return exchangeService.convertSync(amount, source, target);
+      found = true;
     }
 
-    return Math.round(amount * rate * 100) / 100;
+    // If rate found, use it; otherwise fall back to exchangeService
+    if (found) {
+      const converted = Math.round(amount * rate * 100) / 100;
+      return converted;
+    }
+
+    // Fallback to exchangeService if context rates not available
+    return exchangeService.convertSync(amount, source, target);
   }, [selectedCurrency.code, exchangeRates]);
 
   /**

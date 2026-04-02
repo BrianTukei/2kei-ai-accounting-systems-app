@@ -102,8 +102,6 @@ export default function Transactions() {
               onDeleteTransaction={handleDeleteTransaction}
               showForexRates={true}
               targetCurrency="USD"
-              onEditTransaction={handleEditTransaction}
-              onDeleteTransaction={handleDeleteTransaction}
             />
           </div>
         

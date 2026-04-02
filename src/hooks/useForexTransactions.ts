@@ -137,15 +137,6 @@ export function useForexTransactions() {
       } finally {
         setLoading(false);
       }
-          lastUpdated: data.data?.transactions?.[idx]?.lastUpdated,
-        }));
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        setError(message);
-        return transactions;
-      } finally {
-        setLoading(false);
-      }
     },
     []
   );

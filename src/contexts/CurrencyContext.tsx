@@ -65,6 +65,11 @@ export const CURRENCIES: Currency[] = [
   { code: 'NPR', name: 'Nepalese Rupee', symbol: '₨', locale: 'ne-NP' },
 ];
 
+/** Get currency symbol - maps currency code to symbol */
+export function getCurrencySymbol(code: string): string {
+  return CURRENCIES.find(c => c.code === code.toUpperCase())?.symbol || code;
+}
+
 interface CurrencyContextType {
   selectedCurrency: Currency;
   setCurrency: (currency: Currency) => void;
@@ -79,6 +84,10 @@ interface CurrencyContextType {
   isRatesLoading: boolean;
   refreshRates: () => Promise<void>;
   baseCurrency: string;
+  /** Convert + format amount in one call (like pricing plans display) */
+  displayAmount: (amount: number, fromCurrency: string, toCurrency?: string) => string;
+  /** Get just the numeric converted amount */
+  convertTo: (amount: number, fromCurrency: string, toCurrency?: string) => number;
 }
 
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
@@ -257,6 +266,49 @@ export function CurrencyProvider({ children }: CurrencyProviderProps) {
     }
   }, []);
 
+  /**
+   * Convert amount from one currency to another (numeric only).
+   * Pattern matches getDisplayPrice from billing service.
+   * Example: convertTo(1000, 'USD', 'UGX') → 3780000
+   */
+  const convertTo = useCallback((amount: number, fromCurrency: string, toCurrency?: string): number => {
+    const from = fromCurrency.toUpperCase();
+    const to = (toCurrency || selectedCurrency.code).toUpperCase();
+
+    if (from === to) return amount;
+
+    // Get rate using exchangeService (same as billing.ts does it)
+    const liveRate = exchangeService.getRateSync(from, to);
+    if (liveRate !== 1 || from === 'USD') {
+      return Math.round(amount * liveRate * 100) / 100;
+    }
+
+    // Fallback is already handled by getRateSync
+    return Math.round(amount * liveRate * 100) / 100;
+  }, [selectedCurrency.code]);
+
+  /**
+   * Convert + format amount in one step.
+   * Pattern matches getDisplayPrice from billing service.
+   * Example: displayAmount(1000, 'USD', 'UGX') → "USh 3,780,000"
+   */
+  const displayAmount = useCallback((amount: number, fromCurrency: string, toCurrency?: string): string => {
+    const to = (toCurrency || selectedCurrency.code).toUpperCase();
+    const converted = convertTo(amount, fromCurrency, to);
+    const symbol = getCurrencySymbol(to); // Use module-level function, not hook
+
+    // Format with proper decimals for the target currency
+    const zeroDecimalCurrencies = ['UGX', 'KES', 'TZS', 'RWF', 'NGN', 'JPY', 'VND', 'IDR'];
+    const decimals = zeroDecimalCurrencies.includes(to) ? 0 : 2;
+
+    const formatted = converted.toLocaleString('en-US', {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    });
+
+    return `${symbol}${formatted}`;
+  }, [selectedCurrency.code, convertTo]);
+
   return (
     <CurrencyContext.Provider
       value={{
@@ -273,6 +325,8 @@ export function CurrencyProvider({ children }: CurrencyProviderProps) {
         isRatesLoading,
         refreshRates,
         baseCurrency: BASE_CURRENCY,
+        displayAmount,
+        convertTo,
       }}
     >
       {children}

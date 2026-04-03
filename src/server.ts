@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { runJobWorker } from './workers/jobWorker';
 import apiRoutes from './routes';
 import advancedAIRoutes from './routes/advancedAI';
 import enhancedAIRoutes from './routes/enhancedAI';
@@ -106,6 +107,11 @@ app.listen(PORT, () => {
   if (process.env.NODE_ENV === 'development') {
     console.log('🔧 Development mode - CORS enabled for localhost');
   }
+
+  // Initialize background AI job worker
+  runJobWorker().catch(err => {
+    console.error('Failed to start Job Worker:', err);
+  });
 });
 
 export default app;

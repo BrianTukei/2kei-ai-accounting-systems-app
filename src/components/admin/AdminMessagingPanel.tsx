@@ -2,8 +2,9 @@
 // Professional message generation and management for 2K AI Accounting Systems
 
 import React, { useState, useEffect } from 'react';
-import { Send, MessageSquare, Clock, Users, TrendingUp, Calendar, BarChart3, Sparkles, Target, Zap, Mail, FileText, Settings, ChevronRight, Plus, Edit3, Trash2, Eye } from 'lucide-react';
+import { Send, MessageSquare, Clock, Users, TrendingUp, Calendar, BarChart3, Sparkles, Target, Zap, Mail, FileText, Settings, ChevronRight, Plus, Edit3, Trash2, Eye, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAdminData } from '@/hooks/useAdminData';
 
 interface Message {
   id: string;
@@ -61,6 +62,12 @@ export const AdminMessagingPanel: React.FC = () => {
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [generatedMessages, setGeneratedMessages] = useState<Message[]>([]);
+
+  const { users: systemUsers } = useAdminData();
+  const [isSendDialogOpen, setIsSendDialogOpen] = useState(false);
+  const [messageToSend, setMessageToSend] = useState<Message | null>(null);
+  const [sendRecipientType, setSendRecipientType] = useState<string>('all');
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
 
   useEffect(() => {
     loadTemplates();
@@ -161,26 +168,42 @@ export const AdminMessagingPanel: React.FC = () => {
     }
   };
 
-  const sendMessage = async (message: Message) => {
+  const openSendDialog = (message: Message) => {
+    setMessageToSend(message);
+    setSendRecipientType(message.targetAudience || 'all');
+    setSelectedUserIds([]);
+    setIsSendDialogOpen(true);
+  };
+
+  const confirmSend = async () => {
+    if (!messageToSend) return;
+    
     try {
+      const isSpecific = sendRecipientType === 'specific';
+      if (isSpecific && selectedUserIds.length === 0) {
+        toast.error('Please select at least one user');
+        return;
+      }
+
       const response = await fetch('/api/admin/messages/send', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          title: message.title,
-          message: message.body,
-          link: message.action?.link,
-          recipientType: message.targetAudience || 'all',
-          specificUserIds: [],
+          title: messageToSend.title,
+          message: messageToSend.body,
+          link: messageToSend.action?.link,
+          recipientType: isSpecific ? 'specific' : sendRecipientType,
+          specificUserIds: isSpecific ? selectedUserIds : [],
         })
       });
 
       const data = await response.json();
       if (data.success || data.sentTo !== undefined) {
         toast.success(`Message sent successfully to ${data.sentTo || 'users'}`);
-        setMessages(prev => [{ ...message, id: Date.now().toString() }, ...prev]);
+        setMessages(prev => [{ ...messageToSend, id: Date.now().toString() }, ...prev]);
+        setIsSendDialogOpen(false);
       } else {
         throw new Error(data.message || 'Failed to send message');
       }
@@ -188,6 +211,10 @@ export const AdminMessagingPanel: React.FC = () => {
       console.error('Failed to send message:', error);
       toast.error('Failed to send message');
     }
+  };
+
+  const sendMessage = async (message: Message) => {
+    openSendDialog(message);
   };
 
   const optimizeMessage = async (message: Message) => {
@@ -510,9 +537,113 @@ export const AdminMessagingPanel: React.FC = () => {
       {activeTab === 'sent' && (
         <div className="space-y-4">
           <h3 className="font-semibold text-gray-900 mb-4">Recently Sent Messages</h3>
-          <div className="text-center py-8 text-gray-500">
-            <Mail className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-            <p>No messages sent yet. Generate and send your first message!</p>
+          {messages.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <Mail className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+              <p>No messages sent yet. Generate and send your first message!</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {messages.map((message) => (
+                <div key={message.id} className="bg-white border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-semibold text-gray-900">{message.title}</h4>
+                    <span className="text-xs text-gray-500">Sent to: {message.targetAudience || 'all'}</span>
+                  </div>
+                  <p className="text-gray-700 text-sm">{message.body}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Send Message Dialog */}
+      {isSendDialogOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg mx-4 flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="text-lg font-semibold text-gray-900">Send Message</h3>
+              <button onClick={() => setIsSendDialogOpen(false)} className="text-gray-500 hover:text-gray-700">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-4 overflow-y-auto flex-1">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Target Audience</label>
+                  <select
+                    value={sendRecipientType}
+                    onChange={(e) => setSendRecipientType(e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  >
+                    <option value="all">All Users</option>
+                    <option value="specific">Select Specific Registered Users</option>
+                    <option value="active">Active Users</option>
+                    <option value="inactive">Inactive / At-Risk Users</option>
+                  </select>
+                </div>
+
+                {sendRecipientType === 'specific' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Select Registered Users</label>
+                    <div className="border border-gray-300 rounded-md max-h-60 overflow-y-auto p-2 bg-gray-50">
+                      {systemUsers && systemUsers.length > 0 ? (
+                        <div className="space-y-2">
+                          {systemUsers.map((user: any) => (
+                            <label key={user.id} className="flex items-center space-x-2 p-1 hover:bg-gray-100 rounded cursor-pointer">
+                              <input
+                                type="checkbox"
+                                className="rounded text-blue-600 focus:ring-blue-500"
+                                checked={selectedUserIds.includes(user.id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedUserIds([...selectedUserIds, user.id]);
+                                  } else {
+                                    setSelectedUserIds(selectedUserIds.filter(id => id !== user.id));
+                                  }
+                                }}
+                              />
+                              <div className="flex flex-col">
+                                <span className="text-sm font-medium text-gray-900">{user.email}</span>
+                                {user.name && <span className="text-xs text-gray-500">{user.name}</span>}
+                              </div>
+                            </label>
+                          ))}
+                        </div>
+                      ) : (
+                         <div className="text-center py-4 text-sm text-gray-500">No registered users found.</div>
+                      )}
+                    </div>
+                    <div className="mt-2 text-xs text-gray-500">
+                      {selectedUserIds.length} user(s) selected.
+                    </div>
+                  </div>
+                )}
+                
+                <div className="bg-blue-50 p-3 rounded-md text-sm text-blue-800">
+                  <p className="font-semibold mb-1">Message Preview:</p>
+                  <p className="line-clamp-2">{messageToSend?.body}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end p-4 border-t space-x-3 bg-gray-50 rounded-b-lg">
+              <button
+                onClick={() => setIsSendDialogOpen(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmSend}
+                className="flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                <Send className="w-4 h-4 mr-2" />
+                Send Now
+              </button>
+            </div>
           </div>
         </div>
       )}

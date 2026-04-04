@@ -331,6 +331,11 @@ export default function AdminDashboard() {
               </Button>
               <Button variant="outline" size="sm" 
                 className="bg-slate-800/50 border-slate-600 text-slate-200 hover:bg-slate-700 hover:text-white"
+                onClick={() => navigate('/admin/email-subscribers')}>
+                <Mail className="w-3.5 h-3.5 mr-1" /> Broadcast Emails
+              </Button>
+              <Button variant="outline" size="sm" 
+                className="bg-slate-800/50 border-slate-600 text-slate-200 hover:bg-slate-700 hover:text-white"
                 onClick={() => navigate('/super-admin')}>
                 <Crown className="w-3.5 h-3.5 mr-1" /> Super Admin
               </Button>

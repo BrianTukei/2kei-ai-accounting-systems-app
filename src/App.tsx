@@ -48,6 +48,7 @@ import DeveloperAdminDashboard from './pages/DeveloperAdminDashboard';
 import AdminTest from './pages/AdminTest';
 import AdminBilling from './pages/AdminBilling';
 import AdminExchangeRates from './pages/AdminExchangeRates';
+import AdminEmailSubscribers from './pages/AdminEmailSubscribers';
 import RecurringTransactions from './pages/RecurringTransactions';
 import EnhancedAIChatPage from './pages/EnhancedAIChatPage';
 import AutonomousBookkeepingPage from './pages/AutonomousBookkeepingPage';
@@ -147,6 +148,7 @@ function AppInner() {
       <Route path="/admin-test"   element={<ProtectedRoute allowWithoutOrg><AdminTest /></ProtectedRoute>} />
       <Route path="/admin/billing" element={<ProtectedRoute allowWithoutOrg><AdminBilling /></ProtectedRoute>} />
       <Route path="/admin/exchange-rates" element={<ProtectedRoute allowWithoutOrg><AdminExchangeRates /></ProtectedRoute>} />
+      <Route path="/admin/email-subscribers" element={<ProtectedRoute allowWithoutOrg><AdminEmailSubscribers /></ProtectedRoute>} />
 
       {/* Legal */}
       <Route path="/privacy" element={<Privacy />} />

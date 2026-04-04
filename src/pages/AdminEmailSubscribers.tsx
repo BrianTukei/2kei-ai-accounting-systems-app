@@ -1,15 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import AdminAccessCheck from '@/components/admin/AdminAccessCheck';
-import { PageLayout } from '@/components/layout/PageLayout';
+import PageLayout from '@/components/layout/PageLayout';
 import { Mail, Send, Users, Activity, Plus, FileText, CheckCircle, XCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import toast from 'react-hot-toast';
+import { useToast } from '@/hooks/use-toast';
 
 export default function AdminEmailSubscribers() {
+  const { toast } = useToast();
   const [subscribers, setSubscribers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -65,15 +66,15 @@ export default function AdminEmailSubscribers() {
       });
       const data = await res.json();
       if (data.success) {
-        toast.success(data.message || 'Subscriber added');
+        toast({ title: 'Success', description: data.message || 'Subscriber added' });
         setNewEmail('');
         setNewName('');
         fetchSubscribers();
       } else {
-        toast.error(data.error || 'Failed to add subscriber');
+        toast({ variant: 'destructive', title: 'Error', description: data.error || 'Failed to add subscriber' });
       }
     } catch (error) {
-      toast.error('Failed to add subscriber');
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to add subscriber' });
     } finally {
       setAddingSub(false);
     }
@@ -82,7 +83,7 @@ export default function AdminEmailSubscribers() {
   const handleBroadcast = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!subject.trim() || !message.trim()) {
-      toast.error('Subject and message are required');
+      toast({ variant: 'destructive', title: 'Error', description: 'Subject and message are required' });
       return;
     }
 
@@ -104,14 +105,14 @@ export default function AdminEmailSubscribers() {
       
       const data = await res.json();
       if (data.success) {
-        toast.success(data.message);
+        toast({ title: 'Success', description: data.message });
         setSubject('');
         setMessage('');
       } else {
-        toast.error(data.error || 'Failed to send broadcast');
+        toast({ variant: 'destructive', title: 'Error', description: data.error || 'Failed to send broadcast' });
       }
     } catch (error) {
-      toast.error('An error occurred during broadcast');
+      toast({ variant: 'destructive', title: 'Error', description: 'An error occurred during broadcast' });
     } finally {
       setSending(false);
     }

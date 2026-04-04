@@ -12,13 +12,14 @@ import { useToast } from '@/hooks/use-toast';
 export default function AdminEmailSubscribers() {
   const { toast } = useToast();
   const [subscribers, setSubscribers] = useState<any[]>([]);
+  const [systemUsersCount, setSystemUsersCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
 
   // Form states
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
-  const [sendTo, setSendTo] = useState<'all'>('all');
+  const [sendTo, setSendTo] = useState<'all' | 'system_users' | 'both'>('all');
   
   // Add subscriber state
   const [newEmail, setNewEmail] = useState('');
@@ -37,6 +38,9 @@ export default function AdminEmailSubscribers() {
       const data = await response.json();
       if (data.success) {
         setSubscribers(data.subscribers || []);
+        if (data.systemUsersCount !== undefined) {
+          setSystemUsersCount(data.systemUsersCount);
+        }
       }
     } catch (error) {
       console.error('Failed to fetch subscribers', error);
@@ -142,7 +146,7 @@ export default function AdminEmailSubscribers() {
                 <form onSubmit={handleBroadcast} className="space-y-5">
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-slate-700">Send To</label>
-                    <div className="flex gap-4">
+                    <div className="flex flex-col sm:flex-row gap-4">
                       <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
                         <input 
                           type="radio" 
@@ -150,7 +154,25 @@ export default function AdminEmailSubscribers() {
                           onChange={() => setSendTo('all')} 
                           className="text-blue-600 focus:ring-blue-500"
                         />
-                        All Active Subscribers ({subscribers.filter(s => s.status === 'active').length})
+                        Target Subscribers ({subscribers.filter(s => s.status === 'active').length})
+                      </label>
+                      <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+                        <input 
+                          type="radio" 
+                          checked={sendTo === 'system_users'} 
+                          onChange={() => setSendTo('system_users')} 
+                          className="text-purple-600 focus:ring-purple-500"
+                        />
+                        System Users ({systemUsersCount})
+                      </label>
+                      <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+                        <input 
+                          type="radio" 
+                          checked={sendTo === 'both'} 
+                          onChange={() => setSendTo('both')} 
+                          className="text-indigo-600 focus:ring-indigo-500"
+                        />
+                        Both lists
                       </label>
                     </div>
                   </div>
@@ -178,7 +200,7 @@ export default function AdminEmailSubscribers() {
 
                   <Button 
                     type="submit" 
-                    disabled={sending || subscribers.filter(s => s.status === 'active').length === 0} 
+                    disabled={sending || (sendTo === 'all' && subscribers.filter(s => s.status === 'active').length === 0) || (sendTo === 'system_users' && systemUsersCount === 0)} 
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                   >
                     {sending ? (

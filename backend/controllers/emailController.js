@@ -1,7 +1,7 @@
 const User = require("../models/User");
 const EmailLog = require("../models/EmailLog");
 const Subscriber = require("../models/Subscriber");
-const { sendEmail } = require("../services/emailService");
+const emailService = require("../services/emailService");
 const { v4: uuidv4 } = require("uuid");
 
 exports.sendEmail = async (req, res) => {
@@ -27,7 +27,7 @@ exports.sendEmail = async (req, res) => {
   for (const email of recipients) {
     const messageId = uuidv4();
     try {
-      const result = await sendEmail({ to: email, subject, text: message, html: message });
+      const result = await emailService.sendEmail(email, subject, message);
       const success = result && result.success;
       
       await EmailLog.create({
@@ -61,7 +61,8 @@ exports.sendEmail = async (req, res) => {
 exports.getSubscribers = async (req, res) => {
   try {
     const subscribers = await Subscriber.find().sort({ subscribedAt: -1 });
-    res.json({ success: true, count: subscribers.length, subscribers });
+    const systemUsersCount = await User.countDocuments({ isActive: true });
+    res.json({ success: true, count: subscribers.length, subscribers, systemUsersCount });
   } catch (error) {
     console.error("Error fetching subscribers:", error);
     res.status(500).json({ error: "Failed to fetch subscribers" });
@@ -109,6 +110,14 @@ exports.broadcastEmail = async (req, res) => {
     if (sendTo === 'all') {
       const subscribers = await Subscriber.find({ status: 'active' });
       recipients = subscribers.map(sub => sub.email);
+    } else if (sendTo === 'system_users') {
+      const users = await User.find({ isActive: true });
+      recipients = users.map(u => u.email);
+    } else if (sendTo === 'both') {
+      const subscribers = await Subscriber.find({ status: 'active' });
+      const users = await User.find({ isActive: true });
+      const combined = new Set([...subscribers.map(s => s.email), ...users.map(u => u.email)]);
+      recipients = Array.from(combined);
     } else if (Array.isArray(sendTo)) {
       recipients = sendTo;
     } else {
@@ -127,7 +136,7 @@ exports.broadcastEmail = async (req, res) => {
     for (const email of recipients) {
       const messageId = uuidv4();
       try {
-        const result = await sendEmail({ to: email, subject, text: message, html: message });
+        const result = await emailService.sendEmail(email, subject, message);
         const success = result && result.success;
         
         await EmailLog.create({

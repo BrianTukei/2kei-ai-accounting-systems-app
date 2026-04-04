@@ -53,21 +53,21 @@ router.post(
       .matches(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/)
       .withMessage('Time must be in HH:MM format (24-hour)'),
     body('phone')
-      .optional()
+      .optional({ checkFalsy: true })
       .trim()
       .matches(/^[+]?[\d\s\-\(\)]+$/)
       .withMessage('Please enter a valid phone number')
       .isLength({ max: 20 })
       .withMessage('Phone number cannot exceed 20 characters'),
     body('website')
-      .optional()
+      .optional({ checkFalsy: true })
       .trim()
       .isURL()
       .withMessage('Please enter a valid website URL')
       .isLength({ max: 255 })
       .withMessage('Website URL cannot exceed 255 characters'),
     body('message')
-      .optional()
+      .optional({ checkFalsy: true })
       .trim()
       .isLength({ max: 1000 })
       .withMessage('Message cannot exceed 1000 characters'),

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { body } = require('express-validator');
 const adminController = require('../controllers/adminController');
+const emailController = require('../controllers/emailController');
 const { isAdmin } = require('../middleware/adminAuth');
 const { emailLimiter } = require('../middleware/rateLimiter');
 
@@ -96,5 +97,35 @@ router.get('/email-stats', adminController.getEmailStatistics);
  * @access  Admin
  */
 router.post('/test-email', adminController.testEmail);
+
+/**
+ * @route   GET /api/admin/subscribers
+ * @desc    Get all bulk email subscribers
+ * @access  Admin
+ */
+router.get('/subscribers', emailController.getSubscribers);
+
+/**
+ * @route   POST /api/admin/subscribers
+ * @desc    Add a new subscriber (for manual adding by admin)
+ * @access  Admin
+ */
+router.post('/subscribers', emailController.addSubscriber);
+
+/**
+ * @route   POST /api/admin/broadcast-email
+ * @desc    Send bulk email to subscribers
+ * @access  Admin
+ */
+router.post(
+  '/broadcast-email',
+  emailLimiter,
+  [
+    body('subject').trim().notEmpty().withMessage('Subject is required'),
+    body('message').trim().notEmpty().withMessage('Message is required'),
+    body('sendTo').notEmpty().withMessage('sendTo is required')
+  ],
+  emailController.broadcastEmail
+);
 
 module.exports = router;

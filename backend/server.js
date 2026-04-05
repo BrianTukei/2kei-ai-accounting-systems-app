@@ -19,6 +19,7 @@ const billingRoutes = require('./routes/billing');
 const adminMessagingRoutes = require('./routes/adminMessaging');
 const broadcastRoutes = require('./routes/broadcastRoutes');
 const documentProcessingRoutes = require('./routes/documentProcessing');
+const demoRoutes = require('./routes/demo');
 
 // Import subscription jobs
 const { initializeSubscriptionJobs } = require('./jobs/subscriptionJobs');
@@ -125,6 +126,7 @@ app.use('/api/billing', authenticate, billingRoutes); // Billing routes with aut
 app.use('/api/admin/messages', adminMessagingRoutes); // Admin messaging routes
 app.use('/api/admin/broadcasts', broadcastRoutes); // Admin Broadcast Routes
 app.use('/api/documents', documentProcessingRoutes); // AI Parser Queue Routes
+app.use('/api/demo', demoRoutes); // Public demo booking routes
 app.use('/api/admin', adminRoutes); // Admin routes have their own auth middleware
 
 // API documentation endpoint

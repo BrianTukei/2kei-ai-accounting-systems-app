@@ -403,11 +403,11 @@ export default function BookDemo() {
                     Website
                   </label>
                   <input
-                    type="url"
+                    type="text"
                     value={bookingData.website}
                     onChange={(e) => handleInputChange('website', e.target.value)}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                    placeholder="https://company.com"
+                    placeholder="company.com"
                   />
                 </div>
 

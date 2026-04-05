@@ -88,7 +88,11 @@ export const AdminMessagingPanel: React.FC = () => {
 
   const loadAnalytics = async () => {
     try {
-      const response = await fetch('/api/admin-messaging/analytics');
+      const response = await fetch('/api/admin/broadcasts/analytics', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
       const data = await response.json();
       if (data.success) {
         setAnalytics(data.data);
@@ -185,19 +189,52 @@ export const AdminMessagingPanel: React.FC = () => {
         return;
       }
 
-      const response = await fetch('/api/admin/messages/send', {
+      // Step 1: Create Broadcast Draft
+      const createResponse = await fetch('/api/admin/broadcasts', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}` // Ensure auth
         },
         body: JSON.stringify({
-          title: messageToSend.title,
+          name: `Broadcast: ${messageToSend.title.substring(0, 30)}...`,
+          subject: messageToSend.title,
           message: messageToSend.body,
-          link: messageToSend.action?.link,
-          recipientType: isSpecific ? 'specific' : sendRecipientType,
-          specificUserIds: isSpecific ? selectedUserIds : [],
+          recipient_group: isSpecific ? 'specific' : sendRecipientType,
+          specific_recipients: isSpecific ? selectedUserIds : [],
         })
       });
+
+      const createData = await createResponse.json();
+      
+      if (!createData.success || !createData.data) {
+        throw new Error(createData.error || 'Failed to create broadcast draft');
+      }
+
+      const broadcastId = createData.data.id;
+
+      // Step 2: Send Broadcast
+      const sendResponse = await fetch(`/api/admin/broadcasts/${broadcastId}/send`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      const sendData = await sendResponse.json();
+
+      if (sendData.success) {
+        toast.success(`Broadcast successfully created and dispatched!`);
+        setIsSendDialogOpen(false);
+      } else {
+        throw new Error(sendData.error || 'Failed to send broadcast');
+      }
+    } catch (error: any) {
+      console.error('Failed to send broadcast:', error);
+      toast.error(error.message || 'Failed to send broadcast');
+    }
+  };
 
       const data = await response.json();
       if (data.success || data.sentTo !== undefined) {

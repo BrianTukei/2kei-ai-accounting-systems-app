@@ -33,8 +33,13 @@ export default function CameraCapture({ onCapture, onClose }: CameraCaptureProps
 
   // ---------- start / stop camera ----------
   const stopCamera = useCallback(() => {
-    streamRef.current?.getTracks().forEach((t) => t.stop());
-    streamRef.current = null;
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
     // Release wake lock when camera stops
     wakeLockRef.current?.release().catch(() => {});
     wakeLockRef.current = null;
@@ -55,7 +60,14 @@ export default function CameraCapture({ onCapture, onClose }: CameraCaptureProps
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        await videoRef.current.play();
+        try {
+          await videoRef.current.play();
+        } catch (playErr: any) {
+          // AbortError is thrown when play() is interrupted by a new load request or unmount
+          if (playErr.name !== 'AbortError') {
+            throw playErr;
+          }
+        }
       }
 
       // Keep the screen on while camera is active

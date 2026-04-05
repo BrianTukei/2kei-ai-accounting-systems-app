@@ -294,47 +294,63 @@ export function useBankImport() {
     setProgress(5);
 
     try {
-      if (!file) {
-        throw new Error('No file selected');
-      }
-
+      if (!file) throw new Error('No file selected');
       const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
-      let raw: RawRow[] = [];
 
-      setProgress(15);
+      setProgress(40);
 
-      // Parse based on file type
-      if (ext === 'csv') {
-        raw = await parseCSV(file);
-      } else if (['xlsx','xls','ods'].includes(ext)) {
-        raw = await parseExcel(file);
-      } else if (ext === 'pdf') {
-        setProgress(25); // PDF parsing takes longer
-        raw = await parsePDF(file);
-      } else if (['jpg','jpeg','png','gif','bmp','webp'].includes(ext)) {
-        setProgress(25); // Image OCR takes longer
-        raw = await parseImage(file);
-      } else {
-        throw new Error(`Unsupported file type: .${ext}. Please upload CSV, Excel, PDF, or image files (JPG, PNG, etc.).`);
+      // 1. Delegate parsing to the enterprise backend route
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('jobType', 'bank_statement_parse');
+
+      let token = localStorage.getItem('supabase.auth.token') || '';
+      if (!token) {
+        const tokens = Object.keys(localStorage).filter(k => k.startsWith('sb-') && k.endsWith('-auth-token'));
+        if (tokens.length) {
+            const authObj = JSON.parse(localStorage.getItem(tokens[0]) || '{}');
+            token = authObj.access_token || '';
+        }
       }
 
-      if (!raw || raw.length === 0) {
-        throw new Error('No data found in file. Please check your file format.');
+      const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+
+      const res = await fetch('/api/documents/parse-preview', {
+        method: 'POST',
+        headers,
+        body: formData
+      });
+
+      const resData = await res.json();
+      if (!res.ok) {
+        throw new Error(resData.error || 'Failed to parse document');
       }
 
-      setProgress(45);
-
-      const mapped = mapRows(raw);
-      
-      if (mapped.length === 0) {
-        throw new Error('No valid transaction rows found. Ensure your file has Date, Description, and Amount columns.');
+      const backendRows = resData.rows || [];
+      if (backendRows.length === 0) {
+         throw new Error('No valid transaction rows found in file.');
       }
 
-      setProgress(60);
-
-      const categorised = categoriseBatch(mapped);
       setProgress(80);
 
+      // 2. Map backend structure to the frontend Review Wizard expectations
+      const mapped = backendRows.map((r: any) => {
+         const debit = r.type === 'expense' ? Math.abs(r.amount) : 0;
+         const credit = r.type === 'income' ? Math.abs(r.amount) : 0;
+
+         return {
+            date: r.date,
+            description: String(r.description || ''),
+            debit,
+            credit,
+            balance: null,
+            aiCategory: r.category !== 'Uncategorized' ? r.category : undefined,
+            aiType: r.type
+         };
+      });
+      
+      const categorised = categoriseBatch(mapped);
+      
       const importedRows: ImportedRow[] = categorised.map((r) => ({
         ...r,
         id:        uuidv4(),

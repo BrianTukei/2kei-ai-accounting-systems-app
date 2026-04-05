@@ -103,3 +103,20 @@ exports.getGlobalMonitoring = async (req, res) => {
     }
 }
 
+
+
+const bankStatementParser = require('../parsers/bankStatementParser');
+try {
+} catch(e) {}
+exports.parsePreview = async (req, res) => {
+    try {
+        const file = req.file;
+        if (!file) return res.status(400).json({ error: 'No file uploaded' });
+        const parsedData = await bankStatementParser.parseStatementFile(file.buffer, file.mimetype);
+        res.status(200).json({ rows: parsedData });
+    } catch (error) {
+        const logger = require('../utils/logger');
+        logger.error('Parse Preview error:', error);
+        res.status(400).json({ error: error.message });
+    }
+};

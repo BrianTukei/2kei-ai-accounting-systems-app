@@ -202,14 +202,12 @@ export function categoriseBatch(
   return rows.map((row) => {
     const debit  = row.debit  ?? 0;
     const credit = row.credit ?? 0;
-    const key    = `${row.date}|${row.description.trim().toLowerCase()}|${debit}|${credit}`;
-    const isDuplicate = seen.has(key);
-    seen.add(key);
-
-    const { category, type } = categoriseTransaction(row.description, debit, credit);
-
-    return {
-      date:        row.date,
+      const safeDesc = String(row.description || '');
+      const key    = `${row.date}|${safeDesc.trim().toLowerCase()}|${debit}|${credit}`;
+      const isDuplicate = seen.has(key);
+      seen.add(key);
+  
+      const { category, type } = categoriseTransaction(safeDesc, debit, credit);
       description: row.description,
       debit,
       credit,

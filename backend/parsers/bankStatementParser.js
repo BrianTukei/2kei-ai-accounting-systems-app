@@ -1,11 +1,11 @@
 const Papa = require('papaparse');
 const ExcelJS = require('exceljs');
 const logger = require('../utils/logger');
-const { Readable } = require('stream');
 
 /**
- * 7) File Parser Architecture (Bank Statement Parser Pipeline)
- * Upload -> Detect Format -> Parse Rows -> Clean Data -> Validate -> Classify -> Save
+ * PRODUCTION BANK STATEMENT PARSER
+ * Decodes CSV and Excel files securely in memory and normalizes bank transactions
+ * mapped to the new enterprise SQL schema (aia_transactions).
  */
 
 exports.parseStatementFile = async (fileBuffer, mimetype) => {
@@ -20,10 +20,9 @@ exports.parseStatementFile = async (fileBuffer, mimetype) => {
 
         if (mimetype === 'text/csv' || mimetype === 'application/csv') {
              parsedRows = await parseCSV(fileBuffer);
-        } else if (mimetype.includes('excel') || mimetype.includes('spreadsheet')) {
+        } else if (mimetype.includes('excel') || mimetype.includes('spreadsheetml')) {
              parsedRows = await parseExcel(fileBuffer);
         } else if (mimetype.includes('ofx') || mimetype.includes('qfx')) {
-             // parsedRows = parseOFX(fileBuffer);
              throw new Error('OFX parsing module is currently a stub. CSV/Excel supported out of box.');
         } else {
              throw new Error(`Unsupported bank format type: ${mimetype}`);
@@ -34,7 +33,7 @@ exports.parseStatementFile = async (fileBuffer, mimetype) => {
         
         // Validate Data
         if (!cleanedData || cleanedData.length === 0) {
-            throw new Error('No valid transactions found in bank statement.');
+            throw new Error('No valid transactions found in bank statement. Check if headers like Date, Description, Amount exist.');
         }
         
         return cleanedData;
@@ -52,10 +51,8 @@ exports.parseStatementFile = async (fileBuffer, mimetype) => {
  */
 const parseCSV = (buffer) => {
     return new Promise((resolve, reject) => {
-        const results = [];
         const fileContent = buffer.toString('utf-8');
 
-        // Streaming is safer for memory, but string memory is fine for typical < 10MB bank exports
         Papa.parse(fileContent, {
             header: true,
             skipEmptyLines: true,
@@ -86,14 +83,15 @@ const parseExcel = async (buffer) => {
        // Assume first row is headers
        if (rowNumber === 1) {
            row.eachCell((cell, colNumber) => {
-               headers[colNumber] = cell.value?.toString().toLowerCase().trim();
+               headers[colNumber] = cell.value?.toString().toLowerCase().trim() || `col_${colNumber}`;
            });
        } else {
            // Parse into Object based on headers
            const rowData = {};
            row.eachCell((cell, colNumber) => {
                if (headers[colNumber]) {
-                   rowData[headers[colNumber]] = cell.value;
+                   // Clean up dates if they come as raw ISODates in JS
+                   rowData[headers[colNumber]] = cell.type === ExcelJS.ValueType.Date ? cell.value.toISOString() : cell.value;
                }
            });
            results.push(rowData);
@@ -104,40 +102,63 @@ const parseExcel = async (buffer) => {
 };
 
 /**
- * Normalizes rows across all bank export structures
+ * Normalizes rows across all bank export structures and maps them straight into
+ * the DB-ready aia_transactions model shape.
  * @param {Array} rows 
  * @returns {Array} Clean transactions
  */
 const cleanData = (rows) => {
     return rows.map((row, index) => {
-       // A robust system tries to find the 'date', 'description'/'payee', 'amount' dynamically
-       // The field names in CSV exports vary by bank: 'Date', 'Posted Date', 'Payee', 'Description', 'Amount', 'Credit', 'Debit'
+       const keys = Object.keys(row);
+       const rowMapping = {};
        
-       const keys = Object.keys(row).map(k => k.toLowerCase().replace(/[^a-z0-9]/g, ''));
+       // Build lowercase unspaced map to find column names loosely
+       keys.forEach(k => {
+           rowMapping[k.toLowerCase().replace(/[^a-z]/g, '')] = row[k];
+       });
        
-       let dateStr = row.date || row.posted || row.transactiondate || row[Object.keys(row).find(k => k.toLowerCase().includes('date'))] || null;
-       let descStr = row.description || row.payee || row.name || row.memo || row[Object.keys(row).find(k => k.toLowerCase().includes('desc'))] || null;
-       let amountStr = row.amount || row[Object.keys(row).find(k => k.toLowerCase().includes('amount'))] || null;
+       let dateStr = rowMapping.date || rowMapping.transactiondate || rowMapping.postingdate || rowMapping.posteddate || null;
+       let descStr = rowMapping.description || rowMapping.payee || rowMapping.name || rowMapping.memo || rowMapping.particulars || null;
+       let amountStr = rowMapping.amount || rowMapping.transactionamount || null;
 
-       if (!dateStr || !descStr) return null; // Drop invalid rows
+       if (!dateStr || !descStr) return null; // Drop invalid header/footer rows
 
        // Compute amount (Handles Credit / Debit split columns if no main Amount column exists)
        let amount = 0;
        if (amountStr) {
-           amount = parseFloat(String(amountStr).replace(/,/g, ''));
+           amount = parseFloat(String(amountStr).replace(/[$,]/g, ''));
        } else {
-           let creditStr = row.credit || row[Object.keys(row).find(k => k.toLowerCase() === 'credit')];
-           let debitStr = row.debit || row[Object.keys(row).find(k => k.toLowerCase() === 'debit')];
-           if (creditStr) amount = parseFloat(String(creditStr).replace(/,/g, ''));
-           if (debitStr) amount = -parseFloat(String(debitStr).replace(/,/g, ''));
+           let creditStr = rowMapping.credit || rowMapping.deposit || rowMapping.moneyin;
+           let debitStr = rowMapping.debit || rowMapping.withdrawal || rowMapping.moneyout;
+           
+           if (creditStr) amount = parseFloat(String(creditStr).replace(/[$,]/g, ''));
+           // Convert debit columns to negative values
+           if (debitStr) {
+               const debitFloat = parseFloat(String(debitStr).replace(/[$,]/g, ''));
+               amount = -Math.abs(debitFloat);
+           }
+       }
+       
+       if (isNaN(amount) || amount === 0) return null; // Safety check
+       
+       // Fallback Date parser
+       let cleanDateStr;
+       try {
+           let d = new Date(dateStr);
+           if(isNaN(d.getTime())) cleanDateStr = new Date().toISOString().split('T')[0];
+           else cleanDateStr = d.toISOString().split('T')[0];
+       } catch (e) {
+           cleanDateStr = new Date().toISOString().split('T')[0];
        }
 
        return {
-           row_index: index,
-           date: new Date(dateStr).toISOString().split('T')[0],
+           date: cleanDateStr, // YYYY-MM-DD
            description: descStr.toString().trim(),
            amount: amount,
-           type: amount >= 0 ? 'income' : 'expense'
+           type: amount >= 0 ? 'income' : 'expense',
+           category: 'Uncategorized', // AI classification stage updates this
+           source: 'bank_import',
+           confidence_score: 1.00 // Direct import -> absolute truth source
        };
     }).filter(row => row !== null); // Filter out the nulls
 };

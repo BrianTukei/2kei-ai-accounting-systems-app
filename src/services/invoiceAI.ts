@@ -208,6 +208,9 @@ export function categoriseBatch(
       seen.add(key);
   
       const { category, type } = categoriseTransaction(safeDesc, debit, credit);
+
+    return {
+      date: row.date,
       description: row.description,
       debit,
       credit,

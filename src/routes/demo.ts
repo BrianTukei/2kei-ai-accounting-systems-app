@@ -63,8 +63,6 @@ router.post(
     body('website')
       .optional()
       .trim()
-      .isURL()
-      .withMessage('Please enter a valid website URL')
       .isLength({ max: 255 })
       .withMessage('Website URL cannot exceed 255 characters'),
     body('message')

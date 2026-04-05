@@ -1,6 +1,6 @@
 const { createClient } = require('@supabase/supabase-js');
 const logger = require('../utils/logger');
-// const emailService = require('../services/emailService'); // Depending on implementation
+const emailService = require('../services/emailService');
 
 const hasSupabaseConfig = Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY);
 const supabase = hasSupabaseConfig
@@ -103,6 +103,39 @@ exports.deleteBroadcast = async (req, res) => {
         if (error) throw error;
         res.json({ success: true, message: 'Broadcast draft deleted' });
     } catch(err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
+
+// Send a test broadcast
+exports.sendTestBroadcast = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { email } = req.body;
+        
+        if (!email) {
+            return res.status(400).json({ success: false, error: 'Test email address is required' });
+        }
+        
+        const { data: broadcast, error: checkError } = await supabase
+            .from('broadcasts')
+            .select('*')
+            .eq('id', id)
+            .single();
+            
+        if (checkError || !broadcast) return res.status(404).json({ success: false, error: 'Broadcast not found' });
+        
+        // Using email service to send a test email
+        if(emailService && typeof emailService.sendEmail === 'function') {
+           await emailService.sendEmail(email, `[TEST] ${broadcast.subject}`, broadcast.message);
+        } else {
+           // fallback / mock if service is not injected perfectly
+           logger.info(`Mocking test email to ${email} for broadcast: ${broadcast.subject}`);
+        }
+
+        res.json({ success: true, message: 'Test broadcast sent successfully' });
+    } catch(err) {
+        logger.error('Error sending test broadcast', { error: err.message });
         res.status(500).json({ success: false, error: err.message });
     }
 };

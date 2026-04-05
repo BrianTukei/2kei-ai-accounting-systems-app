@@ -18,6 +18,7 @@ const adminRoutes = require('./routes/admin');
 const billingRoutes = require('./routes/billing');
 const adminMessagingRoutes = require('./routes/adminMessaging');
 const broadcastRoutes = require('./routes/broadcastRoutes');
+const documentProcessingRoutes = require('./routes/documentProcessing');
 
 // Import subscription jobs
 const { initializeSubscriptionJobs } = require('./jobs/subscriptionJobs');
@@ -99,6 +100,7 @@ app.use('/api/transactions', authenticate, transactionRoutes);
 app.use('/api/billing', authenticate, billingRoutes); // Billing routes with auth protection
 app.use('/api/admin/messages', adminMessagingRoutes); // Admin messaging routes
 app.use('/api/admin/broadcasts', broadcastRoutes); // Admin Broadcast Routes
+app.use('/api/documents', documentProcessingRoutes); // AI Parser Queue Routes
 app.use('/api/admin', adminRoutes); // Admin routes have their own auth middleware
 
 // API documentation endpoint
@@ -190,6 +192,12 @@ const connectDB = async () => {
     process.exit(1);
   }
 };
+
+// Import core stability tools
+const { initWorker } = require('./workers/processor');
+
+// Init process queue
+initWorker();
 
 // Start server
 const PORT = process.env.PORT || 5000;

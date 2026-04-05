@@ -21,6 +21,9 @@ router.put('/:id', broadcastController.updateBroadcast);
 // DELETE /api/admin/broadcasts/:id
 router.delete('/:id', broadcastController.deleteBroadcast);
 
+// POST /api/admin/broadcasts/:id/test
+router.post('/:id/test', broadcastController.sendTestBroadcast);
+
 // POST /api/admin/broadcasts/:id/send
 router.post('/:id/send', broadcastController.sendBroadcast);
 

@@ -88,6 +88,30 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Step 9: System health check with stats
+app.get('/api/system/health', async (req, res) => {
+  try {
+    const Company = require('./models/Company');
+    const User = require('./models/User');
+    const DemoBooking = require('./models/DemoBooking');
+    
+    // Fallback if collections are not ready
+    let companies = 0, users = 0, bookings = 0;
+    try { companies = await Company.countDocuments(); } catch(e){}
+    try { users = await User.countDocuments(); } catch(e){}
+    try { bookings = await DemoBooking.countDocuments(); } catch(e){}
+
+    res.status(200).json({
+      companies,
+      users,
+      bookings,
+      status: "healthy"
+    });
+  } catch (error) {
+    res.status(500).json({ status: "unhealthy", error: error.message });
+  }
+});
+
 // Apply general rate limiting to all API routes
 app.use('/api/', generalLimiter);
 
@@ -187,6 +211,11 @@ const connectDB = async () => {
     });
     
     console.log(`MongoDB Connected: ${conn.connection.host}`);
+    
+    // Step 8: Seed Demo Data Automatically
+    const seedDemoData = require('./utils/seedDemoData');
+    await seedDemoData();
+    
   } catch (error) {
     console.error('Database connection error:', error);
     process.exit(1);

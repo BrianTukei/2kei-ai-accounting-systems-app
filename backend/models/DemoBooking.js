@@ -21,6 +21,10 @@ const demoBookingSchema = new mongoose.Schema({
     trim: true,
     maxlength: [200, 'Company name cannot exceed 200 characters']
   },
+  companyId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Company'
+  },
   phone: {
     type: String,
     trim: true,

@@ -60,11 +60,29 @@ class DemoController {
         });
       }
 
+      // Step 7: Add Default Company Fallback (Demo Safety)
+      const Company = require('../models/Company');
+      let companyId;
+      const defaultCompany = await Company.findOne().select('_id name');
+      
+      if (defaultCompany) {
+        companyId = defaultCompany._id;
+      }
+
+      // Step 6 & 10: Mandatory Validation Before Booking & Error instead of silent failure
+      if (!companyId) {
+        return res.status(400).json({
+          success: false,
+          error: 'No company assigned to this user (or system demo data missing).'
+        });
+      }
+
       // Create booking
       const booking = new DemoBooking({
         name,
         email,
-        company,
+        company: company || defaultCompany.name, // Keep the string for UI if needed
+        companyId, // Link the actual relationship
         phone,
         website,
         preferredDate: new Date(preferredDate),

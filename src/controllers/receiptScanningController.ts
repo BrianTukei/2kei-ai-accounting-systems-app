@@ -6,7 +6,7 @@ export class ReceiptScanningController {
   // Single receipt scanning
   async scanReceipt(req: Request, res: Response) {
     try {
-      const { imageData, ocrText } = req.body;
+      const { imageData, ocrText, userId, companyId } = req.body;
       
       if (!imageData && !ocrText) {
         return res.status(400).json({
@@ -15,14 +15,63 @@ export class ReceiptScanningController {
         });
       }
 
+      if (!userId || !companyId) {
+        return res.status(400).json({
+          success: false,
+          error: 'User ID and Company ID are required to save receipt'
+        });
+      }
+
       const result = await enhancedReceiptScanner.scanReceipt(imageData || '', ocrText);
       
+      // Save to Supabase DB if successful
+      if (result.success && result.data) {
+        const { createClient } = require('@supabase/supabase-js');
+        const supabase = createClient(
+          process.env.SUPABASE_URL || '',
+          process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+        );
+
+        const receiptData = result.data;
+        const metadata = {
+          items: receiptData.items || [],
+          taxes: receiptData.taxes || [],
+          warnings: result.warnings || []
+        };
+
+        const { error: dbError } = await supabase.from('receipts').insert({
+          user_id: userId,
+          company_id: companyId,
+          merchant_name: receiptData.merchant !== 'Not Found' ? receiptData.merchant : null,
+          total_amount: receiptData.total || 0,
+          currency: receiptData.currency || 'USD',
+          date: receiptData.date !== 'Not Found' ? new Date(receiptData.date) : null,
+          tax_amount: receiptData.tax || 0,
+          status: 'processed',
+          ocr_data: metadata,
+          confidence_score: receiptData.confidence || 0,
+          category: receiptData.category || 'Uncategorized'
+        });
+
+        if (dbError) {
+          console.error('Failed to save receipt to DB:', dbError);
+          // Return success true but with a warning that DB save failed
+          return res.json({
+            success: true,
+            data: result.data,
+            warnings: [...(result.warnings || []), `DB Save Error: ${dbError.message}`],
+            processingTime: result.processingTime,
+            message: 'Receipt scanned successfully but failed to save to database'
+          });
+        }
+      }
+
       res.json({
         success: result.success,
         data: result.data,
         warnings: result.warnings,
         processingTime: result.processingTime,
-        message: result.success ? 'Receipt scanned successfully' : 'Failed to scan receipt',
+        message: result.success ? 'Receipt scanned and saved successfully' : 'Failed to scan receipt',
         error: result.error
       });
     } catch (error) {

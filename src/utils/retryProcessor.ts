@@ -5,7 +5,7 @@
  * timeouts and maximum retry limits across all AI operations.
  */
 
-import { logger } from './loggerService';
+import { logger } from '../services/loggerService';
 
 interface RetryOptions {
   maxRetries?: number;

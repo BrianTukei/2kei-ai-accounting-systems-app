@@ -19,28 +19,32 @@ export default function AdminEmailSubscribers() {
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
-  const [sendTo, setSendTo] = useState<'all' | 'system_users' | 'both'>('all');
+  const [sendTo, setSendTo] = useState<'subscribers' | 'users' | 'both'>('both');
   
   // Add subscriber state
   const [newEmail, setNewEmail] = useState('');
   const [newName, setNewName] = useState('');
   const [addingSub, setAddingSub] = useState(false);
 
+  const [counts, setCounts] = useState({
+    subscriberCount: 0,
+    userCount: 0,
+    bothCount: 0,
+  });
+
   const fetchSubscribers = useCallback(async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/admin/subscribers', {
+      const response = await fetch('/api/admin/broadcasts/recipients', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-      const data = await response.json();
-      if (data.success) {
-        setSubscribers(data.subscribers || []);
-        if (data.systemUsersCount !== undefined) {
-          setSystemUsersCount(data.systemUsersCount);
-        }
+      const resData = await response.json();
+      if (resData.success) {
+        setCounts(resData.data);
+        if (resData.data.subscribers) setSubscribers(resData.data.subscribers);
       }
     } catch (error) {
       console.error('Failed to fetch subscribers', error);
@@ -94,13 +98,13 @@ export default function AdminEmailSubscribers() {
     setSending(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/admin/broadcast-email', {
+      const res = await fetch('/api/admin/broadcasts', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
+        body: JSON.stringify({ name: 'Campaign ' + new Date().toISOString().split('T')[0], send_now: true, recipient_group: sendTo,
           subject,
           message,
           sendTo

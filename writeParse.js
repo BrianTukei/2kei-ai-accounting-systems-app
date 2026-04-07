@@ -1,4 +1,5 @@
-const Tesseract = require('tesseract.js');
+﻿const fs = require('fs');
+const content = const Tesseract = require('tesseract.js');
 const logger = require('../utils/logger');
 const { extractReceiptData } = require('../services/aiService');
 
@@ -8,7 +9,7 @@ exports.parseReceiptFile = async (fileBuffer, mimetype) => {
             throw new Error('No file buffer provided to receipt parser.');
         }
 
-        logger.info(`Starting OCR process for receipt...`);
+        logger.info('Starting OCR process for receipt...');
         
         const { data: { text } } = await Tesseract.recognize(fileBuffer, 'eng');
         logger.info('OCR Complete. Executing AI extraction...');
@@ -30,19 +31,19 @@ exports.parseReceiptFile = async (fileBuffer, mimetype) => {
 
     } catch (error) {
         logger.error('Error in receiptParser:', { error: error.message });
-        throw new Error(`Receipt Parsing Failed: ${error.message}`);
+        throw new Error('Receipt Parsing Failed');
     }
 };
 
 function extractFields(ocrText) {
-    const lines = ocrText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    const lines = ocrText.split('\\n').map(l => l.trim()).filter(l => l.length > 0);
     
     let total = 0;
     let dateStr = null;
     let vendor = lines[0] ? lines[0].substring(0, 50) : 'Unknown Vendor';
 
-    const totalRegex = /(?:total|amount|sum|due|pay)[\s\:\-\.\$]*((?:\d{1,3}(?:,\d{3})*|\d+)(?:\.\d{2})?)/i;
-    const dateRegex = /(\d{1,4}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})/;
+    const totalRegex = /(?:total|amount|sum|due|pay)[\\s\\:\\-\\.\\$]*((?:\\d{1,3}(?:,\\d{3})*|\\d+)(?:\\.\\d{2})?)/i;
+    const dateRegex = /(\\d{1,4}[\\/\\-\\.]\\d{1,2}[\\/\\-\\.]\\d{2,4})/;
 
     lines.forEach(line => {
         const tMatch = line.match(totalRegex);
@@ -69,4 +70,5 @@ function extractFields(ocrText) {
         confidenceScore: 0.75,
         categorization: 'Review Needed'
     };
-}
+};
+fs.writeFileSync('backend/parsers/receiptParser.js', content);

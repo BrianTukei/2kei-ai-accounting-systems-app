@@ -24,6 +24,7 @@ import AdminMessagingPanel from './components/admin/AdminMessagingPanel';
 import EmailLogsDashboard from './components/admin/EmailLogsDashboard';
 import EmailTemplates from './components/admin/EmailTemplates';
 import AdminRoute from './components/auth/ProtectedRoute';
+import EmailCampaignManager from './pages/EmailCampaignManager';
 
 function App() {
   return (
@@ -51,8 +52,7 @@ function App() {
               
               {/* Admin Routes */}
                 <Route path="admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-                <Route path="admin/messaging" element={<AdminRoute><AdminMessagingPage /></AdminRoute>} />
-                <Route path="admin/email-logs" element={<AdminRoute><EmailLogsDashboard /></AdminRoute>} />
+                <Route path="admin/messaging" element={<AdminRoute><AdminMessagingPage /></AdminRoute>} />              <Route path="admin/campaigns" element={<AdminRoute><EmailCampaignManager /></AdminRoute>} />                <Route path="admin/email-logs" element={<AdminRoute><EmailLogsDashboard /></AdminRoute>} />
                 <Route path="admin/templates" element={<AdminRoute><EmailTemplates /></AdminRoute>} />
             </Route>
 

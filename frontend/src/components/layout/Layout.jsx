@@ -34,6 +34,7 @@ export default function Layout({ children }) {
   const adminNavigation = [
     { name: 'Admin Dashboard', href: '/admin', icon: Shield },
     { name: 'Messaging', href: '/admin/messaging', icon: Menu },
+    { name: 'Email Campaigns', href: '/admin/campaigns', icon: Menu },
     { name: 'Email Logs', href: '/admin/email-logs', icon: Receipt },
     { name: 'Templates', href: '/admin/templates', icon: Settings },
   ];

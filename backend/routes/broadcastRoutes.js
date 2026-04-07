@@ -12,6 +12,9 @@ router.get('/', broadcastController.getBroadcasts);
 // GET /api/admin/broadcasts/analytics
 router.get('/analytics', broadcastController.getAnalytics);
 
+// GET /api/admin/broadcasts/recipients
+router.get('/recipients', broadcastController.getRecipients);
+
 // POST /api/admin/broadcasts
 router.post('/', broadcastController.createBroadcast);
 

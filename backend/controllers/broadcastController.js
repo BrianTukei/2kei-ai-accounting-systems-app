@@ -1,6 +1,9 @@
 const { createClient } = require('@supabase/supabase-js');
 const logger = require('../utils/logger');
 const emailService = require('../services/emailService');
+const User = require('../models/User');
+const Subscriber = require('../models/Subscriber');
+const { emailCampaignQueue } = require('../queues/emailQueue');
 
 const hasSupabaseConfig = Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY);
 const supabase = hasSupabaseConfig
@@ -87,6 +90,36 @@ exports.updateBroadcast = async (req, res) => {
     } catch (error) {
         logger.error('Error updating broadcast', { error: error.message });
         res.status(500).json({ success: false, error: 'Database error' });
+    }
+};
+
+// Get registered users and subscribers counts to preview before sending
+exports.getRecipients = async (req, res) => {
+    try {
+        const subscribers = await Subscriber.find({ status: 'active' }).select('email name');
+        // Treat fully registered and active system users
+        const users = await User.find({ status: 'active' }).select('email firstName lastName');
+
+        // Extract emails
+        const subEmails = subscribers.map(s => s.email);
+        const userEmails = users.map(u => u.email);
+
+        // De-duplicate both lists using a Set
+        const bothLists = [...new Set([...subEmails, ...userEmails])];
+
+        res.json({
+            success: true,
+            data: {
+                subscriberCount: subEmails.length,
+                userCount: userEmails.length,
+                bothCount: bothLists.length,
+                subscribers: subscribers.slice(0, 10), // Send just a sample for UI preview
+                users: users.slice(0, 10),
+            }
+        });
+    } catch(err) {
+        logger.error('Error fetching broadcast recipients', { error: err.message });
+        res.status(500).json({ success: false, error: err.message });
     }
 };
 
@@ -185,8 +218,22 @@ exports.sendBroadcast = async (req, res) => {
     try {
         const { id } = req.params;
         
-        // 1. Mark as processing
-        const { data: broadcast, error: updateError } = await supabase
+        // 1. Fetch broadcast
+        const { data: broadcast, error: fetchError } = await supabase
+            .from('broadcasts')
+            .select('*')
+            .eq('id', id)
+            .single();
+            
+        if (fetchError || !broadcast) return res.status(404).json({ success: false, error: 'Broadcast not found' });
+        
+        // Ensure not already sent or processing
+        if (['processing', 'sent'].includes(broadcast.status)) {
+            return res.status(400).json({ success: false, error: 'Broadcast already sent or processing' });
+        }
+
+        // 2. Mark as processing
+        const { data: updatedBroadcast, error: updateError } = await supabase
             .from('broadcasts')
             .update({ status: 'processing', sent_at: new Date().toISOString() })
             .eq('id', id)
@@ -195,20 +242,41 @@ exports.sendBroadcast = async (req, res) => {
             
         if (updateError) throw updateError;
         
-        // 2. Here would be the actual email sending logic (e.g. queueing jobs)
-        // emailService.queueBroadcast(broadcast);
+        // 3. Collect targeted emails 
+        let emails = [];
+        const group = broadcast.recipient_group;
         
-        // For demonstration, mark as sent immediately
-        const { error: finalUpdate } = await supabase
-            .from('broadcasts')
-            .update({ 
-               status: 'sent',
-               sent_count: 0 // Update this via webhook callback or job
-            })
-            .eq('id', id);
+        if (group === 'subscribers' || group === 'both') {
+            const subs = await Subscriber.find({ status: 'active' }, 'email').lean();
+            emails.push(...subs.map(s => s.email));
+        }
+        if (group === 'users' || group === 'both') {
+            const users = await User.find({ status: 'active' }, 'email').lean();
+            emails.push(...users.map(u => u.email));
+        }
+        
+        // 4. De-duplicate emails automatically protection
+        const uniqueEmails = [...new Set(emails)];
+        
+        // Filter out empty
+        const validEmails = uniqueEmails.filter(e => e && e.includes('@'));
 
-        res.json({ success: true, message: 'Broadcast is processing', data: broadcast });
+        // 5. Bulk Email Queue
+        if (validEmails.length > 0) {
+            // Use Email Queue system to prevent block/spam and server crash
+            await emailCampaignQueue.add('send_broadcast', {
+                broadcastId: id,
+                subject: broadcast.subject,
+                message: broadcast.message,
+                emails: validEmails
+            });
+        } else {
+             await supabase.from('broadcasts').update({ status: 'sent', sent_count: 0 }).eq('id', id);
+        }
+        
+        res.json({ success: true, message: 'Broadcast is queued for processing', data: updatedBroadcast, stats: { queuedCount: validEmails.length } });
     } catch(err) {
+        logger.error('Error sending broadcast queueing', { error: err.message });
         res.status(500).json({ success: false, error: err.message });
     }
 };

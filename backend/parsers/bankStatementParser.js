@@ -1,10 +1,12 @@
 const Papa = require('papaparse');
 const ExcelJS = require('exceljs');
+const pdfParse = require('pdf-parse');
 const logger = require('../utils/logger');
+const { categorizeTransaction } = require('../services/aiService');
 
 /**
  * PRODUCTION BANK STATEMENT PARSER
- * Decodes CSV and Excel files securely in memory and normalizes bank transactions
+ * Decodes CSV, Excel, and PDF files securely in memory and normalizes bank transactions
  * mapped to the new enterprise SQL schema (aia_transactions).
  */
 
@@ -22,8 +24,10 @@ exports.parseStatementFile = async (fileBuffer, mimetype) => {
              parsedRows = await parseCSV(fileBuffer);
         } else if (mimetype.includes('excel') || mimetype.includes('spreadsheetml')) {
              parsedRows = await parseExcel(fileBuffer);
+        } else if (mimetype === 'application/pdf') {
+             parsedRows = await parsePDF(fileBuffer);
         } else if (mimetype.includes('ofx') || mimetype.includes('qfx')) {
-             throw new Error('OFX parsing module is currently a stub. CSV/Excel supported out of box.');
+             throw new Error('OFX parsing module is currently a stub. CSV/Excel/PDF supported out of box.');
         } else {
              throw new Error(`Unsupported bank format type: ${mimetype}`);
         }
@@ -36,12 +40,67 @@ exports.parseStatementFile = async (fileBuffer, mimetype) => {
             throw new Error('No valid transactions found in bank statement. Check if headers like Date, Description, Amount exist.');
         }
         
+        // AI Categorization for all
+        for (const t of cleanedData) {
+           const aiResult = await categorizeTransaction(t.description, t.amount);
+           if(aiResult && aiResult.category) {
+               t.category = aiResult.category;
+           } else {
+               t.category = categorizeTransactionFallback(t.description);
+           }
+        }
+        
         return cleanedData;
 
     } catch (error) {
         logger.error('Error in bankStatementParser', { error: error.message });
         throw new Error(`Bank Statement Parsing Failed: ${error.message}`);
     }
+};
+
+/**
+ * Fallback Manual Categorization
+ */
+function categorizeTransactionFallback(description) {
+    if(!description) return "Other";
+    const text = String(description).toLowerCase();
+    if (text.includes("fuel") || text.includes("gas") || text.includes("petrol")) return "Travel";
+    if (text.includes("restaurant") || text.includes("eat") || text.includes("food")) return "Meals";
+    if (text.includes("rent") || text.includes("lease")) return "Rent";
+    if (text.includes("salary") || text.includes("payroll")) return "Payroll";
+    if (text.includes("electricity") || text.includes("water") || text.includes("pg&e")) return "Utilities";
+    if (text.includes("software") || text.includes("aws") || text.includes("google") || text.includes("itunes")) return "Software";
+    if (text.includes("office") || text.includes("staples")) return "Office Supplies";
+    if (text.includes("marketing") || text.includes("facebook") || text.includes("adwords")) return "Marketing";
+    return "Other";
+}
+
+/**
+ * Handle basic unstructured PDF Statements parsing lines manually.
+ */
+const parsePDF = async (buffer) => {
+    const data = await pdfParse(buffer);
+    const lines = data.text.split('\n').filter(l => l.trim().length > 0);
+    const results = [];
+    
+    const dateRegex = /^(\d{2}\/\d{2}\/\d{4}|\d{4}-\d{2}-\d{2})/;
+    const amountRegex = /(-?\$?[\d,]+\.\d{2})$/;
+
+    lines.forEach(line => {
+        let dateMatch = line.match(dateRegex);
+        let amountMatch = line.match(amountRegex);
+        
+        if (dateMatch && amountMatch) {
+            let desc = line.replace(dateMatch[0], '').replace(amountMatch[0], '').trim();
+            results.push({
+                date: dateMatch[0],
+                description: desc,
+                amount: amountMatch[0]
+            });
+        }
+    });
+    
+    return results;
 };
 
 /**

@@ -23,6 +23,13 @@ router.use(isAdmin);
 router.get('/users', adminController.getUsers);
 
 /**
+ * @route   GET /api/admin/users/emails
+ * @desc    Get active user emails for broadcast selection
+ * @access  Admin
+ */
+router.get('/users/emails', adminController.getUserEmails);
+
+/**
  * @route   GET /api/admin/users/:id
  * @desc    Get user by ID
  * @access  Admin

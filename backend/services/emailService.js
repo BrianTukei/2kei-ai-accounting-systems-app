@@ -34,7 +34,7 @@ class EmailService {
         delete config.secure;
       }
 
-      this.transporter = nodemailer.createTransporter(config);
+      this.transporter = nodemailer.createTransport(config);
       
       // Verify connection
       this.transporter.verify((error, success) => {

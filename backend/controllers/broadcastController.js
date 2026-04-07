@@ -96,9 +96,11 @@ exports.updateBroadcast = async (req, res) => {
 // Get registered users and subscribers counts to preview before sending
 exports.getRecipients = async (req, res) => {
     try {
+        const includeAll = String(req.query.include || '').toLowerCase() === 'all';
+
         const subscribers = await Subscriber.find({ status: 'active' }).select('email name');
         // Treat fully registered and active system users
-        const users = await User.find({ status: 'active' }).select('email firstName lastName');
+        const users = await User.find({ isActive: true }).select('email firstName lastName');
 
         // Extract emails
         const subEmails = subscribers.map(s => s.email);
@@ -113,8 +115,8 @@ exports.getRecipients = async (req, res) => {
                 subscriberCount: subEmails.length,
                 userCount: userEmails.length,
                 bothCount: bothLists.length,
-                subscribers: subscribers.slice(0, 10), // Send just a sample for UI preview
-                users: users.slice(0, 10),
+                subscribers: includeAll ? subscribers : subscribers.slice(0, 10), // Use sample by default
+                users: includeAll ? users : users.slice(0, 10),
             }
         });
     } catch(err) {
@@ -251,7 +253,7 @@ exports.sendBroadcast = async (req, res) => {
             emails.push(...subs.map(s => s.email));
         }
         if (group === 'users' || group === 'both') {
-            const users = await User.find({ status: 'active' }, 'email').lean();
+            const users = await User.find({ isActive: true }, 'email').lean();
             emails.push(...users.map(u => u.email));
         }
         

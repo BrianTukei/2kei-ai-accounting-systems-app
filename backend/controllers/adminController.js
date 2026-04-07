@@ -119,6 +119,37 @@ class AdminController {
   }
 
   /**
+   * Get active user emails for broadcast selection
+   * GET /api/admin/users/emails
+   */
+  async getUserEmails(req, res) {
+    try {
+      const users = await User.find({ isActive: true })
+        .select('firstName lastName email')
+        .sort({ createdAt: -1 })
+        .lean();
+
+      const results = users.map(user => ({
+        id: user._id,
+        name: `${user.firstName} ${user.lastName}`.trim(),
+        email: user.email
+      }));
+
+      return res.status(200).json({
+        success: true,
+        count: results.length,
+        data: results
+      });
+    } catch (error) {
+      logger.error('Error fetching user emails:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch user emails'
+      });
+    }
+  }
+
+  /**
    * Send email to user(s)
    * POST /api/admin/send-email
    */

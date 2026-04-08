@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 export default function AdminEmailSubscribers() {
   const { toast } = useToast();
   const [subscribers, setSubscribers] = useState<any[]>([]);
+  const [systemUsers, setSystemUsers] = useState<any[]>([]);
   const [systemUsersCount, setSystemUsersCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
 
@@ -19,6 +20,8 @@ export default function AdminEmailSubscribers() {
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
+  const [previewing, setPreviewing] = useState(false);
+  const [previewEmail, setPreviewEmail] = useState('');
   const [sendTo, setSendTo] = useState<'subscribers' | 'users' | 'both'>('both');
   
   // Add subscriber state
@@ -36,7 +39,7 @@ export default function AdminEmailSubscribers() {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/admin/broadcasts/recipients', {
+      const response = await fetch('/api/admin/broadcasts/recipients?include=all', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -44,7 +47,9 @@ export default function AdminEmailSubscribers() {
       const resData = await response.json();
       if (resData.success) {
         setCounts(resData.data);
+        setSystemUsersCount(resData.data.userCount || 0);
         if (resData.data.subscribers) setSubscribers(resData.data.subscribers);
+        if (resData.data.users) setSystemUsers(resData.data.users);
       }
     } catch (error) {
       console.error('Failed to fetch subscribers', error);
@@ -104,16 +109,29 @@ export default function AdminEmailSubscribers() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ name: 'Campaign ' + new Date().toISOString().split('T')[0], send_now: true, recipient_group: sendTo,
+        body: JSON.stringify({
+          name: 'Campaign ' + new Date().toISOString().split('T')[0],
+          recipient_group: sendTo,
           subject,
-          message,
-          sendTo
+          message
         })
       });
       
       const data = await res.json();
       if (data.success) {
-        toast({ title: 'Success', description: data.message });
+        const sendRes = await fetch(`/api/admin/broadcasts/${data.data.id}/send`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        const sendData = await sendRes.json();
+
+        if (sendData.success) {
+          toast({ title: 'Success', description: sendData.message || 'Broadcast queued' });
+        } else {
+          toast({ variant: 'destructive', title: 'Error', description: sendData.error || 'Failed to send broadcast' });
+        }
         setSubject('');
         setMessage('');
       } else {
@@ -126,6 +144,59 @@ export default function AdminEmailSubscribers() {
     }
   };
 
+  const handlePreview = async () => {
+    if (!subject.trim() || !message.trim()) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Subject and message are required' });
+      return;
+    }
+    if (!previewEmail.trim()) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Preview email address is required' });
+      return;
+    }
+
+    setPreviewing(true);
+    try {
+      const token = localStorage.getItem('token');
+      const createRes = await fetch('/api/admin/broadcasts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          name: 'Preview ' + new Date().toISOString().split('T')[0],
+          recipient_group: sendTo,
+          subject,
+          message
+        })
+      });
+      const createData = await createRes.json();
+      if (!createData.success) {
+        toast({ variant: 'destructive', title: 'Error', description: createData.error || 'Failed to create preview broadcast' });
+        return;
+      }
+
+      const testRes = await fetch(`/api/admin/broadcasts/${createData.data.id}/test`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ email: previewEmail })
+      });
+      const testData = await testRes.json();
+      if (testData.success) {
+        toast({ title: 'Success', description: testData.message || 'Preview sent successfully' });
+      } else {
+        toast({ variant: 'destructive', title: 'Error', description: testData.error || 'Failed to send preview' });
+      }
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to send preview email' });
+    } finally {
+      setPreviewing(false);
+    }
+  };
+
   return (
     <AdminAccessCheck>
       <PageLayout 
@@ -135,6 +206,41 @@ export default function AdminEmailSubscribers() {
         requireAuth={false}
       >
         <div className="max-w-7xl mx-auto p-4 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="shadow-sm border-slate-200">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-slate-500">Subscribers</p>
+                    <p className="text-2xl font-semibold text-slate-800">{counts.subscriberCount}</p>
+                  </div>
+                  <Users className="w-6 h-6 text-purple-500" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="shadow-sm border-slate-200">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-slate-500">System Users</p>
+                    <p className="text-2xl font-semibold text-slate-800">{counts.userCount}</p>
+                  </div>
+                  <Users className="w-6 h-6 text-indigo-500" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="shadow-sm border-slate-200">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-slate-500">Both Lists</p>
+                    <p className="text-2xl font-semibold text-slate-800">{counts.bothCount}</p>
+                  </div>
+                  <Users className="w-6 h-6 text-blue-500" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
             {/* Left Col: Send Email Form */}
@@ -154,17 +260,17 @@ export default function AdminEmailSubscribers() {
                       <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
                         <input 
                           type="radio" 
-                          checked={sendTo === 'all'} 
-                          onChange={() => setSendTo('all')} 
+                          checked={sendTo === 'subscribers'} 
+                          onChange={() => setSendTo('subscribers')} 
                           className="text-blue-600 focus:ring-blue-500"
                         />
-                        Target Subscribers ({subscribers.filter(s => s.status === 'active').length})
+                        Target Subscribers ({counts.subscriberCount})
                       </label>
                       <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
                         <input 
                           type="radio" 
-                          checked={sendTo === 'system_users'} 
-                          onChange={() => setSendTo('system_users')} 
+                          checked={sendTo === 'users'} 
+                          onChange={() => setSendTo('users')} 
                           className="text-purple-600 focus:ring-purple-500"
                         />
                         System Users ({systemUsersCount})
@@ -202,9 +308,33 @@ export default function AdminEmailSubscribers() {
                     />
                   </div>
 
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-slate-700">Preview Email</label>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Input
+                        type="email"
+                        placeholder="you@example.com"
+                        value={previewEmail}
+                        onChange={(e) => setPreviewEmail(e.target.value)}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={previewing}
+                        onClick={handlePreview}
+                      >
+                        {previewing ? (
+                          <span className="flex items-center"><Activity className="animate-spin w-4 h-4 mr-2" /> Sending...</span>
+                        ) : (
+                          <span className="flex items-center"><Send className="w-4 h-4 mr-2" /> Preview Email</span>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+
                   <Button 
                     type="submit" 
-                    disabled={sending || (sendTo === 'all' && subscribers.filter(s => s.status === 'active').length === 0) || (sendTo === 'system_users' && systemUsersCount === 0)} 
+                    disabled={sending || (sendTo === 'subscribers' && counts.subscriberCount === 0) || (sendTo === 'users' && systemUsersCount === 0)} 
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                   >
                     {sending ? (
@@ -293,6 +423,48 @@ export default function AdminEmailSubscribers() {
                               <XCircle className="w-4 h-4 text-slate-300" />
                             )}
                           </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card className="shadow-sm border-slate-200">
+                <CardHeader className="bg-slate-50 border-b border-slate-100 pb-4">
+                  <CardTitle className="text-md flex items-center justify-between text-slate-800">
+                    <span className="flex items-center">
+                      <Users className="w-5 h-5 mr-2 text-indigo-600" />
+                      System Users
+                    </span>
+                    <Badge variant="secondary">{systemUsers.length}</Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0 max-h-[400px] overflow-y-auto">
+                  {loading ? (
+                    <div className="p-6 text-center text-slate-400 text-sm flex items-center justify-center">
+                      <Activity className="w-4 h-4 animate-spin mr-2" /> Loading...
+                    </div>
+                  ) : systemUsers.length === 0 ? (
+                    <div className="p-6 text-center text-slate-500 text-sm">
+                      No active system users found.
+                    </div>
+                  ) : (
+                    <ul className="divide-y divide-slate-100">
+                      {systemUsers.map((user: any) => (
+                        <li key={user._id || user.email} className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
+                          <div className="flex items-center space-x-3 overflow-hidden">
+                            <div className="bg-slate-100 text-slate-600 w-8 h-8 rounded flex items-center justify-center font-semibold text-xs shrink-0">
+                              <Mail className="w-4 h-4" />
+                            </div>
+                            <div className="truncate min-w-0">
+                              <p className="text-sm font-medium text-slate-900 truncate">
+                                {user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : 'System User'}
+                              </p>
+                              <p className="text-xs text-slate-500 truncate">{user.email}</p>
+                            </div>
+                          </div>
+                          <CheckCircle className="w-4 h-4 text-green-500" />
                         </li>
                       ))}
                     </ul>

@@ -128,7 +128,8 @@ app.use('/api/admin/broadcasts', broadcastRoutes); // Admin Broadcast Routes
 app.use('/api/documents', documentProcessingRoutes); // AI Parser Queue Routes
 app.use('/api/demo', demoRoutes); // Public demo booking routes
 app.use('/api/admin', adminRoutes);
-  app.use('/api/system', require('./routes/systemRoutes')); // Admin routes have their own auth middleware
+  app.use('/api/system', require('./routes/systemRoutes'));
+app.use('/api/receipts', require('./routes/receiptRoutes'));
 
 // API documentation endpoint
 app.get('/api', (req, res) => {

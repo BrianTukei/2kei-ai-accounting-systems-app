@@ -1,481 +1,348 @@
-import { useState, useEffect, useCallback } from 'react';
-import AdminAccessCheck from '@/components/admin/AdminAccessCheck';
-import PageLayout from '@/components/layout/PageLayout';
-import { Mail, Send, Users, Activity, Plus, FileText, CheckCircle, XCircle } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
+'
+import { useState, useEffect, useCallback, useMemo } from "react";
+import AdminAccessCheck from "@/components/admin/AdminAccessCheck";
+import PageLayout from "@/components/layout/PageLayout";
+import { Mail, Send, Users, CheckCircle, Search, AlertCircle } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useToast } from "@/hooks/use-toast";
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  isActive?: boolean;
+}
 
 export default function AdminEmailSubscribers() {
   const { toast } = useToast();
-  const [subscribers, setSubscribers] = useState<any[]>([]);
-  const [systemUsers, setSystemUsers] = useState<any[]>([]);
-  const [systemUsersCount, setSystemUsersCount] = useState<number>(0);
-  const [loading, setLoading] = useState(true);
-
-  // Form states
-  const [subject, setSubject] = useState('');
-  const [message, setMessage] = useState('');
-  const [sending, setSending] = useState(false);
-  const [previewing, setPreviewing] = useState(false);
-  const [previewEmail, setPreviewEmail] = useState('');
-  const [sendTo, setSendTo] = useState<'subscribers' | 'users' | 'both'>('both');
   
-  // Add subscriber state
-  const [newEmail, setNewEmail] = useState('');
-  const [newName, setNewName] = useState('');
-  const [addingSub, setAddingSub] = useState(false);
+  const [users, setUsers] = useState<User[]>([]);
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  
+  const [subject, setSubject] = useState("");
+  const [message, setMessage] = useState("");
+  
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
 
-  const [counts, setCounts] = useState({
-    subscriberCount: 0,
-    userCount: 0,
-    bothCount: 0,
-  });
-
-  const fetchSubscribers = useCallback(async () => {
+  // Fetch already registered users from the database
+  const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/admin/broadcasts/recipients?include=all', {
+      const token = localStorage.getItem("token");
+      
+      // Call the existing backend API endpoint to get registered users
+      const response = await fetch("/api/admin/users/emails", {
         headers: {
-          'Authorization': `Bearer ${token}`
+          "Authorization": `Bearer ${token}`
         }
       });
+      
       const resData = await response.json();
-      if (resData.success) {
-        setCounts(resData.data);
-        setSystemUsersCount(resData.data.userCount || 0);
-        if (resData.data.subscribers) setSubscribers(resData.data.subscribers);
-        if (resData.data.users) setSystemUsers(resData.data.users);
+      
+      if (resData.success && resData.data) {
+        setUsers(resData.data);
+      } else {
+        throw new Error(resData.message || "Failed to load users");
       }
-    } catch (error) {
-      console.error('Failed to fetch subscribers', error);
+    } catch (error: any) {
+      console.error("Error fetching registered users:", error);
+      toast({
+        title: "Error loading users",
+        description: error.message || "Could not connect to the database.",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
-    fetchSubscribers();
-  }, [fetchSubscribers]);
+    fetchUsers();
+  }, [fetchUsers]);
 
-  const handleAddSubscriber = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newEmail.trim()) return;
+  // Filter users based on search
+  const filteredUsers = useMemo(() => {
+    return users.filter(user => 
+      user.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      user.email?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [users, searchQuery]);
 
-    setAddingSub(true);
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/admin/subscribers', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ email: newEmail, name: newName })
-      });
-      const data = await res.json();
-      if (data.success) {
-        toast({ title: 'Success', description: data.message || 'Subscriber added' });
-        setNewEmail('');
-        setNewName('');
-        fetchSubscribers();
-      } else {
-        toast({ variant: 'destructive', title: 'Error', description: data.error || 'Failed to add subscriber' });
-      }
-    } catch (error) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Failed to add subscriber' });
-    } finally {
-      setAddingSub(false);
+  // Handle Select All
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedUsers(filteredUsers.map(user => String(user.id)));
+    } else {
+      setSelectedUsers([]);
     }
   };
 
-  const handleBroadcast = async (e: React.FormEvent) => {
+  // Handle individual user selection
+  const handleSelectUser = (userId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedUsers(prev => [...prev, userId]);
+    } else {
+      setSelectedUsers(prev => prev.filter(id => id !== userId));
+    }
+  };
+
+  // Check if all current filtered users are selected
+  const isAllSelected = filteredUsers.length > 0 && 
+    filteredUsers.every(user => selectedUsers.includes(String(user.id)));
+
+  // Send Broadcast Email
+  const handleSendBroadcast = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (selectedUsers.length === 0) {
+      return toast({
+        title: "No Recipients Selected",
+        description: "Please select at least one user to send the broadcast to.",
+        variant: "destructive"
+      });
+    }
+    
     if (!subject.trim() || !message.trim()) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Subject and message are required' });
-      return;
+      return toast({
+        title: "Missing Fields",
+        description: "Subject and Message are required.",
+        variant: "destructive"
+      });
     }
 
-    setSending(true);
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/admin/broadcasts', {
-        method: 'POST',
+      setSending(true);
+      const token = localStorage.getItem("token");
+      
+      // Get the actual email strings of the selected users
+      const recipientEmails = users
+        .filter(user => selectedUsers.includes(String(user.id)))
+        .map(user => user.email);
+
+      // Call the existing backend API endpoint to dispatch emails
+      const response = await fetch("/api/admin/send-email", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({
-          name: 'Campaign ' + new Date().toISOString().split('T')[0],
-          recipient_group: sendTo,
           subject,
-          message
+          message,
+          emails: recipientEmails,
+          type: "bulk_campaign"
         })
       });
-      
-      const data = await res.json();
-      if (data.success) {
-        const sendRes = await fetch(`/api/admin/broadcasts/${data.data.id}/send`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        const sendData = await sendRes.json();
 
-        if (sendData.success) {
-          toast({ title: 'Success', description: sendData.message || 'Broadcast queued' });
-        } else {
-          toast({ variant: 'destructive', title: 'Error', description: sendData.error || 'Failed to send broadcast' });
-        }
-        setSubject('');
-        setMessage('');
+      const data = await response.json();
+
+      if (data.success) {
+        toast({
+          title: "Broadcast Sent Successfully!",
+          description: `Delivered to ${data.data?.summary?.success || recipientEmails.length} recipients.`,
+          variant: "default"
+        });
+        
+        // Reset form after successful send
+        setSubject("");
+        setMessage("");
       } else {
-        toast({ variant: 'destructive', title: 'Error', description: data.error || 'Failed to send broadcast' });
+        throw new Error(data.message || "Failed to send email");
       }
-    } catch (error) {
-      toast({ variant: 'destructive', title: 'Error', description: 'An error occurred during broadcast' });
+    } catch (error: any) {
+      console.error("Error sending broadcast:", error);
+      toast({
+        title: "Broadcast Failed",
+        description: error.message || "There was an error sending the emails.",
+        variant: "destructive"
+      });
     } finally {
       setSending(false);
     }
   };
 
-  const handlePreview = async () => {
-    if (!subject.trim() || !message.trim()) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Subject and message are required' });
-      return;
-    }
-    if (!previewEmail.trim()) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Preview email address is required' });
-      return;
-    }
-
-    setPreviewing(true);
-    try {
-      const token = localStorage.getItem('token');
-      const createRes = await fetch('/api/admin/broadcasts', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          name: 'Preview ' + new Date().toISOString().split('T')[0],
-          recipient_group: sendTo,
-          subject,
-          message
-        })
-      });
-      const createData = await createRes.json();
-      if (!createData.success) {
-        toast({ variant: 'destructive', title: 'Error', description: createData.error || 'Failed to create preview broadcast' });
-        return;
-      }
-
-      const testRes = await fetch(`/api/admin/broadcasts/${createData.data.id}/test`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ email: previewEmail })
-      });
-      const testData = await testRes.json();
-      if (testData.success) {
-        toast({ title: 'Success', description: testData.message || 'Preview sent successfully' });
-      } else {
-        toast({ variant: 'destructive', title: 'Error', description: testData.error || 'Failed to send preview' });
-      }
-    } catch (error) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Failed to send preview email' });
-    } finally {
-      setPreviewing(false);
-    }
-  };
-
   return (
     <AdminAccessCheck>
-      <PageLayout 
-        title="Admin Email Campaign Manager" 
-        subtitle="Manage subscribers and broadcast emails" 
-        showSidebar={false} 
-        requireAuth={false}
-      >
-        <div className="max-w-7xl mx-auto p-4 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="shadow-sm border-slate-200">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-slate-500">Subscribers</p>
-                    <p className="text-2xl font-semibold text-slate-800">{counts.subscriberCount}</p>
-                  </div>
-                  <Users className="w-6 h-6 text-purple-500" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="shadow-sm border-slate-200">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-slate-500">System Users</p>
-                    <p className="text-2xl font-semibold text-slate-800">{counts.userCount}</p>
-                  </div>
-                  <Users className="w-6 h-6 text-indigo-500" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="shadow-sm border-slate-200">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-slate-500">Both Lists</p>
-                    <p className="text-2xl font-semibold text-slate-800">{counts.bothCount}</p>
-                  </div>
-                  <Users className="w-6 h-6 text-blue-500" />
-                </div>
-              </CardContent>
-            </Card>
+      <PageLayout>
+        <div className="flex flex-col space-y-6 max-w-6xl mx-auto">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Email Broadcast</h1>
+              <p className="text-muted-foreground mt-2">
+                Select registered users and send bulk email updates.
+              </p>
+            </div>
+            <div className="flex items-center space-x-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-md">
+              <Users className="h-5 w-5" />
+              <span className="font-semibold">{users.length} Total Users</span>
+            </div>
           </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
-            {/* Left Col: Send Email Form */}
-            <Card className="lg:col-span-2 shadow-sm border-slate-200">
-              <CardHeader className="bg-slate-50 border-b border-slate-100">
-                <CardTitle className="flex items-center text-lg text-slate-800">
-                  <Send className="w-5 h-5 mr-2 text-blue-600" />
-                  Compose Broadcast
-                </CardTitle>
-                <CardDescription>Send announcements, updates, or alerts to your subscribers.</CardDescription>
-              </CardHeader>
-              <CardContent className="p-6">
-                <form onSubmit={handleBroadcast} className="space-y-5">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700">Send To</label>
-                    <div className="flex flex-col sm:flex-row gap-4">
-                      <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
-                        <input 
-                          type="radio" 
-                          checked={sendTo === 'subscribers'} 
-                          onChange={() => setSendTo('subscribers')} 
-                          className="text-blue-600 focus:ring-blue-500"
-                        />
-                        Target Subscribers ({counts.subscriberCount})
-                      </label>
-                      <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
-                        <input 
-                          type="radio" 
-                          checked={sendTo === 'users'} 
-                          onChange={() => setSendTo('users')} 
-                          className="text-purple-600 focus:ring-purple-500"
-                        />
-                        System Users ({systemUsersCount})
-                      </label>
-                      <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
-                        <input 
-                          type="radio" 
-                          checked={sendTo === 'both'} 
-                          onChange={() => setSendTo('both')} 
-                          className="text-indigo-600 focus:ring-indigo-500"
-                        />
-                        Both lists
-                      </label>
+            {/* LEFT COLUMN: User Selection Table */}
+            <div className="lg:col-span-1 space-y-4">
+              <Card className="h-full flex flex-col border-slate-200 shadow-sm">
+                <CardHeader className="bg-slate-50 border-b pb-4">
+                  <CardTitle className="text-lg flex items-center space-x-2">
+                    <Users className="h-5 w-5 text-slate-500" />
+                    <span>Registered Users</span>
+                  </CardTitle>
+                  <CardDescription>
+                    Select recipients for your broadcast.
+                  </CardDescription>
+                  <div className="mt-4 relative">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
+                    <Input
+                      placeholder="Search names or emails..."
+                      className="pl-9 bg-white"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                  </div>
+                </CardHeader>
+                
+                <CardContent className="flex-1 overflow-y-auto p-0 hover:overflow-y-auto max-h-[500px]">
+                  {loading ? (
+                    <div className="flex justify-center items-center h-32">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                     </div>
-                  </div>
+                  ) : filteredUsers.length === 0 ? (
+                    <div className="text-center py-8 text-slate-500">
+                      <AlertCircle className="h-8 w-8 mx-auto mb-2 opacity-20" />
+                      <p>No registered users found.</p>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-slate-100">
+                      <div className="flex items-center space-x-3 p-4 bg-slate-50 sticky top-0 z-10 border-b">
+                        <Checkbox 
+                          id="select-all" 
+                          checked={isAllSelected}
+                          onCheckedChange={handleSelectAll}
+                        />
+                        <label 
+                          htmlFor="select-all" 
+                          className="text-sm font-medium cursor-pointer"
+                        >
+                          Select All ({filteredUsers.length})
+                        </label>
+                      </div>
+                      
+                      {filteredUsers.map((user) => (
+                        <div key={user.id} className="flex items-start space-x-3 p-4 hover:bg-slate-50 transition-colors">
+                          <Checkbox 
+                            id={`user-${user.id}`}
+                            checked={selectedUsers.includes(String(user.id))}
+                            onCheckedChange={(checked) => handleSelectUser(String(user.id), checked as boolean)}
+                            className="mt-1"
+                          />
+                          <div className="grid gap-1.5 flex-1 cursor-pointer" onClick={() => handleSelectUser(String(user.id), !selectedUsers.includes(String(user.id)))}>
+                            <label htmlFor={`user-${user.id}`} className="text-sm font-medium cursor-pointer">
+                              {user.name || "Unnamed User"}
+                            </label>
+                            <p className="text-xs text-slate-500 break-all">
+                              {user.email}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+                <div className="p-4 border-t bg-slate-50 text-sm text-slate-600 flex justify-between">
+                  <span>Selected: <strong>{selectedUsers.length}</strong></span>
+                </div>
+              </Card>
+            </div>
 
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700">Subject</label>
-                    <Input 
-                      placeholder="e.g. Awesome New Updates from 2K AI Accounting" 
-                      value={subject}
-                      onChange={(e) => setSubject(e.target.value)}
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700">Message (HTML supported)</label>
-                    <Textarea 
-                      placeholder="Write your email body here. Supports HTML formatting..." 
-                      className="min-h-[250px] font-mono text-sm"
-                      value={message}
-                      onChange={(e) => setMessage(e.target.value)}
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700">Preview Email</label>
-                    <div className="flex flex-col sm:flex-row gap-2">
-                      <Input
-                        type="email"
-                        placeholder="you@example.com"
-                        value={previewEmail}
-                        onChange={(e) => setPreviewEmail(e.target.value)}
+            {/* RIGHT COLUMN: Email Form */}
+            <div className="lg:col-span-2">
+              <Card className="border-slate-200 shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center space-x-2">
+                    <Mail className="h-5 w-5 text-blue-500" />
+                    <span>Compose Broadcast</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleSendBroadcast} className="space-y-6">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Subject Line</label>
+                      <Input 
+                        placeholder="Important update from the team..." 
+                        value={subject}
+                        onChange={(e) => setSubject(e.target.value)}
+                        required
+                        className="text-lg"
                       />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        disabled={previewing}
-                        onClick={handlePreview}
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium flex justify-between">
+                        <span>Message Body</span>
+                      </label>
+                      <Textarea 
+                        placeholder="Hello, we are writing to inform you..."
+                        className="min-h-[300px] resize-y"
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)}
+                        required
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Emails will be delivered individually. Your recipients will not see each other in the "To" field.
+                      </p>
+                    </div>
+
+                    <div className="bg-slate-50 border rounded-lg p-4 flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className={`flex items-center justify-center h-10 w-10 rounded-full ${selectedUsers.length > 0 ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"}`}>
+                          {selectedUsers.length > 0 ? <CheckCircle className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
+                        </div>
+                        <div>
+                          <p className="font-medium">
+                            {selectedUsers.length === 0 
+                              ? "No recipients selected" 
+                              : `Ready to send to ${selectedUsers.length} user(s)`}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {users.length === 0 ? "Connect to the database to sync users." : "Wait a few seconds after sending for the API to process."}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <Button 
+                        type="submit" 
+                        disabled={sending || selectedUsers.length === 0}
+                        className="bg-blue-600 hover:bg-blue-700 px-8"
                       >
-                        {previewing ? (
-                          <span className="flex items-center"><Activity className="animate-spin w-4 h-4 mr-2" /> Sending...</span>
+                        {sending ? (
+                          <span className="flex items-center">
+                            <span className="animate-spin mr-2 h-4 w-4 border-2 border-current border-t-transparent inline-block rounded-full"></span>
+                            Sending...
+                          </span>
                         ) : (
-                          <span className="flex items-center"><Send className="w-4 h-4 mr-2" /> Preview Email</span>
+                          <span className="flex items-center">
+                            <Send className="mr-2 h-4 w-4" />
+                            Send Broadcast
+                          </span>
                         )}
                       </Button>
                     </div>
-                  </div>
-
-                  <Button 
-                    type="submit" 
-                    disabled={sending || (sendTo === 'subscribers' && counts.subscriberCount === 0) || (sendTo === 'users' && systemUsersCount === 0)} 
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                  >
-                    {sending ? (
-                      <span className="flex items-center"><Activity className="animate-spin w-4 h-4 mr-2" /> Sending Broadcast...</span>
-                    ) : (
-                      <span className="flex items-center"><Send className="w-4 h-4 mr-2" /> Send Email</span>
-                    )}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-
-            {/* Right Col: Manage Subscribers */}
-            <div className="space-y-6">
-              
-              {/* Quick Add Subscriber */}
-              <Card className="shadow-sm border-slate-200">
-                <CardHeader className="bg-slate-50 border-b border-slate-100 pb-4">
-                  <CardTitle className="text-md flex items-center text-slate-800">
-                    <Plus className="w-5 h-5 mr-2 text-green-600" />
-                    Add Subscriber
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 pt-6">
-                  <form onSubmit={handleAddSubscriber} className="space-y-3">
-                    <Input 
-                      placeholder="Name (Optional)" 
-                      value={newName} 
-                      onChange={(e) => setNewName(e.target.value)} 
-                      className="text-sm"
-                    />
-                    <Input 
-                      type="email" 
-                      placeholder="Email Address *" 
-                      value={newEmail} 
-                      onChange={(e) => setNewEmail(e.target.value)} 
-                      required 
-                      className="text-sm"
-                    />
-                    <Button type="submit" size="sm" variant="outline" disabled={addingSub} className="w-full mt-2">
-                      {addingSub ? 'Adding...' : 'Add to List'}
-                    </Button>
                   </form>
                 </CardContent>
               </Card>
-
-              {/* Subscribers List */}
-              <Card className="shadow-sm border-slate-200">
-                <CardHeader className="bg-slate-50 border-b border-slate-100 pb-4">
-                  <CardTitle className="text-md flex items-center justify-between text-slate-800">
-                    <span className="flex items-center">
-                      <Users className="w-5 h-5 mr-2 text-purple-600" />
-                      Subscribers
-                    </span>
-                    <Badge variant="secondary">{subscribers.length}</Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-0 max-h-[400px] overflow-y-auto">
-                  {loading ? (
-                    <div className="p-6 text-center text-slate-400 text-sm flex items-center justify-center">
-                      <Activity className="w-4 h-4 animate-spin mr-2" /> Loading...
-                    </div>
-                  ) : subscribers.length === 0 ? (
-                    <div className="p-6 text-center text-slate-500 text-sm">
-                      No subscribers yet. List is empty.
-                    </div>
-                  ) : (
-                    <ul className="divide-y divide-slate-100">
-                      {subscribers.map((sub: any) => (
-                        <li key={sub._id || sub.email} className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
-                          <div className="flex items-center space-x-3 overflow-hidden">
-                            <div className="bg-slate-100 text-slate-600 w-8 h-8 rounded flex items-center justify-center font-semibold text-xs shrink-0">
-                              <Mail className="w-4 h-4" />
-                            </div>
-                            <div className="truncate min-w-0">
-                              <p className="text-sm font-medium text-slate-900 truncate">
-                                {sub.name || 'Anonymous'}
-                              </p>
-                              <p className="text-xs text-slate-500 truncate">{sub.email}</p>
-                            </div>
-                          </div>
-                          <div>
-                            {sub.status === 'active' ? (
-                              <CheckCircle className="w-4 h-4 text-green-500" />
-                            ) : (
-                              <XCircle className="w-4 h-4 text-slate-300" />
-                            )}
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card className="shadow-sm border-slate-200">
-                <CardHeader className="bg-slate-50 border-b border-slate-100 pb-4">
-                  <CardTitle className="text-md flex items-center justify-between text-slate-800">
-                    <span className="flex items-center">
-                      <Users className="w-5 h-5 mr-2 text-indigo-600" />
-                      System Users
-                    </span>
-                    <Badge variant="secondary">{systemUsers.length}</Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-0 max-h-[400px] overflow-y-auto">
-                  {loading ? (
-                    <div className="p-6 text-center text-slate-400 text-sm flex items-center justify-center">
-                      <Activity className="w-4 h-4 animate-spin mr-2" /> Loading...
-                    </div>
-                  ) : systemUsers.length === 0 ? (
-                    <div className="p-6 text-center text-slate-500 text-sm">
-                      No active system users found.
-                    </div>
-                  ) : (
-                    <ul className="divide-y divide-slate-100">
-                      {systemUsers.map((user: any) => (
-                        <li key={user._id || user.email} className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
-                          <div className="flex items-center space-x-3 overflow-hidden">
-                            <div className="bg-slate-100 text-slate-600 w-8 h-8 rounded flex items-center justify-center font-semibold text-xs shrink-0">
-                              <Mail className="w-4 h-4" />
-                            </div>
-                            <div className="truncate min-w-0">
-                              <p className="text-sm font-medium text-slate-900 truncate">
-                                {user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : 'System User'}
-                              </p>
-                              <p className="text-xs text-slate-500 truncate">{user.email}</p>
-                            </div>
-                          </div>
-                          <CheckCircle className="w-4 h-4 text-green-500" />
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </CardContent>
-              </Card>
-
             </div>
+            
           </div>
         </div>
       </PageLayout>
     </AdminAccessCheck>
   );
 }
+'

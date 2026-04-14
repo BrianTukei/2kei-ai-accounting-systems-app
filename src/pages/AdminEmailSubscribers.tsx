@@ -1,4 +1,3 @@
-'
 import { useState, useEffect, useCallback, useMemo } from "react";
 import AdminAccessCheck from "@/components/admin/AdminAccessCheck";
 import PageLayout from "@/components/layout/PageLayout";
@@ -345,4 +344,3 @@ export default function AdminEmailSubscribers() {
     </AdminAccessCheck>
   );
 }
-'

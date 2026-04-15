@@ -334,7 +334,7 @@ export default function SuperAdmin() {
     }
   };
 
-  useEffect(() => { if (authorized) loadData(); }, [authorized]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (authorized) loadData(); }, [authorized]);  
 
   // ── Suspend / activate ────────────────
 

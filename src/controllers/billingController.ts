@@ -487,7 +487,7 @@ class BillingController {
       const webhookData = req.body;
 
       // Process webhook based on provider
-      const processedData = mobileMoneyService.handleWebhook(provider, webhookData);
+      const processedData = await mobileMoneyService.handleWebhook(provider, webhookData);
 
       // Find and update transaction
       const transaction = await Transaction.findOne({ reference: processedData.reference });

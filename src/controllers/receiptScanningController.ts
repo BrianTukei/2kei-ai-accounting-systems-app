@@ -35,7 +35,7 @@ export class ReceiptScanningController {
         const receiptData = result.data;
         const metadata = {
           items: receiptData.items || [],
-          taxes: receiptData.taxes || [],
+          taxes: (receiptData as any).taxes || [],
           warnings: result.warnings || []
         };
 

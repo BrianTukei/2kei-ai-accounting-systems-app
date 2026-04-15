@@ -1,5 +1,25 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { adminApiCall } from '@/services/adminService';
+import { Layers, Building2, MoreVertical, ShieldCheck, MailPlus } from 'lucide-react';
+
+const StatsCard = ({ label, value, icon: Icon, iconColor }: any) => (
+  <div className="bg-slate-800 rounded-xl p-4 border border-slate-700/50 flex items-center justify-between shadow-sm">
+    <div>
+      <p className="text-slate-400 text-sm mb-1">{label}</p>
+       <h3 className="text-2xl font-bold text-white">{value}</h3>
+    </div>
+    <div className={`p-3 rounded-lg ${iconColor}`}>
+      <Icon className="w-5 h-5" />
+    </div>
+  </div>
+);
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+
+// Mock component placeholders for development
+const NotificationsSection = () => <div className="text-white p-4">Notifications Section content</div>;
+const DevelopersSection = () => <div className="text-white p-4">Developers Section content</div>;
 import {
   LayoutDashboard,
   Users,
@@ -68,6 +88,10 @@ type NavSection =
   | 'audit'
   | 'notifications'
   | 'developers'
+  | 'announcements'
+  | 'bulk'
+  | 'orgs'
+  | 'auth'
   | 'settings';
 
 interface NavItem {

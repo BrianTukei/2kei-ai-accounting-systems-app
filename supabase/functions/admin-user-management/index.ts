@@ -217,7 +217,7 @@ serve(async (req) => {
 
       // If searching, apply client-side pagination to the filtered results
       let paginatedResult = filtered;
-      let totalCount = filtered.length;
+      const totalCount = filtered.length;
       if (search) {
         const startIdx = (page - 1) * perPage;
         paginatedResult = filtered.slice(startIdx, startIdx + perPage);

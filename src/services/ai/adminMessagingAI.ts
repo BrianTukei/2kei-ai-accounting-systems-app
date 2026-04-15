@@ -180,7 +180,7 @@ Example topics and responses:
     
     let type: AdminMessage['action']['type'] = 'navigation';
     let module = '';
-    let link = '';
+    const link = '';
 
     // Determine action type and module
     if (actionLower.includes('upload') || actionLower.includes('receipt')) {

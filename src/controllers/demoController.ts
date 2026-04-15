@@ -151,7 +151,7 @@ export const getAvailableSlots = async (req: Request, res: Response) => {
     const slots = [];
     for (let hour = 9; hour < 17; hour++) {
       for (let minute = 0; minute < 60; minute += 30) {
-        const timeString = \\:\\;
+        const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
         if (!bookedTimes.has(timeString)) {
           slots.push({ date: targetDate, time: timeString, duration: 30, isAvailable: true, timezone });
         }

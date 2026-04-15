@@ -9,6 +9,8 @@ export const AdminMessagingPanel: React.FC = () => {
   const [recipientGroup, setRecipientGroup] = useState('all');
   const [scheduleOption, setScheduleOption] = useState('now');
   const [broadcasts, setBroadcasts] = useState<any[]>([]);
+  const [availableUsers, setAvailableUsers] = useState<{email: string, name: string}[]>([]);
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [isSending, setIsSending] = useState(false);
 
   useEffect(() => {
@@ -16,6 +18,23 @@ export const AdminMessagingPanel: React.FC = () => {
       fetchBroadcasts();
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await fetch('/api/admin/users/emails', {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        const data = await response.json();
+        if (data.success) {
+          setAvailableUsers(data.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch available users:', error);
+      }
+    };
+    fetchUsers();
+  }, []);
 
   const fetchBroadcasts = async () => {
     try {
@@ -86,7 +105,7 @@ export const AdminMessagingPanel: React.FC = () => {
               subject,
               message,
               recipient_group: recipientGroup,
-              specific_recipients: [],
+              specific_recipients: recipientGroup === 'specific' ? selectedUsers : [],
             })
          });
          const createData = await createResponse.json();
@@ -172,6 +191,26 @@ export const AdminMessagingPanel: React.FC = () => {
                     </select>
                   </div>
                   
+                  {recipientGroup === 'specific' && (
+                    <div className="pt-2">
+                       <p className="text-sm font-medium text-gray-800 mb-3 flex items-center">
+                         Select Specific Users 
+                       </p>
+                       <div className="max-h-48 overflow-y-auto border border-gray-200 rounded p-2">
+                         {availableUsers.map((u) => (
+                            <label key={u.email} className="flex items-center text-sm text-gray-600 hover:text-gray-900 cursor-pointer p-1">
+                               <input type="checkbox" className="mr-3 rounded text-blue-600 focus:ring-blue-500 cursor-pointer h-4 w-4" checked={selectedUsers.includes(u.email)} onChange={(e) => {
+                                   if (e.target.checked) setSelectedUsers([...selectedUsers, u.email]);
+                                   else setSelectedUsers(selectedUsers.filter(x => x !== u.email));
+                               }}/>
+                               <span>{u.name} ({u.email})</span>
+                            </label>
+                         ))}
+                         {availableUsers.length === 0 && <span className="text-gray-400 text-sm p-1">No active users found.</span>}
+                       </div>
+                    </div>
+                  )}
+
                   <div className="pt-2">
                     <p className="text-sm font-medium text-gray-800 mb-3 flex items-center">
                       <Filter className="w-4 h-4 mr-2 text-gray-500" /> Advanced Filters (Optional)

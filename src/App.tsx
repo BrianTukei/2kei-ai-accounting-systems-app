@@ -37,7 +37,6 @@ import { EnhancedAIChat } from './components/ai/EnhancedAIChat';
 import { AdminMessagingPanel } from './components/admin/AdminMessagingPanel';
 import { AutonomousBookkeepingPanel } from './components/admin/AutonomousBookkeepingPanel';
 import Invoices from './pages/Invoices';
-import InvoiceProcessor from './components/InvoiceProcessor';
 import BankImport from './pages/BankImport';
 import Journal from './pages/Journal';
 import Onboarding from './pages/Onboarding';
@@ -126,7 +125,6 @@ function AppInner() {
       <Route path="/local-ai"        element={<ProtectedRoute><LocalAIAssistant /></ProtectedRoute>} />
       <Route path="/ai-accountant"    element={<ProtectedRoute><AIAccountantPage /></ProtectedRoute>} />
       <Route path="/ai-receipt-scanner" element={<ProtectedRoute><AIReceiptScannerPage /></ProtectedRoute>} />
-      <Route path="/ai-invoice-processor" element={<ProtectedRoute><InvoiceProcessor /></ProtectedRoute>} />
       <Route path="/action-ai"       element={<ProtectedRoute><ActionAIPage /></ProtectedRoute>} />
       <Route path="/enhanced-ai-chat" element={<ProtectedRoute><EnhancedAIChatPage /></ProtectedRoute>} />
       <Route path="/team"           element={<ProtectedRoute requireActiveSubscription><Team /></ProtectedRoute>} />

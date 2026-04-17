@@ -1,0 +1,53 @@
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsScanning(true);
+    setScanProgress(0);
+    setExtractedData(null);
+    setValidationResult(null);
+
+    try {
+      // Step 1: OCR Extraction (0-30%)
+      setScanProgress(10);
+      const ocrResult = await receiptParser.parseReceiptFromImage(file);
+      setOriginalText(ocrResult.merchant + ' ' + ocrResult.items.map(item => item.name).join(' '));
+      setScanProgress(30);
+
+      // Step 2: AI Analysis (30-70%)
+      setScanProgress(40);
+      const aiExtracted = await aiReceiptScannerService.extractReceiptData(originalText);
+      setExtractedData(aiExtracted);
+      setScanProgress(70);
+
+      // Step 3: Validation (70-90%)
+      setScanProgress(80);
+      
+      // Get existing expenses for duplicate detection
+      const existingExpenses = getExistingExpenses();
+      const validation = await aiReceiptScannerService.validateReceipt(aiExtracted, existingExpenses);
+      setValidationResult(validation);
+      setScanProgress(90);
+
+      // Step 4: Duplicate Detection (90-100%)
+      const duplicateExpenses = await aiReceiptScannerService.detectDuplicateExpenses(aiExtracted, existingExpenses);
+      setDuplicates(duplicateExpenses);
+      setScanProgress(100);
+
+      setConfidence(aiExtracted.confidence);
+      
+      if (validation.isValid) {
+        toast.success(`✅ Receipt scanned successfully! Confidence: ${(aiExtracted.confidence * 100).toFixed(1)}%`);
+      } else {
+        toast.warning(`⚠️ Receipt scanned with issues. Confidence: ${(aiExtracted.confidence * 100).toFixed(1)}%`);
+      }
+
+    } catch (error) {
+      console.error('AI Receipt scanning failed:', error);
+      toast.error('❌ Failed to scan receipt. Please try again.');
+    } finally {
+      setIsScanning(false);
+      setTimeout(() => setScanProgress(0), 1000);
+    }
+  };
+

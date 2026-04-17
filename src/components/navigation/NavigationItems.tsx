@@ -48,7 +48,6 @@ export const navItems: NavItem[] = [
   { name: 'Bookkeeping',  path: '/journal',      icon: BookOpenCheck,   iconGradient: 'from-rose-500/20 to-pink-500/20',     iconColor: 'text-rose-600 dark:text-rose-400',      group: 'main' },
   { name: 'Forecast',     path: '/forecast',     icon: LineChart,       iconGradient: 'from-fuchsia-500/20 to-pink-500/20',  iconColor: 'text-fuchsia-600 dark:text-fuchsia-400', group: 'main' },
   { name: 'AI Assistant', path: '/ai-assistant', icon: Sparkles,        iconGradient: 'from-yellow-500/20 to-amber-500/20',  iconColor: 'text-yellow-600 dark:text-yellow-400',  group: 'main' },
-  { name: 'Invoice Processing', path: '/ai-invoice-processor', icon: Sparkles, iconGradient: 'from-indigo-500/20 to-violet-500/20', iconColor: 'text-indigo-600 dark:text-indigo-400', group: 'main' },
   { name: 'Payroll',      path: '/payroll',      icon: Banknote,        iconGradient: 'from-pink-500/20 to-rose-500/20',     iconColor: 'text-pink-600 dark:text-pink-400',      group: 'main' },
   { name: 'Recurring',    path: '/recurring-transactions', icon: RefreshCw, iconGradient: 'from-orange-500/20 to-red-500/20', iconColor: 'text-orange-600 dark:text-orange-400', group: 'main' },
   // ── Financial Statements ──

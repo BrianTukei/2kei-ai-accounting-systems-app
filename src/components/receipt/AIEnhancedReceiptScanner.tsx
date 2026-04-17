@@ -50,44 +50,105 @@ export default function AIEnhancedReceiptScanner({ onScanComplete, className }: 
     const file = event.target.files?.[0];
     if (!file) return;
 
+    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"];
+    if (!allowed.includes(file.type)) {
+      toast.error("Please upload a JPG, PNG, WEBP, or PDF file.");
+      return;
+    }
+
     setIsScanning(true);
     setScanProgress(0);
     setExtractedData(null);
     setValidationResult(null);
 
     try {
-      // Step 1: OCR Extraction (0-30%)
-      setScanProgress(10);
-      const ocrResult = await receiptParser.parseReceiptFromImage(file);
-      setOriginalText(ocrResult.merchant + ' ' + ocrResult.items.map(item => item.name).join(' '));
+      setScanProgress(15);
+      
+      const base64 = await new Promise<string>((res, rej) => {
+        const reader = new FileReader();
+        reader.onload = () => res((reader.result as string).split(",")[1]);
+        reader.onerror = () => rej(new Error("File read failed"));
+        reader.readAsDataURL(file);
+      });
+
+      const isPDF = file.type === "application/pdf";
+      const contentBlock = isPDF
+        ? { type: "document", source: { type: "base64", media_type: "application/pdf", data: base64 } }
+        : { type: "image", source: { type: "base64", media_type: file.type, data: base64 } };
+
+      const prompt = `You are an expert accounting AI. Analyze this invoice or receipt and extract all data.
+Return ONLY a valid JSON object (no markdown, no explanation) with this exact structure:
+{
+  "vendor": "string",
+  "date": "YYYY-MM-DD",
+  "items": [
+    { "name": "string", "price": number, "quantity": number, "category": "string" }
+  ],
+  "subtotal": number,
+  "tax": number,
+  "total": number,
+  "currency": "string",
+  "originalCurrency": "string",
+  "paymentMethod": "string",
+  "category": "string",
+  "confidence": number,
+  "warnings": ["string"]
+}
+If any field cannot be determined, use reasonable defaults like null or 0. Return only the JSON.`;
+
       setScanProgress(30);
 
-      // Step 2: AI Analysis (30-70%)
-      setScanProgress(40);
-      const aiExtracted = await aiReceiptScannerService.extractReceiptData(originalText);
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "x-api-key": import.meta.env.VITE_ANTHROPIC_API_KEY || "", 
+          "anthropic-version": "2023-06-01",
+          "anthropic-dangerously-allow-browser": "true" 
+        },
+        body: JSON.stringify({
+          model: "claude-3-5-sonnet-20240620",
+          max_tokens: 1000,
+          messages: [{ role: "user", content: [contentBlock, { type: "text", text: prompt }] }]
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`API returned ${response.status}`);
+      }
+
+      setScanProgress(60);
+
+      const data = await response.json();
+      const text = data.content?.map((c: any) => c.text || "").join("") || "";
+      const clean = text.replace(new RegExp("```json|```", "g"), "").trim();
+      const aiExtracted = JSON.parse(clean);
+      
+      setOriginalText('Processed by Claude AI from image/pdf');
       setExtractedData(aiExtracted);
       setScanProgress(70);
 
-      // Step 3: Validation (70-90%)
+      // Validation
       setScanProgress(80);
-      
-      // Get existing expenses for duplicate detection
       const existingExpenses = getExistingExpenses();
       const validation = await aiReceiptScannerService.validateReceipt(aiExtracted, existingExpenses);
       setValidationResult(validation);
       setScanProgress(90);
 
-      // Step 4: Duplicate Detection (90-100%)
+      // Duplicate Detection
       const duplicateExpenses = await aiReceiptScannerService.detectDuplicateExpenses(aiExtracted, existingExpenses);
       setDuplicates(duplicateExpenses);
       setScanProgress(100);
 
-      setConfidence(aiExtracted.confidence);
+      setConfidence(aiExtracted.confidence || 0.9);
       
       if (validation.isValid) {
-        toast.success(`✅ Receipt scanned successfully! Confidence: ${(aiExtracted.confidence * 100).toFixed(1)}%`);
+        toast.success(`✅ Receipt scanned successfully! Confidence: ${((aiExtracted.confidence || 0.9) * 100).toFixed(1)}%`);
+        if (onScanComplete) {
+            onScanComplete(aiExtracted);
+        }
       } else {
-        toast.warning(`⚠️ Receipt scanned with issues. Confidence: ${(aiExtracted.confidence * 100).toFixed(1)}%`);
+        toast.warning(`⚠️ Receipt scanned with issues. Confidence: ${((aiExtracted.confidence || 0.9) * 100).toFixed(1)}%`);
       }
 
     } catch (error) {

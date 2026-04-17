@@ -6,7 +6,7 @@ const emailQueue = require("../queues/emailQueue");
 async function getUserEmails(req, res) {
   try {
     const users = await User.find(
-      { isActive: true }, // Using isActive instead of status: "active" for User based on schema
+      { isActive: true },
       { name: 1, email: 1 }
     );
     res.json(users);
@@ -39,9 +39,23 @@ async function systemHealth(req, res) {
   }
 }
 
+async function getSystemStatus(req, res) {
+  res.json({ status: "ok" });
+}
+
+async function getDeploymentLogs(req, res) {
+  res.json({ logs: [] });
+}
+
+async function getDiagnostics(req, res) {
+  res.json({ diagnostics: "ok" });
+}
+
 module.exports = {
   getUserEmails,
   getSubscriberEmails,
-  systemHealth
+  systemHealth,
+  getSystemStatus,
+  getDeploymentLogs,
+  getDiagnostics
 };
-

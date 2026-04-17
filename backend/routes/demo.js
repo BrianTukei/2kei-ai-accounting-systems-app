@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { body } = require('express-validator');
 const demoController = require('../controllers/demoController');
-const { isAdmin } = require('../middleware/isAdmin');
+const { isAdmin } = require('../middleware/adminAuth');
 const { demoLimiter } = require('../middleware/rateLimiter');
 
 /**

@@ -3,7 +3,38 @@ const { getAllRecipients } = require("../services/emailRecipientService");
 const User = require("../models/User");
 const Subscriber = require("../models/Subscriber");
 
-async function sendBroadcastEmail(req, res) {
+async function getSubscribers(req, res) {
+  try {
+    const subscribers = await Subscriber.find({ status: 'active' }).sort({ createdAt: -1 });
+    res.json({
+      success: true,
+      count: subscribers.length,
+      data: subscribers
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to get subscribers" });
+  }
+}
+
+async function addSubscriber(req, res) {
+  try {
+    const { email, name } = req.body;
+    if (!email) {
+      return res.status(400).json({ error: "Email is required" });
+    }
+    const exists = await Subscriber.findOne({ email });
+    if (exists) {
+      return res.status(400).json({ error: "Subscriber already exists" });
+    }
+    const newSubscriber = new Subscriber({ email, name, status: 'active' });
+    await newSubscriber.save();
+    res.status(201).json({ success: true, data: newSubscriber });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to add subscriber" });
+  }
+}
+
+async function broadcastEmail(req, res) {
   try {
     const { targetGroup, subject, message, scheduledTime } = req.body;
 
@@ -34,7 +65,7 @@ async function sendBroadcastEmail(req, res) {
 async function getEmailCounts(req, res) {
   try {
     const users = await User.countDocuments({ isActive: true });
-    const subscribers = await Subscriber.countDocuments({});
+    const subscribers = await Subscriber.countDocuments({ status: 'active' });
 
     res.json({
       subscribers,
@@ -47,7 +78,8 @@ async function getEmailCounts(req, res) {
 }
 
 module.exports = {
-  sendBroadcastEmail,
+  getSubscribers,
+  addSubscriber,
+  broadcastEmail,
   getEmailCounts
 };
-

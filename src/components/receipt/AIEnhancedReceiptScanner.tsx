@@ -275,15 +275,15 @@ If any field cannot be determined, use reasonable defaults like null or 0. Retur
                       <Upload className="h-6 w-6 text-blue-600" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold">Upload Receipt Image</h3>
+                      <h3 className="text-lg font-semibold">Upload Document</h3>
                       <p className="text-gray-600">
-                        Take a photo or upload an image of your receipt for AI analysis
+                        Take a photo or upload an image or PDF of your receipt/invoice for AI analysis
                       </p>
                     </div>
                     <input
                       ref={fileInputRef}
                       type="file"
-                      accept="image/*"
+                      accept="image/*,application/pdf"
                       onChange={handleFileUpload}
                       className="hidden"
                       id="receipt-upload"

@@ -1,0 +1,1 @@
+﻿const fs = require('fs'); const code = fs.readFileSync('src/components/receipt/AIEnhancedReceiptScanner.tsx', 'utf8'); console.log(code.substring(code.indexOf('receipt-upload') - 600, code.indexOf('receipt-upload') + 50));

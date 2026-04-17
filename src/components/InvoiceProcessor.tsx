@@ -122,7 +122,7 @@ const css = `
   ::-webkit-scrollbar { width: 6px; }
   ::-webkit-scrollbar-track { background: ${CARD}; }
   ::-webkit-scrollbar-thumb { background: ${BORDER}; border-radius: 3px; }
-\`;
+`;
 
 const LOGO = () => (
   <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
@@ -135,8 +135,8 @@ const LOGO = () => (
 const Spinner = () => (
   <div style={{
     width: 20, height: 20,
-    border: \`2px solid \${BORDER}\`,
-    borderTop: \`2px solid \${ACCENT}\`,
+    border: `2px solid ${BORDER}`,
+    borderTop: `2px solid ${ACCENT}`,
     borderRadius: "50%",
     animation: "spin 0.8s linear infinite",
     display: "inline-block"
@@ -218,7 +218,7 @@ export default function InvoiceProcessor() {
         ? { type: "document", source: { type: "base64", media_type: "application/pdf", data: base64 } }
         : { type: "image", source: { type: "base64", media_type: file.type, data: base64 } };
 
-      const prompt = \`You are an expert accounting AI. Analyze this invoice or receipt and extract all data.
+      const prompt = `You are an expert accounting AI. Analyze this invoice or receipt and extract all data.
 Return ONLY a valid JSON object (no markdown, no explanation) with this exact structure:
 {
   "vendor": "string",
@@ -240,7 +240,7 @@ Return ONLY a valid JSON object (no markdown, no explanation) with this exact st
   "notes": "string or null",
   "confidence": "high | medium | low"
 }
-If any field cannot be determined, use null. Always include line_items array (can be empty). Return only the JSON.\`;
+If any field cannot be determined, use null. Always include line_items array (can be empty). Return only the JSON.`;
 
       const response = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
@@ -258,12 +258,12 @@ If any field cannot be determined, use null. Always include line_items array (ca
       });
 
       if (!response.ok) {
-        throw new Error(\`API returned \${response.status}\`);
+        throw new Error(`API returned ${response.status}`);
       }
 
       const data = await response.json();
       const text = data.content?.map((c: any) => c.text || "").join("") || "";
-      const clean = text.replace(/\`\`\`json|\`\`\`/g, "").trim();
+      const clean = text.replace(/```json|```/g, "").trim();
       const parsed = JSON.parse(clean);
       setResult(parsed);
     } catch (err: any) {
@@ -305,7 +305,7 @@ If any field cannot be determined, use null. Always include line_items array (ca
       }}>
         {/* Header */}
         <div style={{
-          borderBottom: \`1px solid \${BORDER}\`,
+          borderBottom: `1px solid ${BORDER}`,
           padding: "18px 32px",
           display: "flex",
           alignItems: "center",
@@ -343,11 +343,11 @@ If any field cannot be determined, use null. Always include line_items array (ca
             <div className="fade-up-2">
               <div style={{
                 background: CARD,
-                border: \`1px solid \${BORDER}\`,
+                border: `1px solid ${BORDER}`,
                 borderRadius: 12,
                 overflow: "hidden"
               }}>
-                <div style={{ padding: "20px 24px", borderBottom: \`1px solid \${BORDER}\` }}>
+                <div style={{ padding: "20px 24px", borderBottom: `1px solid ${BORDER}` }}>
                   <div style={{ fontWeight: 700, fontSize: 14, letterSpacing: "0.5px", textTransform: "uppercase", color: MUTED }}>
                     Document Upload
                   </div>
@@ -356,7 +356,7 @@ If any field cannot be determined, use null. Always include line_items array (ca
                 <div style={{ padding: 24 }}>
                   {!file ? (
                     <div
-                      className={\`drop-zone \${dragging ? "dragging" : ""}\`}
+                      className={`drop-zone ${dragging ? "dragging" : ""}`}
                       style={{ padding: "48px 24px", textAlign: "center" }}
                       onDrop={onDrop}
                       onDragOver={onDragOver}
@@ -374,7 +374,7 @@ If any field cannot be determined, use null. Always include line_items array (ca
                         marginTop: 20,
                         display: "inline-block",
                         padding: "8px 20px",
-                        border: \`1px solid \${BORDER}\`,
+                        border: `1px solid ${BORDER}`,
                         borderRadius: 8,
                         fontSize: 12,
                         color: MUTED,
@@ -399,7 +399,7 @@ If any field cannot be determined, use null. Always include line_items array (ca
                           style={{
                             width: "100%",
                             borderRadius: 8,
-                            border: \`1px solid \${BORDER}\`,
+                            border: `1px solid ${BORDER}`,
                             maxHeight: 320,
                             objectFit: "contain",
                             background: "#1a1f27"
@@ -408,7 +408,7 @@ If any field cannot be determined, use null. Always include line_items array (ca
                       ) : (
                         <div style={{
                           background: "#1a1f27",
-                          border: \`1px solid \${BORDER}\`,
+                          border: `1px solid ${BORDER}`,
                           borderRadius: 8,
                           padding: "40px 20px",
                           textAlign: "center"
@@ -444,7 +444,7 @@ If any field cannot be determined, use null. Always include line_items array (ca
                       marginTop: 16,
                       padding: "12px 16px",
                       background: "rgba(248,81,73,0.1)",
-                      border: \`1px solid rgba(248,81,73,0.3)\`,
+                      border: `1px solid rgba(248,81,73,0.3)`,
                       borderRadius: 8,
                       fontSize: 13,
                       color: ERROR
@@ -460,7 +460,7 @@ If any field cannot be determined, use null. Always include line_items array (ca
                 marginTop: 16,
                 padding: "16px 20px",
                 background: "rgba(240,180,41,0.06)",
-                border: \`1px solid rgba(240,180,41,0.2)\`,
+                border: `1px solid rgba(240,180,41,0.2)`,
                 borderRadius: 12
               }}>
                 <div style={{ fontWeight: 700, fontSize: 12, color: ACCENT, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.5px" }}>
@@ -478,14 +478,14 @@ If any field cannot be determined, use null. Always include line_items array (ca
             <div className="fade-up-3">
               <div style={{
                 background: CARD,
-                border: \`1px solid \${BORDER}\`,
+                border: `1px solid ${BORDER}`,
                 borderRadius: 12,
                 overflow: "hidden",
                 minHeight: 420
               }}>
                 <div style={{
                   padding: "20px 24px",
-                  borderBottom: \`1px solid \${BORDER}\`,
+                  borderBottom: `1px solid ${BORDER}`,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between"
@@ -512,7 +512,7 @@ If any field cannot be determined, use null. Always include line_items array (ca
                         <span style={{ color: MUTED, fontSize: 13 }}>Claude is analyzing your document…</span>
                       </div>
                       {[80, 60, 90, 50, 70].map((w, i) => (
-                        <div key={i} className="skeleton" style={{ height: 18, width: \`\${w}%\` }} />
+                        <div key={i} className="skeleton" style={{ height: 18, width: `${w}%` }} />
                       ))}
                     </div>
                   )}
@@ -532,7 +532,7 @@ If any field cannot be determined, use null. Always include line_items array (ca
                   {result && !loading && (
                     <div style={{ animation: "fadeUp 0.4s ease" }}>
                       {/* Confidence + Total */}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, paddingBottom: 16, borderBottom: \`1px solid \${BORDER}\` }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, paddingBottom: 16, borderBottom: `1px solid ${BORDER}` }}>
                         <div>
                           <div style={{ fontSize: 12, color: MUTED, marginBottom: 4 }}>Total Amount</div>
                           <div style={{ fontSize: 24, fontWeight: 800, color: ACCENT }}>{result.currency} {result.total || 'N/A'}</div>
@@ -565,7 +565,7 @@ If any field cannot be determined, use null. Always include line_items array (ca
                       {/* Line Items */}
                       {result.line_items && result.line_items.length > 0 && (
                         <div style={{ marginBottom: 24 }}>
-                          <div style={{ fontSize: 11, color: MUTED, textTransform: 'uppercase', marginBottom: 8, paddingBottom: 4, borderBottom: \`1px solid \${BORDER}\` }}>
+                          <div style={{ fontSize: 11, color: MUTED, textTransform: 'uppercase', marginBottom: 8, paddingBottom: 4, borderBottom: `1px solid ${BORDER}` }}>
                             Line Items
                           </div>
                           {result.line_items.map((item: any, idx: number) => (
@@ -574,7 +574,7 @@ If any field cannot be determined, use null. Always include line_items array (ca
                                 <div style={{ fontSize: 13, fontWeight: 600 }}>{item.description}</div>
                               </div>
                               <div style={{ fontSize: 13, color: MUTED }}>
-                                {item.quantity ? \`\${item.quantity} × \` : ''}{item.currency || result.currency} {item.unit_price || ''}
+                                {item.quantity ? `${item.quantity} × ` : ''}{item.currency || result.currency} {item.unit_price || ''}
                               </div>
                               <div style={{ fontSize: 13, fontWeight: 700 }}>
                                 {item.currency || result.currency} {item.amount}

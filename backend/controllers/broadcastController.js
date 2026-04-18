@@ -119,9 +119,9 @@ exports.getRecipients = async (req, res) => {
                 users: includeAll ? users : users.slice(0, 10),
             }
         });
-    } catch(err) {
-        logger.error('Error fetching broadcast recipients', { error: err.message });
-        res.status(500).json({ success: false, error: err.message });
+    } catch(error) {
+        logger.error('Error fetching broadcast recipients', { error: error.message });
+        res.status(500).json({ success: false, error: error.message });
     }
 };
 

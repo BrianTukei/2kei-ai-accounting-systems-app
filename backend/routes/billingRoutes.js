@@ -97,11 +97,12 @@ router.get('/subscription', auth, async (req, res) => {
     const status = await checkSubscriptionExpiry(req.user.id);
 
     res.json({
+      success: true,
       subscription,
       status,
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 

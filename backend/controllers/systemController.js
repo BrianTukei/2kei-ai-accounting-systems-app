@@ -1,7 +1,6 @@
 ﻿const User = require("../models/User");
 const Subscriber = require("../models/Subscriber");
 const mongoose = require("mongoose");
-const emailQueue = require("../queues/emailQueue");
 
 async function getUserEmails(req, res) {
   try {

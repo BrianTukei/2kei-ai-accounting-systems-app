@@ -102,9 +102,21 @@ app.get('/api/system/health', async (req, res) => {
     
     // Fallback if collections are not ready
     let companies = 0, users = 0, bookings = 0;
-    try { companies = await Company.countDocuments(); } catch(e){}
-    try { users = await User.countDocuments(); } catch(e){}
-    try { bookings = await DemoBooking.countDocuments(); } catch(e){}
+    try {
+      companies = await Company.countDocuments();
+    } catch (error) {
+      logger.warn('Failed to count companies:', error.message);
+    }
+    try {
+      users = await User.countDocuments();
+    } catch (error) {
+      logger.warn('Failed to count users:', error.message);
+    }
+    try {
+      bookings = await DemoBooking.countDocuments();
+    } catch (error) {
+      logger.warn('Failed to count bookings:', error.message);
+    }
 
     res.status(200).json({
       companies,

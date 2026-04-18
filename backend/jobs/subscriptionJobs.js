@@ -240,18 +240,30 @@ const processAutoRenewals = async () => {
 
           // If in test mode, auto-approve
           if (process.env.AUTO_APPROVE_RENEWALS === 'true') {
-            await supabase
+            // Update payment status with error handling
+            const { error: paymentUpdateError } = await supabase
               .from('payments')
               .update({ status: 'success' })
               .eq('id', payment.id);
 
-            await supabase
+            if (paymentUpdateError) {
+              logger.error(`Failed to mark renewal payment as success for ${payment.id}`, paymentUpdateError);
+              continue;
+            }
+
+            // Update subscription end date with error handling
+            const { error: subUpdateError } = await supabase
               .from('subscriptions')
               .update({
                 end_date: newEndDate.toISOString().split('T')[0],
                 updated_at: new Date().toISOString(),
               })
               .eq('id', sub.id);
+
+            if (subUpdateError) {
+              logger.error(`Failed to update subscription end_date for ${sub.id}`, subUpdateError);
+              continue;
+            }
 
             logger.info(`🔄 Auto-renewal processed for subscription ${sub.id}`);
           }

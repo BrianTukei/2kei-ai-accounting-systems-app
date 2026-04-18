@@ -4,7 +4,7 @@
  * Core business logic for subscriptions, payments, and usage tracking
  */
 
-import { createClient } from '@supabase/supabase-js';
+const { createClient } = require('@supabase/supabase-js');
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -15,7 +15,7 @@ const supabase = createClient(
 // SUBSCRIPTION MANAGEMENT
 // ─────────────────────────────────────────
 
-export async function getUserSubscription(userId) {
+async function getUserSubscription(userId) {
   const { data, error } = await supabase
     .from('subscriptions')
     .select(`
@@ -30,7 +30,7 @@ export async function getUserSubscription(userId) {
   return data;
 }
 
-export async function checkSubscriptionExpiry(userId: string) {
+async function checkSubscriptionExpiry(userId) {
   const subscription = await getUserSubscription(userId);
   if (!subscription) return { plan: 'free', expired: false };
 
@@ -50,7 +50,7 @@ export async function checkSubscriptionExpiry(userId: string) {
   return { plan: subscription.plan.slug, expired: false };
 }
 
-export async function createSubscription(userId: string, planId: string, billingCycle: 'monthly' | 'yearly') {
+async function createSubscription(userId, planId, billingCycle) {
   const plan = await supabase
     .from('pricing_plans')
     .select('*')
@@ -82,7 +82,7 @@ export async function createSubscription(userId: string, planId: string, billing
   return data[0];
 }
 
-export async function upgradeSubscription(userId: string, newPlanId: string) {
+async function upgradeSubscription(userId, newPlanId) {
   const currentSub = await getUserSubscription(userId);
   if (!currentSub) throw new Error('No active subscription');
 
@@ -100,7 +100,7 @@ export async function upgradeSubscription(userId: string, newPlanId: string) {
   return data[0];
 }
 
-export async function downgradeToFree(userId: string) {
+async function downgradeToFree(userId) {
   const currentSub = await getUserSubscription(userId);
   if (!currentSub) return;
 
@@ -124,7 +124,7 @@ export async function downgradeToFree(userId: string) {
   await logBillingHistory(userId, currentSub.id, 'downgraded', currentSub.plan.slug, 'free');
 }
 
-export async function cancelSubscription(userId: string) {
+async function cancelSubscription(userId) {
   const currentSub = await getUserSubscription(userId);
   if (!currentSub) throw new Error('No active subscription');
 
@@ -146,7 +146,7 @@ export async function cancelSubscription(userId: string) {
  * Activate a subscription after successful payment
  * Called by: Webhook handler on payment success
  */
-export async function activateSubscription(userId: string, planId: string) {
+async function activateSubscription(userId, planId) {
   try {
     const plan = await supabase
       .from('pricing_plans')
@@ -208,7 +208,7 @@ export async function activateSubscription(userId: string, planId: string) {
 
     if (existingCredits.error && existingCredits.error.code === 'PGRST116') {
       // Don't have credits yet - initialize based on plan
-      const creditMap: Record<string, number> = {
+      const creditMap = {
         free: 0,
         starter: 100000,
         business: 1000000,
@@ -235,12 +235,12 @@ export async function activateSubscription(userId: string, planId: string) {
 // PAYMENT PROCESSING
 // ─────────────────────────────────────────
 
-export async function createPayment(
-  userId: string,
-  amount: number,
-  paymentMethod: 'mobile_money' | 'card' | 'bank_transfer',
-  provider: 'mtn' | 'airtel' | 'stripe',
-  phoneNumber?: string
+async function createPayment(
+  userId,
+  amount,
+  paymentMethod,
+  provider,
+  phoneNumber
 ) {
   const { data, error } = await supabase
     .from('payments')
@@ -259,11 +259,11 @@ export async function createPayment(
   return data[0];
 }
 
-export async function updatePaymentStatus(
-  paymentId: string,
-  status: 'success' | 'failed' | 'refunded',
-  reference?: string,
-  metadata?: any
+async function updatePaymentStatus(
+  paymentId,
+  status,
+  reference,
+  metadata
 ) {
   const { data, error } = await supabase
     .from('payments')
@@ -287,7 +287,7 @@ export async function updatePaymentStatus(
   return data[0];
 }
 
-export async function getPaymentHistory(userId: string, limit = 10) {
+async function getPaymentHistory(userId, limit = 10) {
   const { data, error } = await supabase
     .from('payments')
     .select('*')
@@ -303,7 +303,7 @@ export async function getPaymentHistory(userId: string, limit = 10) {
 // USAGE TRACKING
 // ─────────────────────────────────────────
 
-export async function trackTransaction(userId: string) {
+async function trackTransaction(userId) {
   const now = new Date();
   const year = now.getFullYear();
   const month = now.getMonth() + 1;
@@ -352,7 +352,7 @@ export async function trackTransaction(userId: string) {
   return { limited: false };
 }
 
-export async function getMonthlyUsage(userId: string) {
+async function getMonthlyUsage(userId) {
   const now = new Date();
   const year = now.getFullYear();
   const month = now.getMonth() + 1;
@@ -377,7 +377,7 @@ export async function getMonthlyUsage(userId: string) {
 // AI CREDITS SYSTEM
 // ─────────────────────────────────────────
 
-export async function getAICredits(userId: string) {
+async function getAICredits(userId) {
   let { data, error } = await supabase
     .from('ai_credits')
     .select('*')
@@ -400,7 +400,7 @@ export async function getAICredits(userId: string) {
   return data;
 }
 
-export async function useAICredits(userId: string, feature: string, creditsToUse: number) {
+async function useAICredits(userId, feature, creditsToUse) {
   const credits = await getAICredits(userId);
 
   if (credits.balance < creditsToUse) {
@@ -430,7 +430,7 @@ export async function useAICredits(userId: string, feature: string, creditsToUse
   return true;
 }
 
-export async function purchaseAICredits(userId: string, amount: number, paymentId: string) {
+async function purchaseAICredits(userId, amount, paymentId) {
   const credits = await getAICredits(userId);
 
   const { error } = await supabase
@@ -461,7 +461,7 @@ export async function purchaseAICredits(userId: string, amount: number, paymentI
 // ADMIN FUNCTIONS
 // ─────────────────────────────────────────
 
-export async function getAllSubscriptions(limit = 100) {
+async function getAllSubscriptions(limit = 100) {
   const { data, error } = await supabase
     .from('subscriptions')
     .select(`
@@ -476,7 +476,7 @@ export async function getAllSubscriptions(limit = 100) {
   return data;
 }
 
-export async function getRevenueMetrics(startDate: string, endDate: string) {
+async function getRevenueMetrics(startDate, endDate) {
   const { data, error } = await supabase
     .from('payments')
     .select('*')
@@ -487,7 +487,7 @@ export async function getRevenueMetrics(startDate: string, endDate: string) {
   if (error) throw error;
 
   const totalRevenue = data.reduce((sum, p) => sum + Number(p.amount), 0);
-  const paymentsByProvider = data.reduce((acc: Record<string, number>, p) => {
+  const paymentsByProvider = data.reduce((acc, p) => {
     acc[p.provider] = (acc[p.provider] || 0) + Number(p.amount);
     return acc;
   }, {});
@@ -495,7 +495,7 @@ export async function getRevenueMetrics(startDate: string, endDate: string) {
   return { totalRevenue, transactionCount: data.length, paymentsByProvider };
 }
 
-export async function manuallyUpgradeUser(userId: string, planSlug: string) {
+async function manuallyUpgradeUser(userId, planSlug) {
   const plan = await supabase
     .from('pricing_plans')
     .select('id')
@@ -512,13 +512,13 @@ export async function manuallyUpgradeUser(userId: string, planSlug: string) {
 }
 
 const logBillingHistory = async (
-  userId: string,
-  subscriptionId: string | undefined,
-  action: string,
-  fromPlan: string | null,
-  toPlan: string | null,
-  amount?: number,
-  notes?: string
+  userId,
+  subscriptionId,
+  action,
+  fromPlan,
+  toPlan,
+  amount,
+  notes
 ) => {
   await supabase
     .from('billing_history')
@@ -533,7 +533,7 @@ const logBillingHistory = async (
     });
 };
 
-export async function getDemoBookings(status?: string) {
+async function getDemoBookings(status) {
   let query = supabase.from('demo_bookings').select('*');
 
   if (status) {
@@ -546,15 +546,7 @@ export async function getDemoBookings(status?: string) {
   return data;
 }
 
-export async function createDemoBooking(booking: {
-  name: string;
-  email: string;
-  phone: string;
-  business_name?: string;
-  preferred_date: string;
-  timezone?: string;
-  notes?: string;
-}) {
+async function createDemoBooking(booking) {
   const { data, error } = await supabase
     .from('demo_bookings')
     .insert([booking])
@@ -564,7 +556,7 @@ export async function createDemoBooking(booking: {
   return data[0];
 }
 
-export async function updateDemoBooking(bookingId: string, updates: any) {
+async function updateDemoBooking(bookingId, updates) {
   const { data, error } = await supabase
     .from('demo_bookings')
     .update(updates)
@@ -574,3 +566,43 @@ export async function updateDemoBooking(bookingId: string, updates: any) {
   if (error) throw error;
   return data[0];
 }
+
+// ─────────────────────────────────────────
+// EXPORTS
+// ─────────────────────────────────────────
+
+module.exports = {
+  // Subscription Management
+  getUserSubscription,
+  checkSubscriptionExpiry,
+  createSubscription,
+  upgradeSubscription,
+  downgradeToFree,
+  cancelSubscription,
+  activateSubscription,
+  
+  // Payment Processing
+  createPayment,
+  updatePaymentStatus,
+  getPaymentHistory,
+  
+  // Usage Tracking
+  trackTransaction,
+  getMonthlyUsage,
+  
+  // AI Credits System
+  getAICredits,
+  useAICredits,
+  purchaseAICredits,
+  
+  // Admin Functions
+  getAllSubscriptions,
+  getRevenueMetrics,
+  manuallyUpgradeUser,
+  logBillingHistory,
+  
+  // Demo Bookings
+  getDemoBookings,
+  createDemoBooking,
+  updateDemoBooking,
+};

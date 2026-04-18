@@ -273,7 +273,16 @@ exports.sendBroadcast = async (req, res) => {
                 emails: validEmails
             });
         } else {
-             await supabase.from('broadcasts').update({ status: 'sent', sent_count: 0 }).eq('id', id);
+            // Update broadcast status with error handling
+            const { error: updateError } = await supabase
+              .from('broadcasts')
+              .update({ status: 'sent', sent_count: 0 })
+              .eq('id', id);
+            
+            if (updateError) {
+              logger.error('Failed to update broadcast status', { error: updateError, broadcastId: id });
+              throw updateError;
+            }
         }
         
         res.json({ success: true, message: 'Broadcast is queued for processing', data: updatedBroadcast, stats: { queuedCount: validEmails.length } });

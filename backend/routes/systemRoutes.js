@@ -1,10 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const systemController = require('../controllers/systemController');
-const { authenticate, admin } = require('../middleware/auth'); // If you want to protect it
+const { authenticate, admin } = require('../middleware/auth');
 
-// Typically you'd restrict these routes to 'admin' role
-// router.use(authenticate, admin);
+// ⚠️ SECURITY: All system diagnostics endpoints require admin authentication
+// These endpoints expose sensitive system information and must be protected
+router.use(authenticate, admin);
 
 router.get('/status', systemController.getSystemStatus);
 router.get('/logs', systemController.getDeploymentLogs);

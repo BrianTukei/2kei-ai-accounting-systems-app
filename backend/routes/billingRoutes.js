@@ -5,7 +5,9 @@
  */
 
 const express = require('express');
+const { body, validationResult } = require('express-validator');
 const { auth, admin } = require('../middleware/auth');
+const { generalLimiter, createRateLimiter } = require('../middleware/rateLimiter');
 const {
   getUserSubscription,
   checkSubscriptionExpiry,
@@ -39,6 +41,47 @@ const {
 } = require('../services/mobileMoneyService');
 
 const router = express.Router();
+
+// ─────────────────────────────────────────
+// RATE LIMITERS
+// ─────────────────────────────────────────
+
+// Stricter rate limit for subscription changes to prevent abuse
+const subscriptionLimiter = createRateLimiter({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5, // Max 5 subscription changes per hour
+  message: 'Too many subscription changes. Please try again later.'
+});
+
+// Stricter rate limit for credit operations
+const creditOperationLimiter = createRateLimiter({
+  windowMs: 60 * 1000, // 1 minute
+  max: 10, // Max 10 credit operations per minute
+  message: 'Too many credit operations. Please try again later.'
+});
+
+// Very strict rate limit for credit purchases
+const creditPurchaseLimiter = createRateLimiter({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5, // Max 5 credit purchases per hour
+  message: 'Too many credit purchase attempts. Please try again later.'
+});
+
+// ─────────────────────────────────────────
+// VALIDATION MIDDLEWARE
+// ─────────────────────────────────────────
+
+// Validation helper
+const handleValidationErrors = (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
+      success: false,
+      errors: errors.array().map(e => ({ field: e.param, message: e.msg }))
+    });
+  }
+  return null;
+};
 
 // ─────────────────────────────────────────
 // SUBSCRIPTION MANAGEMENT
@@ -84,39 +127,67 @@ router.get('/plans', async (req, res) => {
  * Upgrade subscription
  * POST /api/billing/upgrade
  */
-router.post('/upgrade', auth, async (req, res) => {
-  try {
-    const { planSlug } = req.body;
+router.post(
+  '/upgrade',
+  auth,
+  subscriptionLimiter,
+  [
+    body('planSlug')
+      .trim()
+      .isString()
+      .withMessage('Plan slug must be a string')
+      .isLength({ min: 2, max: 50 })
+      .withMessage('Invalid plan slug format')
+      .matches(/^[a-z0-9_-]+$/)
+      .withMessage('Plan slug can only contain lowercase letters, numbers, hyphens, and underscores')
+      .isIn(['starter', 'professional', 'enterprise'])
+      .withMessage('Invalid plan selection')
+  ],
+  async (req, res) => {
+    // Handle validation errors
+    const validationError = handleValidationErrors(req, res);
+    if (validationError) return;
 
-    // Get plan ID
-    const { data: plan } = await supabase
-      .from('pricing_plans')
-      .select('id')
-      .eq('slug', planSlug)
-      .single();
+    try {
+      const { planSlug } = req.body;
 
-    if (!plan) return res.status(404).json({ error: 'Plan not found' });
+      // Get plan ID with error handling
+      const { data: plan, error: planError } = await supabase
+        .from('pricing_plans')
+        .select('id')
+        .eq('slug', planSlug)
+        .single();
 
-    await upgradeSubscription(req.user.id, plan.id);
+      if (planError || !plan) {
+        return res.status(404).json({ success: false, error: 'Plan not found' });
+      }
 
-    res.json({ message: 'Subscription upgraded successfully' });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+      await upgradeSubscription(req.user.id, plan.id);
+
+      res.json({ success: true, message: 'Subscription upgraded successfully' });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
   }
-});
+);
 
 /**
  * Cancel subscription
  * POST /api/billing/cancel
  */
-router.post('/cancel', auth, async (req, res) => {
-  try {
-    await cancelSubscription(req.user.id);
-    res.json({ message: 'Subscription canceled successfully' });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+router.post(
+  '/cancel',
+  auth,
+  subscriptionLimiter,
+  async (req, res) => {
+    try {
+      await cancelSubscription(req.user.id);
+      res.json({ success: true, message: 'Subscription canceled successfully' });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
   }
-});
+);
 
 // ─────────────────────────────────────────
 // PAYMENTS
@@ -301,56 +372,107 @@ router.get('/credits', auth, async (req, res) => {
  * Use AI credits
  * POST /api/billing/credits/use
  */
-router.post('/credits/use', auth, async (req, res) => {
-  try {
-    const { feature, creditsToUse } = req.body;
+router.post(
+  '/credits/use',
+  auth,
+  creditOperationLimiter,
+  [
+    body('feature')
+      .trim()
+      .isString()
+      .withMessage('Feature must be a string')
+      .isLength({ min: 1, max: 100 })
+      .withMessage('Invalid feature name'),
+    body('creditsToUse')
+      .isInt({ min: 1, max: 10000 })
+      .withMessage('Credits must be between 1 and 10,000 per operation')
+  ],
+  async (req, res) => {
+    // Handle validation errors
+    const validationError = handleValidationErrors(req, res);
+    if (validationError) return;
 
-    await useAICredits(req.user.id, feature, creditsToUse);
+    try {
+      const { feature, creditsToUse } = req.body;
 
-    const credits = await getAICredits(req.user.id);
-    res.json({ message: 'Credits used successfully', credits });
-  } catch (error) {
-    res.status(400).json({ error: error.message });
+      await useAICredits(req.user.id, feature, creditsToUse);
+
+      const credits = await getAICredits(req.user.id);
+      res.json({
+        success: true,
+        message: 'Credits used successfully',
+        credits
+      });
+    } catch (error) {
+      res.status(400).json({ success: false, error: error.message });
+    }
   }
-});
+);
 
 /**
  * Purchase AI credits
  * POST /api/billing/credits/purchase
  */
-router.post('/credits/purchase', auth, async (req, res) => {
-  try {
-    const { creditsAmount, phoneNumber } = req.body;
+router.post(
+  '/credits/purchase',
+  auth,
+  creditPurchaseLimiter,
+  [
+    body('creditsAmount')
+      .isInt({ min: 100, max: 1000000 })
+      .withMessage('Credits must be between 100 and 1,000,000'),
+    body('phoneNumber')
+      .trim()
+      .isMobilePhone()
+      .withMessage('Invalid phone number format')
+  ],
+  async (req, res) => {
+    // Handle validation errors
+    const validationError = handleValidationErrors(req, res);
+    if (validationError) return;
 
-    // Calculate price (500 UGX per credit)
-    const price = creditsAmount * 500;
+    try {
+      const { creditsAmount, phoneNumber } = req.body;
 
-    // Create payment
-    const payment = await createPayment(req.user.id, price, 'mobile_money', 'mtn', phoneNumber);
+      // Calculate price (500 UGX per credit) with max limit to prevent fraud
+      const maxCreditsTransaction = 1000000; // 1 million credits max
+      if (creditsAmount > maxCreditsTransaction) {
+        return res.status(400).json({
+          success: false,
+          error: `Transaction limited to ${maxCreditsTransaction} credits maximum`
+        });
+      }
 
-    // Initiate payment
-    const result = await initiateMTNPayment(
-      phoneNumber,
-      price,
-      req.user.id,
-      req.user.email
-    );
+      const price = creditsAmount * 500;
 
-    if (!result.success) {
-      return res.status(400).json({ error: result.error });
+      // Create payment with error handling
+      const payment = await createPayment(req.user.id, price, 'mobile_money', 'mtn', phoneNumber);
+
+      // Initiate payment
+      const result = await initiateMTNPayment(
+        phoneNumber,
+        price,
+        req.user.id,
+        req.user.email
+      );
+
+      if (!result.success) {
+        return res.status(400).json({ success: false, error: result.error });
+      }
+
+      res.json({
+        success: true,
+        paymentId: payment.id,
+        transactionId: result.transactionId,
+        amount: price,
+        credits: creditsAmount,
+        message: 'Payment initiated successfully',
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
     }
-
-    res.json({
-      paymentId: payment.id,
-      transactionId: result.transactionId,
-      amount: price,
-      credits: creditsAmount,
-      message: 'Payment initiated successfully',
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
   }
-});
+);
 
 // ─────────────────────────────────────────
 // DEMO BOOKING

@@ -97,12 +97,38 @@ exports.getJobStatus = async (req, res) => {
 
 exports.getGlobalMonitoring = async (req, res) => {
     try {
-        const { data: jobs } = await supabase.from('processing_jobs').select('*').order('created_at', { ascending: false }).limit(50);
-        const { data: logs } = await supabase.from('system_logs').select('*').order('timestamp', { ascending: false }).limit(50);
+        // Fetch processing jobs with error handling
+        const { data: jobs, error: jobsError } = await supabase
+          .from('processing_jobs')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(50);
+
+        if (jobsError) {
+          logger.error('Failed to fetch processing jobs', jobsError);
+          return res.status(500).json({ success: false, error: 'Failed to fetch processing jobs' });
+        }
+
+        // Fetch system logs with error handling
+        const { data: logs, error: logsError } = await supabase
+          .from('system_logs')
+          .select('*')
+          .order('timestamp', { ascending: false })
+          .limit(50);
+
+        if (logsError) {
+          logger.error('Failed to fetch system logs', logsError);
+          return res.status(500).json({ success: false, error: 'Failed to fetch system logs' });
+        }
         
-        res.json({ jobs: jobs || [], logs: logs || [] });
+        res.json({
+          success: true,
+          jobs: jobs || [],
+          logs: logs || []
+        });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logger.error('Error fetching global monitoring data', error);
+        res.status(500).json({ success: false, error: error.message });
     }
 }
 

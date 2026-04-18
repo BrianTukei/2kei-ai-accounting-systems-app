@@ -308,21 +308,29 @@ paymentMethodSchema.virtual('displayName').get(function() {
 });
 
 // Pre-save middleware
-paymentMethodSchema.pre('save', function(next) {
-  // Ensure only one default payment method per user
-  if (this.isDefault) {
-    this.constructor.updateMany(
-      { user: this.user, _id: { $ne: this._id } },
-      { isDefault: false }
-    ).catch(err => console.error('Error updating default payment method:', err));
+paymentMethodSchema.pre('save', async function(next) {
+  try {
+    // Ensure only one default payment method per user
+    if (this.isDefault) {
+      const result = await this.constructor.updateMany(
+        { user: this.user, _id: { $ne: this._id } },
+        { isDefault: false }
+      );
+      if (result.error) {
+        console.error('Error updating default payment method:', result.error);
+      }
+    }
+    
+    // Auto-expire cards
+    if (this.isExpired) {
+      this.isActive = false;
+    }
+    
+    next();
+  } catch (error) {
+    console.error('Pre-save middleware error:', error.message);
+    next(error);
   }
-  
-  // Auto-expire cards
-  if (this.isExpired) {
-    this.isActive = false;
-  }
-  
-  next();
 });
 
 // Static methods
@@ -464,7 +472,12 @@ paymentMethodSchema.methods.generateVerificationCode = function() {
   this.mobileMoney.verificationCode = code;
   this.mobileMoney.verificationExpires = expires;
   
-  return this.save().then(() => code);
+  try {
+    await this.save();
+    return code;
+  } catch (error) {
+    throw new Error(`Failed to generate verification code: ${error.message}`);
+  }
 };
 
 paymentMethodSchema.methods.isVerificationCodeValid = function(code) {

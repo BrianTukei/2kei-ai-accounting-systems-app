@@ -448,12 +448,17 @@ router.post(
       // Create payment with error handling
       const payment = await createPayment(req.user.id, price, 'mobile_money', 'mtn', phoneNumber);
 
-      // Initiate payment
-      const result = await initiateMTNPayment(
-        phoneNumber,
-        price,
-        req.user.id,
-        req.user.email
+// Verify user authentication
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ success: false, error: 'User not authenticated' });
+    }
+
+    // Initiate payment
+    const result = await initiateMTNPayment(
+      phoneNumber,
+      price,
+      req.user.id,
+      req.user.email || ''
       );
 
       if (!result.success) {

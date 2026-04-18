@@ -57,7 +57,7 @@ async function createSubscription(userId, planId, billingCycle) {
     .eq('id', planId)
     .single();
 
-  if (plan.error) throw plan.error;
+  if (plan.error || !plan.data) throw new Error('Plan not found');
 
   const startDate = new Date();
   const endDate = new Date();
@@ -78,7 +78,7 @@ async function createSubscription(userId, planId, billingCycle) {
     })
     .select();
 
-  if (error) throw error;
+  if (error || !data || data.length === 0) throw new Error('Failed to create subscription');
   return data[0];
 }
 
@@ -110,7 +110,7 @@ async function downgradeToFree(userId) {
     .eq('slug', 'free')
     .single();
 
-  if (freePlan.error) throw freePlan.error;
+  if (freePlan.error || !freePlan.data) throw new Error('Free plan not found');
 
   await supabase
     .from('subscriptions')
@@ -215,14 +215,10 @@ async function activateSubscription(userId, planId) {
         enterprise: 5000000,
       };
 
-      const credits = creditMap[plan.data.slug] || 0;
-
-      await supabase.from('ai_credits').insert({
-        user_id: userId,
-        balance: credits,
-        total_purchased: credits > 0 ? credits : 0,
-        total_used: 0,
-      });
+  if (!creditMap.hasOwnProperty(plan.data.slug)) {
+    throw new Error(`Unknown plan slug: ${plan.data.slug}`);
+  }
+  const credits = creditMap[plan.data.slug];
     }
 
     return true;
@@ -276,7 +272,7 @@ async function updatePaymentStatus(
     .eq('id', paymentId)
     .select();
 
-  if (error) throw error;
+  if (error || !data || data.length === 0) throw new Error('Payment not found or update failed');
 
   if (status === 'success') {
     const payment = data[0];

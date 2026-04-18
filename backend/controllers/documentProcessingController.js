@@ -28,7 +28,7 @@ exports.uploadDocument = async (req, res) => {
             })
             .select().single();
 
-        if (uploadErr) throw uploadErr;
+        if (uploadErr || !uploadLog) throw new Error('Failed to create upload record');
 
         // 2. Create Job in DB
         const { data: job, error: jobErr } = await supabase
@@ -42,7 +42,7 @@ exports.uploadDocument = async (req, res) => {
             })
             .select().single();
 
-        if (jobErr) throw jobErr;
+        if (jobErr || !job) throw new Error('Failed to create processing job');
 
         // 3. Insert Initial Processing Status
         await supabase.from('processing_status').insert({
@@ -89,7 +89,11 @@ exports.getJobStatus = async (req, res) => {
             .limit(1)
             .single();
 
-        res.status(200).json({ job, status: statusLog || null });
+        if (statusErr && statusErr.code !== 'PGRST116') throw statusErr;
+        res.status(200).json({ 
+          job, 
+          status: statusLog || { status: 'pending', progress_percentage: 0 } 
+        });
     } catch (error) {
          res.status(500).json({ error: error.message });
     }

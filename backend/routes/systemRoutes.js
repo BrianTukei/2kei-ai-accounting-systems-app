@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const systemController = require('../controllers/systemController');
-const { requireAuth, restrictTo } = require('../middleware/auth'); // If you want to protect it
+const { authenticate, admin } = require('../middleware/auth'); // If you want to protect it
 
 // Typically you'd restrict these routes to 'admin' role
-// router.use(requireAuth, restrictTo('admin'));
+// router.use(authenticate, admin);
 
 router.get('/status', systemController.getSystemStatus);
 router.get('/logs', systemController.getDeploymentLogs);

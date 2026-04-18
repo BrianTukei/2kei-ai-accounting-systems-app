@@ -3,7 +3,7 @@ const logger = require('../utils/logger');
 const emailService = require('../services/emailService');
 const User = require('../models/User');
 const Subscriber = require('../models/Subscriber');
-const { emailCampaignQueue } = require('../queues/emailQueue');
+const emailQueue = require('../queues/emailQueue');
 
 const hasSupabaseConfig = Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY);
 const supabase = hasSupabaseConfig
@@ -266,7 +266,7 @@ exports.sendBroadcast = async (req, res) => {
         // 5. Bulk Email Queue
         if (validEmails.length > 0) {
             // Use Email Queue system to prevent block/spam and server crash
-            await emailCampaignQueue.add('send_broadcast', {
+            await emailQueue.add('send_broadcast', {
                 broadcastId: id,
                 subject: broadcast.subject,
                 message: broadcast.message,

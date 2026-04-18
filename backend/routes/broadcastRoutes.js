@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const { admin } = require('../middleware/auth');
+const { authenticate, admin } = require('../middleware/auth');
 const broadcastController = require('../controllers/broadcastController');
 
 // All broadcast routes require admin authentication
-router.use(admin);
+router.use(authenticate, admin);
 
 // GET /api/admin/broadcasts
 router.get('/', broadcastController.getBroadcasts);

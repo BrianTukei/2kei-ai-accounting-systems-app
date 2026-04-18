@@ -16,6 +16,15 @@ class EmailService {
    */
   initializeTransporter() {
     try {
+      const emailUser = process.env.EMAIL_USER;
+      const emailPass = process.env.EMAIL_PASS;
+      
+      if (!emailUser || !emailPass) {
+        logger.warn('Email credentials (EMAIL_USER or EMAIL_PASS) not configured. Email service will run in mock mode.');
+        this.transporter = null;
+        return;
+      }
+
       const config = {
         host: process.env.SMTP_HOST || 'smtp.gmail.com',
         port: parseInt(process.env.SMTP_PORT) || 587,
@@ -61,7 +70,8 @@ class EmailService {
   async sendEmail(to, subject, message, textMessage = null) {
     try {
       if (!this.transporter) {
-        throw new Error('Email service not available');
+        logger.info(`[MOCK EMAIL] To: ${to} | Subject: ${subject}`);
+        return { messageId: 'mock-id' };
       }
 
       const mailOptions = {

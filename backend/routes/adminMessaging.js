@@ -34,7 +34,7 @@ router.use((req, res, next) => {
  * POST /api/admin/messages/send
  * Body: { userIds?: string[], recipientType: 'all'|'paid'|'free'|'specific', title, message, link? }
  */
-router.post('/send', admin, async (req, res) => {
+router.post('/send', auth, admin, async (req, res) => {
   try {
     const { userIds, recipientType, title, message, link } = req.body;
 
@@ -127,7 +127,7 @@ router.post('/send', admin, async (req, res) => {
  * Get all sent messages
  * GET /api/admin/messages
  */
-router.get('/', admin, async (req, res) => {
+router.get('/', auth, admin, async (req, res) => {
   try {
     const { data: messages, error } = await supabase
       .from('admin_messages')

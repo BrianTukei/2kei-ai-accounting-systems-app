@@ -29,6 +29,9 @@ const { authenticate } = require('./middleware/auth');
 const { generalLimiter, authLimiter, passwordLimiter, emailLimiter } = require('./middleware/rateLimiter');
 const { sanitizeInput } = require('./middleware/validation');
 
+// Import workers
+require('./workers/emailWorker');
+
 // Create Express app
 const app = express();
 
@@ -221,7 +224,12 @@ const connectDB = async () => {
     await seedDemoData();
     
   } catch (error) {
-    console.error('Database connection error:', error);
+    if (error.name === 'MongooseServerSelectionError') {
+      console.error('❌ Database connection error: Could not connect to MongoDB.');
+      console.error('👉 Please ensure MongoDB is installed and running locally, or configure MONGODB_URI in your .env file.');
+    } else {
+      console.error('❌ Database connection error:', error.message);
+    }
     process.exit(1);
   }
 };

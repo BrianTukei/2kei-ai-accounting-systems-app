@@ -50,20 +50,19 @@ exports.processReceiptWithAI = async (req, res) => {
     if (user_id && Receipt) {
       try {
         const receipt = new Receipt({
-          user_id,
-          vendor_name: receiptData.vendor_name,
-          receipt_number: receiptData.receipt_number,
+          userId: user_id,
+          storeName: receiptData.vendor_name,
+          receiptNumber: receiptData.receipt_number,
           date: receiptData.date,
           items: receiptData.items,
           subtotal: receiptData.subtotal,
           tax: receiptData.tax,
-          total: receiptData.total,
+          totalAmount: receiptData.total,
           currency: receiptData.currency,
-          payment_method: receiptData.payment_method,
-          category: receiptData.category,
-          notes: receiptData.notes,
-          raw_text: receipt_text,
-          processed_by: 'google_ai'
+          processingEngine: 'google_ai',
+          confidenceScore: receiptData.confidence_score || 0.95,
+          requiresManualReview: false,
+          status: 'completed'
         });
 
         await receipt.save();
@@ -75,8 +74,13 @@ exports.processReceiptWithAI = async (req, res) => {
           total: receiptData.total
         });
       } catch (dbError) {
-        logger.warn('Receipt not saved to database:', dbError.message);
-        // Don't fail the API call if DB save fails
+        logger.error('Failed to save receipt to database:', {
+          error: dbError.message,
+          vendor: receiptData.vendor_name,
+          userId: user_id
+        });
+        // Still return parsed data but notify about DB save failure
+        receiptData.db_save_error = dbError.message;
       }
     }
 

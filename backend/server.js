@@ -20,6 +20,7 @@ const adminMessagingRoutes = require('./routes/adminMessaging');
 const broadcastRoutes = require('./routes/broadcastRoutes');
 const documentProcessingRoutes = require('./routes/documentProcessing');
 const demoRoutes = require('./routes/demo');
+const aiRoutes = require('./routes/aiRoutes');
 
 // Import subscription jobs
 const { initializeSubscriptionJobs } = require('./jobs/subscriptionJobs');
@@ -125,6 +126,7 @@ app.use('/api/company', authenticate, companyRoutes);
 app.use('/api/subscription', authenticate, subscriptionRoutes);
 app.use('/api/forex', authenticate, forexRoutes);
 app.use('/api/transactions', authenticate, transactionRoutes);
+app.use('/api/ai', aiRoutes); // AI-Powered Accounting Features
 app.use('/api/billing', authenticate, billingRoutes); // Billing routes with auth protection
 app.use('/api/admin/messages', adminMessagingRoutes); // Admin messaging routes
 app.use('/api/admin/broadcasts', broadcastRoutes); // Admin Broadcast Routes

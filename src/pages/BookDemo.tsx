@@ -114,8 +114,14 @@ export default function BookDemo() {
         setError(result.error || result.message || 'Failed to book demo');
       }
     } catch (err) {
-      setError('Failed to book demo. Please try again.');
+      const errorMsg = err instanceof Error ? err.message : 'Failed to book demo. Please try again.';
+      setError(errorMsg);
       console.error('Booking error:', err);
+      console.error('Error details:', {
+        message: errorMsg,
+        stack: err instanceof Error ? err.stack : 'N/A',
+        bookingData: bookingData
+      });
     } finally {
       setSubmittingForm(false);
     }

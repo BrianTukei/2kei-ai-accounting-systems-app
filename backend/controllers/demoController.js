@@ -147,7 +147,18 @@ class DemoController {
         message: 'Demo booking created successfully! Check your email for confirmation.'
       });
     } catch (error) {
-      logger.error('Failed to create demo booking:', error);
+      logger.error('Failed to create demo booking:', {
+        message: error.message,
+        code: error.code,
+        stack: error.stack,
+        requestData: {
+          name: req.body.name,
+          email: req.body.email,
+          company: req.body.company,
+          preferredDate: req.body.preferredDate,
+          preferredTime: req.body.preferredTime
+        }
+      });
       
       if (error.code === 'SLOT_TAKEN') {
         return res.status(409).json({
@@ -156,9 +167,12 @@ class DemoController {
         });
       }
 
+      // Return detailed error in development
+      const isDev = process.env.NODE_ENV !== 'production';
       res.status(500).json({
         success: false,
-        error: 'Failed to create booking. Please try again.'
+        error: isDev ? error.message : 'Failed to create booking. Please try again.',
+        details: isDev ? error.stack : undefined
       });
     }
   }

@@ -9,8 +9,11 @@
 
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-dotenv.config();
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.join(__dirname, '../backend/.env') });
 
 const companySchema = new mongoose.Schema({
   name: { type: String, required: true },

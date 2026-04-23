@@ -96,6 +96,8 @@ export default function BookDemo() {
       setSubmittingForm(true);
       setError('');
 
+      console.log('📤 Sending booking request to /api/demo/book with data:', bookingData);
+
       const response = await fetch('/api/demo/book', {
         method: 'POST',
         headers: {
@@ -104,7 +106,36 @@ export default function BookDemo() {
         body: JSON.stringify(bookingData)
       });
 
+      console.log('📥 Response status:', response.status);
+      console.log('📥 Response headers:', Object.fromEntries(response.headers));
+
+      // Check if response is ok before parsing
+      if (!response.ok) {
+        let errorText = `HTTP ${response.status}`;
+        try {
+          const result = await response.json();
+          errorText = result.error || result.message || errorText;
+        } catch (parseError) {
+          // If can't parse JSON, get text
+          try {
+            const text = await response.text();
+            errorText = text || errorText;
+          } catch {
+            // Response is empty
+            errorText = `Server error (${response.status}): No response body`;
+          }
+        }
+        setError(errorText);
+        console.error('❌ Booking request failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorText
+        });
+        return;
+      }
+
       const result = await response.json();
+      console.log('✅ Booking response:', result);
 
       if (result.success) {
         setBookingResult(result.data?.booking || bookingData);
@@ -116,7 +147,7 @@ export default function BookDemo() {
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Failed to book demo. Please try again.';
       setError(errorMsg);
-      console.error('Booking error:', err);
+      console.error('❌ Booking error:', err);
       console.error('Error details:', {
         message: errorMsg,
         stack: err instanceof Error ? err.stack : 'N/A',

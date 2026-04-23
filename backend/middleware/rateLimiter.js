@@ -75,7 +75,6 @@ const demoLimiter = rateLimit({
 });
 
 // Auth rate limiting (very restrictive)
-// Auth rate limiting (very restrictive)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5, // Limit each IP to 5 auth requests per windowMs
@@ -140,11 +139,6 @@ const createRateLimiter = ({ windowMs, max, message }) => rateLimit({
     res.status(429).json({
       success: false,
       error: message || 'Too many requests. Please try again later.'
-    });
-  }
-    return res.status(429).json({
-      success: false,
-      message: message || 'Too many requests, please try again later.'
     });
   }
 });

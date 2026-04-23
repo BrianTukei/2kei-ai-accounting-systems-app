@@ -116,15 +116,22 @@ class DemoController {
 
       // Send confirmation email to user
       try {
-        await emailService.sendDemoConfirmation(booking);
+        await emailService.sendDemoBookingNotification(booking);
       } catch (emailError) {
-        logger.error('Failed to send confirmation email:', emailError);
+        logger.error('Failed to send booking confirmation email:', emailError);
         // Don't fail the booking if email fails
       }
 
-      // Send notification email to admin
+      // Send notification email to admin (if needed)
       try {
-        await emailService.sendDemoNotification(booking);
+        const adminEmail = process.env.ADMIN_EMAIL || 'admin@2kaccounting.com';
+        await emailService.sendEmail(
+          adminEmail,
+          'New Demo Booking Received',
+          `<p>New demo booking from ${booking.name} (${booking.email})</p>
+           <p>Preferred Date: ${booking.preferredDate}</p>
+           <p>Preferred Time: ${booking.preferredTime}</p>`
+        );
       } catch (emailError) {
         logger.error('Failed to send admin notification:', emailError);
         // Don't fail the booking if email fails

@@ -176,7 +176,7 @@ app.use('*', (req, res) => {
   });
 });
 
-// Global error handler
+// Global error handler (must be last)
 app.use(globalErrorHandler);
 
 // Validate required environment variables

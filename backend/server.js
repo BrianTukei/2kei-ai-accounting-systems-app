@@ -226,12 +226,18 @@ const validateEnvironment = () => {
 // Database connection
 const connectDB = async () => {
   try {
+    console.log('🔌 Initializing MongoDB connection...');
+    console.log('   MongoDB URI:', process.env.MONGODB_URI ? process.env.MONGODB_URI.substring(0, 50) + '...' : 'NOT SET');
+    
     const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/2k_accounting', {
       useNewUrlParser: true,
       useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
     });
     
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
+    console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
+    console.log(`✅ Database: ${conn.connection.name}`);
     
     // Step 8: Seed Demo Data Automatically
     const seedDemoData = require('./utils/seedDemoData');
@@ -240,7 +246,8 @@ const connectDB = async () => {
   } catch (error) {
     if (error.name === 'MongooseServerSelectionError') {
       console.error('❌ Database connection error: Could not connect to MongoDB.');
-      console.error('👉 Please ensure MongoDB is installed and running locally, or configure MONGODB_URI in your .env file.');
+      console.error('👉 Please ensure MongoDB is running or MONGODB_URI is correctly configured in .env');
+      console.error('   Current URI:', process.env.MONGODB_URI || 'mongodb://localhost:27017/2k_accounting');
     } else {
       console.error('❌ Database connection error:', error.message);
     }

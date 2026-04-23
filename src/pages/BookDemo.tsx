@@ -111,18 +111,31 @@ export default function BookDemo() {
 
       // Check if response is ok before parsing
       if (!response.ok) {
-        let errorText = `HTTP ${response.status}`;
+        let errorText = `HTTP Error ${response.status}`;
+        
+        // Map common HTTP error codes to user-friendly messages
+        const errorMessages: { [key: number]: string } = {
+          400: 'Invalid form data. Please check all fields.',
+          404: 'Booking service not available.',
+          500: 'Server error. Please try again.',
+          503: 'Server temporarily unavailable. Please wait a moment and try again.',
+          408: 'Request timed out. Please try again.',
+          409: 'This time slot is already booked. Please select a different time.'
+        };
+        
+        // Try to get the actual error from response
         try {
           const result = await response.json();
-          errorText = result.error || result.message || errorText;
+          errorText = result.error || result.message || errorMessages[response.status] || errorText;
         } catch (parseError) {
-          // If can't parse JSON, get text
+          // If can't parse JSON, use mapped message
+          errorText = errorMessages[response.status] || errorText;
           try {
             const text = await response.text();
-            errorText = text || errorText;
+            if (text) errorText = text.substring(0, 200);
           } catch {
             // Response is empty
-            errorText = `Server error (${response.status}): No response body`;
+            errorText = errorMessages[response.status] || errorText;
           }
         }
         setError(errorText);

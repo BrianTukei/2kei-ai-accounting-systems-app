@@ -157,6 +157,7 @@ class DemoController {
       logger.error('Failed to create demo booking:', {
         message: error.message,
         code: error.code,
+        name: error.name,
         stack: error.stack,
         requestData: {
           name: req.body.name,
@@ -167,6 +168,15 @@ class DemoController {
         }
       });
       
+      // Handle MongoDB timeout
+      if (error.message && error.message.includes('buffering timed out')) {
+        return res.status(503).json({
+          success: false,
+          error: 'Database temporarily unavailable. Please try again in a moment.',
+          details: 'MongoDB connection timeout'
+        });
+      }
+
       if (error.code === 'SLOT_TAKEN') {
         return res.status(409).json({
           success: false,

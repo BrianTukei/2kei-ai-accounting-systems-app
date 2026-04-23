@@ -21,6 +21,10 @@ const generalLimiter = rateLimit({
       userAgent: req.get('User-Agent'),
       path: req.path
     });
+    res.status(429).json({
+      success: false,
+      error: 'Too many requests. Please try again later.'
+    });
   }
 });
 
@@ -39,6 +43,10 @@ const emailLimiter = rateLimit({
       ip: req.ip,
       userAgent: req.get('User-Agent'),
       path: req.path
+    });
+    res.status(429).json({
+      success: false,
+      error: 'Too many email requests. Please try again later.'
     });
   }
 });
@@ -59,9 +67,14 @@ const demoLimiter = rateLimit({
       userAgent: req.get('User-Agent'),
       path: req.path
     });
+    res.status(429).json({
+      success: false,
+      error: 'Too many demo booking requests. Please try again later.'
+    });
   }
 });
 
+// Auth rate limiting (very restrictive)
 // Auth rate limiting (very restrictive)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -77,6 +90,10 @@ const authLimiter = rateLimit({
       ip: req.ip,
       userAgent: req.get('User-Agent'),
       path: req.path
+    });
+    res.status(429).json({
+      success: false,
+      error: 'Too many authentication attempts. Please try again later.'
     });
   }
 });
@@ -97,6 +114,10 @@ const passwordResetLimiter = rateLimit({
       userAgent: req.get('User-Agent'),
       path: req.path
     });
+    res.status(429).json({
+      success: false,
+      error: 'Too many password reset requests. Please try again later.'
+    });
   }
 });
 
@@ -116,6 +137,11 @@ const createRateLimiter = ({ windowMs, max, message }) => rateLimit({
       userAgent: req.get('User-Agent'),
       path: req.path
     });
+    res.status(429).json({
+      success: false,
+      error: message || 'Too many requests. Please try again later.'
+    });
+  }
     return res.status(429).json({
       success: false,
       message: message || 'Too many requests, please try again later.'

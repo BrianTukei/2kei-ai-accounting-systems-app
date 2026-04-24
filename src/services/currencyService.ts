@@ -63,6 +63,10 @@ class CurrencyService {
   }
 
   private loadCachedRates() {
+    // Only use localStorage in browser environment
+    if (typeof localStorage === 'undefined') {
+      return;
+    }
     const cached = localStorage.getItem('exchange-rates');
     if (cached) {
       try {
@@ -77,6 +81,10 @@ class CurrencyService {
   }
 
   private saveCachedRates() {
+    // Only use localStorage in browser environment
+    if (typeof localStorage === 'undefined') {
+      return;
+    }
     const rates = Array.from(this.rates.values());
     localStorage.setItem('exchange-rates', JSON.stringify(rates));
   }

@@ -9,17 +9,31 @@
 import { createClient } from '@supabase/supabase-js';
 import { logger } from '../services/loggerService';
 import { RetryProcessor } from '../utils/retryProcessor';
-import { AIReceiptScannerService } from '../services/ai/aiReceiptScannerService';
+import { aiReceiptScannerService } from '../services/ai/aiReceiptScannerService';
 // Import your bank parser here when ready
 // import { BankImportService } from '../services/bankImportService';
 
 const supabaseUrl = process.env.SUPABASE_URL || '';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || '';
 
-const supabase = createClient(supabaseUrl, supabaseKey);
-const receiptScanner = new AIReceiptScannerService();
+let supabase: any = null;
+
+// Only initialize Supabase client if credentials are available
+if (supabaseUrl && supabaseKey) {
+  supabase = createClient(supabaseUrl, supabaseKey);
+} else {
+  logger.warn('[WORKER] Supabase credentials not configured - job worker will be disabled');
+}
+
+const receiptScanner = aiReceiptScannerService;
 
 export async function runJobWorker() {
+  // Skip if Supabase is not configured
+  if (!supabase) {
+    logger.warn('[WORKER] Job worker disabled - Supabase not configured');
+    return;
+  }
+
   logger.info('[WORKER] Started background AI processing worker...');
 
   // Simple polling loop

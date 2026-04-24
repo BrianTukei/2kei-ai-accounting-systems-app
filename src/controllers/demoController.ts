@@ -7,7 +7,12 @@ import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.SUPABASE_URL || '';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseKey);
+let supabase: any = null;
+
+// Only initialize Supabase client if credentials are available
+if (supabaseUrl && supabaseKey) {
+  supabase = createClient(supabaseUrl, supabaseKey);
+}
 
 export const createBooking = async (req: Request, res: Response) => {
   try {
@@ -188,5 +193,9 @@ export const deleteBooking = async (req: Request, res: Response) => {
 };
 
 export const getBookingStats = async (req: Request, res: Response) => {
+  res.status(501).json({ success: false, error: 'Not implemented' });
+};
+
+export const rescheduleBooking = async (req: Request, res: Response) => {
   res.status(501).json({ success: false, error: 'Not implemented' });
 };

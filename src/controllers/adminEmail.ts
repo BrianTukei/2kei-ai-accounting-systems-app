@@ -5,7 +5,12 @@ import nodemailer from 'nodemailer';
 
 const supabaseUrl = process.env.SUPABASE_URL || '';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseKey);
+let supabase: any = null;
+
+// Only initialize Supabase client if credentials are available
+if (supabaseUrl && supabaseKey) {
+  supabase = createClient(supabaseUrl, supabaseKey);
+}
 
 // Basic Email Transporter (Queued later)
 const transporter = nodemailer.createTransport({

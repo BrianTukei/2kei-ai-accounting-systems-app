@@ -116,7 +116,27 @@ class AdminController {
         message: 'Failed to fetch user'
       });
     }
-  }
+  }Email Broadcast
+Select registered users and send bulk email updates.
+
+0 Total Users
+Registered Users
+Select recipients for your broadcast.
+
+Search names or emails...
+No registered users found.
+
+Selected: 0
+Compose Broadcast
+Subject Line
+Important update from the team...
+Message Body
+Hello, we are writing to inform you...
+Emails will be delivered individually. Your recipients will not see each other in the "To" field.
+
+No recipients selected
+
+Connect to the database to sync users.
 
   /**
    * Get active user emails for broadcast selection

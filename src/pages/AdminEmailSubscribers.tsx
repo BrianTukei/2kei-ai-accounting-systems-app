@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
+import { adminApiCall } from "@/services/adminService";
+import { supabase } from "@/integrations/supabase/client";
 
 interface User {
   id: string;
@@ -33,21 +35,20 @@ export default function AdminEmailSubscribers() {
   const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
       
-      // Call the existing backend API endpoint to get registered users
-      const response = await fetch("/api/admin/users/emails", {
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
-      });
+      const resData = await adminApiCall("list-all", { page: 1, perPage: 1000 });
       
-      const resData = await response.json();
-      
-      if (resData.success && resData.data) {
-        setUsers(resData.data);
+      if (resData.users) {
+        setUsers(
+          resData.users.map((user: any) => ({
+            id: user.id,
+            name: user.full_name || user.user_metadata?.full_name || user.user_metadata?.first_name || user.email.split('@')[0],
+            email: user.email,
+            isActive: !user.banned_until
+          }))
+        );
       } else {
-        throw new Error(resData.message || "Failed to load users");
+        throw new Error(resData.error || "Failed to load users");
       }
     } catch (error: any) {
       console.error("Error fetching registered users:", error);
@@ -117,7 +118,8 @@ export default function AdminEmailSubscribers() {
 
     try {
       setSending(true);
-      const token = localStorage.getItem("token");
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token || localStorage.getItem("token");
       
       // Get the actual email strings of the selected users
       const recipientEmails = users

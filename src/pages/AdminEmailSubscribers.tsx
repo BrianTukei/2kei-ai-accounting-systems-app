@@ -166,15 +166,26 @@ export default function AdminEmailSubscribers() {
       const data = await response.json();
 
       if (data.success) {
-        toast({
-          title: "Broadcast Sent Successfully!",
-          description: `Delivered to ${data.data?.summary?.success || recipientEmails.length} recipients.`,
-          variant: "default"
-        });
+        const deliveredCount = data.data?.summary?.success ?? 0;
+        const failedCount = data.data?.summary?.failed ?? 0;
         
-        // Reset form after successful send
-        setSubject("");
-        setMessage("");
+        if (deliveredCount === 0 && failedCount > 0) {
+          toast({
+            title: "Broadcast Failed (Mock Mode?)",
+            description: `0 delivered, ${failedCount} failed. Check your backend SMTP/EMAIL_USER credentials.`,
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Broadcast Processed!",
+            description: `Delivered to ${deliveredCount} recipient(s). ${failedCount > 0 ? `${failedCount} failed.` : ''}`,
+            variant: "default"
+          });
+          
+          // Reset form after successful send
+          setSubject("");
+          setMessage("");
+        }
       } else {
         throw new Error(data.message || "Failed to send email");
       }

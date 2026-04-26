@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Send, Image as ImageIcon, Users, Calendar, Settings, Clock, BarChart3, Mail, Plus, Filter, Paperclip, CheckSquare, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { adminApiCall } from '@/services/adminService';
+import { supabase } from '@/integrations/supabase/client';
 
 export const AdminMessagingPanel: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'compose' | 'templates' | 'history' | 'settings'>('compose');
@@ -22,12 +24,31 @@ export const AdminMessagingPanel: React.FC = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await fetch('/api/admin/users/emails', {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        });
-        const data = await response.json();
-        if (data.success) {
-          setAvailableUsers(data.data);
+        try {
+          const resData = await adminApiCall("list-all", { page: 1, perPage: 1000 });
+          if (resData.users) {
+            setAvailableUsers(
+              resData.users.map((user: any) => ({
+                name: user.full_name || user.user_metadata?.full_name || user.user_metadata?.first_name || user.email.split('@')[0],
+                email: user.email
+              }))
+            );
+          }
+        } catch (apiError) {
+          console.warn("Edge function failed, falling back to profiles table...", apiError);
+          const { data: profiles } = await supabase
+            .from("profiles")
+            .select("id, full_name, email")
+            .limit(1000);
+            
+          if (profiles) {
+            setAvailableUsers(
+              profiles.map((p: any) => ({
+                name: p.full_name || p.email.split('@')[0],
+                email: p.email
+              }))
+            );
+          }
         }
       } catch (error) {
         console.error('Failed to fetch available users:', error);

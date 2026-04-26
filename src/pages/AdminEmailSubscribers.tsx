@@ -36,19 +36,41 @@ export default function AdminEmailSubscribers() {
     try {
       setLoading(true);
       
-      const resData = await adminApiCall("list-all", { page: 1, perPage: 1000 });
-      
-      if (resData.users) {
-        setUsers(
-          resData.users.map((user: any) => ({
-            id: user.id,
-            name: user.full_name || user.user_metadata?.full_name || user.user_metadata?.first_name || user.email.split('@')[0],
-            email: user.email,
-            isActive: !user.banned_until
-          }))
-        );
-      } else {
-        throw new Error(resData.error || "Failed to load users");
+      try {
+        const resData = await adminApiCall("list-all", { page: 1, perPage: 1000 });
+        
+        if (resData.users) {
+          setUsers(
+            resData.users.map((user: any) => ({
+              id: user.id,
+              name: user.full_name || user.user_metadata?.full_name || user.user_metadata?.first_name || user.email.split('@')[0],
+              email: user.email,
+              isActive: !user.banned_until
+            }))
+          );
+        } else {
+          throw new Error(resData.error || "Failed to load users");
+        }
+      } catch (apiError) {
+        console.warn("Edge function failed, falling back to profiles table...", apiError);
+        // Fallback: Query profiles table directly
+        const { data: profiles, error: profileErr } = await supabase
+          .from("profiles")
+          .select("id, full_name, email")
+          .limit(1000);
+
+        if (profileErr) throw profileErr;
+        
+        if (profiles) {
+          setUsers(
+            profiles.map((p: any) => ({
+              id: p.id,
+              name: p.full_name || p.email.split('@')[0],
+              email: p.email,
+              isActive: true
+            }))
+          );
+        }
       }
     } catch (error: any) {
       console.error("Error fetching registered users:", error);

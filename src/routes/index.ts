@@ -2,8 +2,12 @@ import { Router } from 'express';
 import { ReceiptScannerAPI } from '../api/receiptScanner';
 import { ChatbotAPI } from '../api/chatbot';
 import { ActionAIController } from '../api/actionAI';
+import authRoutes from './auth';
 
 const router = Router();
+
+// Auth Routes
+router.use('/auth', authRoutes);
 
 // Receipt Scanner Routes
 router.post('/scan-receipt', ReceiptScannerAPI.scanReceipt);

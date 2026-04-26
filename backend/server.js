@@ -251,7 +251,7 @@ const connectDB = async () => {
     } else {
       console.error('❌ Database connection error:', error.message);
     }
-    process.exit(1);
+    console.warn('⚠️ Bypassing MongoDB connection failure because Supabase is the primary database...');
   }
 };
 

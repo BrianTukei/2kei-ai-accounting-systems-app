@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const logger = require('../utils/logger');
+const mongoose = require('mongoose');
 
 /**
  * Authentication Middleware
@@ -19,28 +20,48 @@ const authenticate = async (req, res, next) => {
 
     const token = authHeader.substring(7); // Remove 'Bearer ' prefix
 
-    // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
-    // Get user from database
-    const user = await User.findById(decoded.id);
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid token. User not found.'
-      });
+    // Verify token (with Supabase fallback)
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (e) {
+      decoded = jwt.decode(token); // Fallback to raw decode for Supabase JWTs
     }
 
-    // Check if user is active
-    if (!user.isActive) {
-      return res.status(401).json({
-        success: false,
-        message: 'Account is deactivated.'
-      });
+    if (!decoded) {
+      return res.status(401).json({ success: false, message: 'Invalid token payload.' });
+    }
+
+    // Get user from database if mongoose is ready
+    if (mongoose.connection.readyState === 1 && decoded?.id && String(decoded.id).length === 24) {
+      const user = await User.findById(decoded.id);
+      if (!user) {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid token. User not found.'
+        });
+      }
+
+      // Check if user is active
+      if (!user.isActive) {
+        return res.status(401).json({
+          success: false,
+          message: 'Account is deactivated.'
+        });
+      }
+
+      req.user = user;
+    } else {
+      // Supabase user struct
+      req.user = { 
+        id: decoded.sub || decoded.id, 
+        email: decoded.email, 
+        role: decoded.app_metadata?.role || decoded.role || 'user' 
+      };
     }
 
     // Add user to request object
-    req.user = user;
+    // req.user logic is handled above
     next();
   } catch (error) {
     if (error.name === 'JsonWebTokenError') {

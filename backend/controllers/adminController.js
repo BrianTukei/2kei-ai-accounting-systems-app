@@ -187,9 +187,15 @@ class AdminController {
       if (emails && Array.isArray(emails)) {
         recipients = [...recipients, ...emails];
         
-        // Find users for provided emails
-        const users = await User.find({ email: { $in: emails } });
-        userIds = [...userIds, ...users.map(u => u._id)];
+        try {
+          // Attempt to find users if MongoDB is available
+          if (mongoose.connection.readyState === 1) {
+            const users = await User.find({ email: { $in: emails } });
+            userIds = [...userIds, ...users.map(u => u._id)];
+          }
+        } catch (e) {
+          logger.warn("Skipping MongoDB user lookup (Supabase active mode)");
+        }
       }
 
       if (recipients.length === 0) {
@@ -204,29 +210,35 @@ class AdminController {
 
       // Send emails in parallel with proper error isolation
       const emailPromises = recipients.map(async (recipient, index) => {
-        const userId = userIds[index] || null;
+        const uid = userIds[index] || null;
         
         try {
           const result = await emailService.sendEmail(recipient, subject, message);
           
-          // Log email
-          const emailLog = new EmailLog({
-            messageId: result.messageId || uuidv4(),
-            recipient,
-            subject,
-            message,
-            admin: adminId,
-            userId,
-            status: result.success ? 'sent' : 'failed',
-            type,
-            bulkId,
-            providerMessageId: result.messageId,
-            error: result.success ? null : {
-              message: result.error
-            }
-          });
+          try {
+            if (mongoose.connection.readyState === 1) {
+              // Log email
+              const emailLog = new EmailLog({
+                messageId: result.messageId || uuidv4(),
+                recipient,
+                subject,
+                message,
+                admin: adminId,
+                userId: uid,
+                status: result.success ? 'sent' : 'failed',
+                type,
+                bulkId,
+                providerMessageId: result.messageId,
+                error: result.success ? null : {
+                  message: result.error
+                }
+              });
 
-          await emailLog.save();
+              await emailLog.save();
+            }
+          } catch (e) {
+             logger.warn('Skipping MongoDB email log save (Supabase active mode)');
+          }
 
           return {
             recipient,
@@ -237,23 +249,29 @@ class AdminController {
         } catch (error) {
           logger.error('Failed to send email to recipient:', error);
           
-          // Log failed email
-          const emailLog = new EmailLog({
-            messageId: uuidv4(),
-            recipient,
-            subject,
-            message,
-            admin: adminId,
-            userId,
-            status: 'failed',
-            type,
-            bulkId,
-            error: {
-              message: error.message
-            }
-          });
+          try {
+            if (mongoose.connection.readyState === 1) {
+              // Log failed email
+              const emailLog = new EmailLog({
+                messageId: uuidv4(),
+                recipient,
+                subject,
+                message,
+                admin: adminId,
+                userId: uid,
+                status: 'failed',
+                type,
+                bulkId,
+                error: {
+                  message: error.message
+                }
+              });
 
-          await emailLog.save();
+              await emailLog.save();
+            }
+          } catch (e) {
+             logger.warn('Skipping MongoDB email log save (Supabase active mode)');
+          }
 
           return {
             recipient,

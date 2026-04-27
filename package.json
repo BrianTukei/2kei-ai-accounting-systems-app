@@ -8,9 +8,10 @@
     "minimatch": "^10.2.2"
   },
   "scripts": {
-    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\" \"npm run dev:legacy\"",
     "dev:frontend": "node ./node_modules/vite/bin/vite.js",
     "dev:backend": "tsx watch src/server.ts",
+    "dev:legacy": "cd backend && npm run dev",
     "build": "node ./node_modules/vite/bin/vite.js build",
     "build:dev": "node ./node_modules/vite/bin/vite.js build --mode development",
     "lint": "eslint .",

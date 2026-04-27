@@ -172,15 +172,20 @@ class AdminController {
 
       // Handle single user by ID
       if (userId) {
-        const user = await User.findById(userId);
-        if (!user) {
-          return res.status(404).json({
-            success: false,
-            message: 'User not found'
-          });
+        if (mongoose.connection.readyState === 1 && typeof userId === 'string' && userId.length === 24) {
+          const user = await User.findById(userId);
+          if (!user) {
+            return res.status(404).json({
+              success: false,
+              message: 'User not found'
+            });
+          }
+          recipients.push(user.email);
+          userIds.push(user._id);
+        } else {
+          // If we can't look up by ID using Mongo, look for email fallback if provided
+          logger.warn(`Skipping MongoDB ID lookup for ${userId} (offline or not Mongo ID)`);
         }
-        recipients.push(user.email);
-        userIds.push(user._id);
       }
 
       // Handle multiple emails
@@ -216,7 +221,7 @@ class AdminController {
           const result = await emailService.sendEmail(recipient, subject, message);
           
           try {
-            if (mongoose.connection.readyState === 1) {
+            if (mongoose.connection.readyState === 1 && uid) {
               // Log email
               const emailLog = new EmailLog({
                 messageId: result.messageId || uuidv4(),
@@ -250,7 +255,7 @@ class AdminController {
           logger.error('Failed to send email to recipient:', error);
           
           try {
-            if (mongoose.connection.readyState === 1) {
+            if (mongoose.connection.readyState === 1 && uid) {
               // Log failed email
               const emailLog = new EmailLog({
                 messageId: uuidv4(),

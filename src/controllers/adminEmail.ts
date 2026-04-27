@@ -122,7 +122,7 @@ export const adminEmailController = {
       if (!broadcast) return res.status(404).json({ success: false, error: 'Not found' });
       
       await transporter.sendMail({
-        from: `"2K AI Accounting" <\${process.env.FROM_EMAIL || 'no-reply@2kai.com'}>`,
+        from: `"2K AI Accounting Systems" <${process.env.FROM_EMAIL || 'no-reply@2kai.com'}>`,
         to: email,
         subject: `[TEST] \${broadcast.subject}`,
         html: broadcast.message

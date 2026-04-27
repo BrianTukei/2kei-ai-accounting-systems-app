@@ -75,7 +75,7 @@ class EmailService {
       }
 
       const mailOptions = {
-        from: `"${process.env.EMAIL_FROM_NAME || '2K AI Accounting'}" <${process.env.EMAIL_USER}>`,
+        from: `"${process.env.EMAIL_FROM_NAME || '2K AI Accounting Systems'}" <${process.env.EMAIL_USER}>`,
         to: Array.isArray(to) ? to.join(', ') : to,
         subject: subject,
         html: message,

@@ -64,7 +64,7 @@ export default function IncomeStatement() {
         totalBalance: totalIncome - totalExpenses,
         monthlyIncome: totalIncome,
         monthlyExpenses: totalExpenses,
-        incomeGrowth: 0,
+        incomeGrowth: 0, // growth data not applicable for single-period statements
         expenseGrowth: 0,
         categoryBreakdown: expenseData.map(e => ({
           category: e.category,

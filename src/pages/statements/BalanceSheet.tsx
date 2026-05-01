@@ -76,7 +76,7 @@ export default function BalanceSheet() {
         totalBalance: totalAssets - totalLiabilities,
         monthlyIncome: totalIncome,
         monthlyExpenses: totalExpenses,
-        incomeGrowth: 0,
+        incomeGrowth: 0, // growth data not applicable for balance sheet snapshots
         expenseGrowth: 0,
         categoryBreakdown: Object.entries(balanceSheetData.liabilities).map(([category, amount]) => ({
           category,

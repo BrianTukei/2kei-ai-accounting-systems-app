@@ -90,10 +90,10 @@ export class AIReasoningEngine {
       // always returns a rich, data-driven response even when Ollama is offline.
       const localResponse = AIAssistantService.generateLocalResponse(
         request.message,
-        undefined,
-        request.context as any,
-        request.context?.financialSnapshot as any,
-        undefined,
+        /* contextType */ undefined,
+        /* contextData */ request.context as any,
+        /* financialSnapshot */ request.context?.financialSnapshot as any,
+        /* userName */ undefined,
       );
 
       return {

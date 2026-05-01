@@ -122,7 +122,7 @@ class EnhancedAIService {
       mode: aiResponse.mode ?? enhancedContext.mode,
       conversationId: enhancedContext.conversationId,
       metadata: {
-        confidence: 0.85,
+        confidence: aiResponse.metadata?.confidence ?? 0.85,
         sources: ['2kei-financial-engine'],
       },
     };

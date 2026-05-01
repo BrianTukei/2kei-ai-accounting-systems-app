@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Brain, TrendingUp, AlertCircle, Info } from 'lucide-react';
 import { AIFloatingButton } from '@/components/ai/AIFloatingButton';
-import { AIAssistantService } from '@/services/aiAssistant';
+import { AIEngine } from '@/services/ai/aiEngine';
+import type { AIContext } from '@/services/ai/types';
 import { toast } from 'sonner';
 
 // Define balance sheet categories
@@ -60,28 +61,45 @@ export default function BalanceSheet() {
   const totalEquity = balanceSheetData.equity;
   const liabilitiesPlusEquity = totalLiabilities + totalEquity;
   
-  // AI Analysis function
+  // AI Analysis function — uses the full 2KEI Financial Intelligence Engine
   const handleAIAnalysis = async () => {
     setIsLoadingInsight(true);
     try {
-      const reportData = {
-        totalAssets,
-        totalLiabilities,
-        totalEquity,
-        liabilitiesPlusEquity,
-        isBalanced: totalAssets === liabilitiesPlusEquity,
-        difference: totalAssets - liabilitiesPlusEquity,
-        assets: balanceSheetData.assets,
-        liabilities: balanceSheetData.liabilities,
-        transactionCount: transactions.length
+      // Build a FinancialSnapshot from balance sheet data so the AI engine
+      // has actual numbers to analyse rather than returning "no data" messages.
+      const totalIncome = Object.values(balanceSheetData.assets).reduce((s, v) => s + v, 0);
+      const totalExpenses = Object.values(balanceSheetData.liabilities).reduce((s, v) => s + v, 0);
+
+      const financialSnapshot = {
+        totalIncome,
+        totalExpenses,
+        totalBalance: totalAssets - totalLiabilities,
+        monthlyIncome: totalIncome,
+        monthlyExpenses: totalExpenses,
+        incomeGrowth: 0,
+        expenseGrowth: 0,
+        categoryBreakdown: Object.entries(balanceSheetData.liabilities).map(([category, amount]) => ({
+          category,
+          amount,
+          percentage: totalExpenses > 0 ? (amount / totalExpenses) * 100 : 0,
+        })),
+        monthlyData: [],
+        transactionCount: transactions.length,
       };
 
-      const response = await AIAssistantService.analyzeReport('Balance Sheet', reportData);
-      
-      if (response.success && response.response) {
-        setAiInsight(response.response);
+      const ctx: AIContext = {
+        message: 'Please analyze this balance sheet. Assess assets vs liabilities, equity position, solvency, and give me actionable recommendations.',
+        role: 'owner',
+        currentPage: '/reports/balance-sheet',
+        financialSnapshot,
+      };
+
+      const response = await AIEngine.processMessage(ctx);
+
+      if (response.success && response.message) {
+        setAiInsight(response.message);
       } else {
-        throw new Error(response.error || 'Failed to generate AI analysis');
+        throw new Error('Failed to generate AI analysis');
       }
     } catch (error: any) {
       toast.error(error.message || 'Failed to generate AI insight');

@@ -9,7 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Brain, TrendingUp, TrendingDown, AlertCircle, Info, DollarSign } from 'lucide-react';
 import { AIFloatingButton } from '@/components/ai/AIFloatingButton';
-import { AIAssistantService } from '@/services/aiAssistant';
+import { AIEngine } from '@/services/ai/aiEngine';
+import type { AIContext } from '@/services/ai/types';
 import { toast } from 'sonner';
 
 export default function IncomeStatement() {
@@ -52,26 +53,41 @@ export default function IncomeStatement() {
   const totalExpenses = expenseData.reduce((sum, item) => sum + item.amount, 0);
   const netIncome = totalIncome - totalExpenses;
   
-  // AI Analysis function
+  // AI Analysis function — uses the full 2KEI Financial Intelligence Engine
   const handleAIAnalysis = async () => {
     setIsLoadingInsight(true);
     try {
-      const reportData = {
+      // Build a FinancialSnapshot from the actual income statement data
+      const financialSnapshot = {
         totalIncome,
         totalExpenses,
-        netIncome,
-        profitMargin: totalIncome > 0 ? (netIncome / totalIncome) * 100 : 0,
-        incomeBreakdown: incomeData,
-        expenseBreakdown: expenseData,
-        transactionCount: transactions.length
+        totalBalance: totalIncome - totalExpenses,
+        monthlyIncome: totalIncome,
+        monthlyExpenses: totalExpenses,
+        incomeGrowth: 0,
+        expenseGrowth: 0,
+        categoryBreakdown: expenseData.map(e => ({
+          category: e.category,
+          amount: e.amount,
+          percentage: totalExpenses > 0 ? (e.amount / totalExpenses) * 100 : 0,
+        })),
+        monthlyData: [],
+        transactionCount: transactions.length,
       };
 
-      const response = await AIAssistantService.analyzeReport('Income Statement', reportData);
-      
-      if (response.success && response.response) {
-        setAiInsight(response.response);
+      const ctx: AIContext = {
+        message: 'Please analyze this income statement and give me a comprehensive assessment with profit insights, expense breakdown, and actionable recommendations.',
+        role: 'owner',
+        currentPage: '/reports/income-statement',
+        financialSnapshot,
+      };
+
+      const response = await AIEngine.processMessage(ctx);
+
+      if (response.success && response.message) {
+        setAiInsight(response.message);
       } else {
-        throw new Error(response.error || 'Failed to generate AI analysis');
+        throw new Error('Failed to generate AI analysis');
       }
     } catch (error: any) {
       toast.error(error.message || 'Failed to generate AI insight');

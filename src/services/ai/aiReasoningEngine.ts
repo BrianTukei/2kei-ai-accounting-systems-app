@@ -2,6 +2,7 @@
 // Advanced AI SaaS Architecture for Intelligent Financial Management
 
 import type { AIContext as BaseAIContext } from './types';
+import { AIAssistantService } from '@/services/aiAssistant';
 
 export interface AIRequest {
   message: string;
@@ -83,11 +84,22 @@ export class AIReasoningEngine {
       const reasoning = await this.callLlama3(prompt);
       return this.parseAIResponse(reasoning);
     } catch (error) {
-      console.error('AI processing failed:', error);
+      console.error('AI processing failed, using local fallback:', error);
+
+      // Fall back to the local 2KEI Financial Intelligence Engine so the AI
+      // always returns a rich, data-driven response even when Ollama is offline.
+      const localResponse = AIAssistantService.generateLocalResponse(
+        request.message,
+        undefined,
+        request.context as any,
+        request.context?.financialSnapshot as any,
+        undefined,
+      );
+
       return {
-        reasoning: 'I apologize, but I encountered an error while processing your request. Please try again.',
+        reasoning: localResponse,
         insights: [],
-        recommendations: []
+        recommendations: [],
       };
     }
   }

@@ -9,10 +9,10 @@
 import type { AIContext, AIResponse, AIMode, AIAction, AIAlert } from './types';
 import { detectMode, getModeSystemContext, getModeConfig } from './modes';
 import { actionEngine } from './actionEngine';
-import { aiReasoningEngine } from './aiReasoningEngine';
 import { contextMemorySystem } from './contextMemorySystem';
 import { errorDetection } from './errorDetection';
 import { forecasting } from './forecasting';
+import { AIEngine } from './aiEngine';
 
 // ── Enhanced AI Configuration ────────────────────────────────────────────────
 
@@ -103,7 +103,9 @@ class EnhancedAIService {
   }
 
   /**
-   * Generate AI response with reasoning engine
+   * Generate AI response using the 2KEI Financial Intelligence Engine.
+   * Delegates to AIEngine.processMessage() which handles all modes:
+   * analysis, forecasting, coaching, error detection, action handling, etc.
    */
   private async generateAIResponse(enhancedContext: AIContext & {
     mode: AIMode;
@@ -112,24 +114,16 @@ class EnhancedAIService {
     contextualMemory: any[];
     alerts: AIAlert[];
   }): Promise<AIResponse> {
-    const reasoningPrompt = this.buildReasoningPrompt(enhancedContext);
-    
-    const reasoning = await aiReasoningEngine.reason({
-      prompt: reasoningPrompt,
-      context: enhancedContext,
-      mode: enhancedContext.mode,
-      financialData: enhancedContext.financialSnapshot,
-    });
+    const aiResponse = await AIEngine.processMessage(enhancedContext);
 
     return {
-      success: true,
-      message: reasoning.response,
-      mode: enhancedContext.mode,
+      success: aiResponse.success,
+      message: aiResponse.message,
+      mode: aiResponse.mode ?? enhancedContext.mode,
       conversationId: enhancedContext.conversationId,
       metadata: {
-        confidence: reasoning.confidence,
-        reasoning: reasoning.steps,
-        sources: reasoning.sources,
+        confidence: 0.85,
+        sources: ['2kei-financial-engine'],
       },
     };
   }

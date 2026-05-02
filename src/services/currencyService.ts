@@ -15,7 +15,7 @@ export interface Currency {
 class CurrencyService {
   private rates: Map<string, ExchangeRate> = new Map();
   private currencies: Map<string, Currency> = new Map();
-  private readonly API_KEY = process.env.REACT_APP_EXCHANGE_RATE_API_KEY;
+  private readonly API_KEY = typeof process !== 'undefined' ? process.env?.REACT_APP_EXCHANGE_RATE_API_KEY : import.meta.env?.VITE_EXCHANGE_RATE_API_KEY || '';
   private readonly BASE_URL = 'https://api.exchangerate-api.com/v4/latest';
 
   constructor() {

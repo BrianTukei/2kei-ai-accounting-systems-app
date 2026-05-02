@@ -81,7 +81,7 @@ router.post(
       .withMessage('Password is required'),
   ],
   validate,
-  AuthController.login
+  (req, res) => AuthController.login(req, res)
 );
 
 /**

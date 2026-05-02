@@ -1,21 +1,8 @@
-import dotenv from 'dotenv';
-import fs from 'fs';
-import path from 'path';
+import './env';
+// Configure dotenv before any other imports
 import { fileURLToPath } from 'url';
+import path from 'path';
 
-// Load environment variables from .env.local if it exists, otherwise fall back to .env
-const envLocalPath = path.resolve(process.cwd(), '.env.local');
-const envPath = path.resolve(process.cwd(), '.env');
-
-if (fs.existsSync(envLocalPath)) {
-  dotenv.config({ path: envLocalPath });
-  console.log('✅ Loaded environment variables from .env.local');
-} else if (fs.existsSync(envPath)) {
-  dotenv.config({ path: envPath });
-  console.log('✅ Loaded environment variables from .env');
-} else {
-  console.warn('⚠️ No .env or .env.local file found');
-}
 
 import express from 'express';
 import cors from 'cors';

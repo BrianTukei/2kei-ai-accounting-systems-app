@@ -168,83 +168,33 @@ class AdminController {
       const adminId = req.user.id;
 
       let recipients = [];
-      let userIds = [];
 
-      // Handle single user by ID
-      if (userId) {
-        if (mongoose.connection.readyState === 1 && typeof userId === 'string' && userId.length === 24) {
-          const user = await User.findById(userId);
-          if (!user) {
-            return res.status(404).json({
-              success: false,
-              message: 'User not found'
-            });
-          }
-          recipients.push(user.email);
-          userIds.push(user._id);
-        } else {
-          // If we can't look up by ID using Mongo, look for email fallback if provided
-          logger.warn(`Skipping MongoDB ID lookup for ${userId} (offline or not Mongo ID)`);
-        }
-      }
+      // Handle single user by ID (skip mongo, just rely on email if provided)
+      // Usually the frontend provides the actual email string in the array instead of userId now.
 
-      // Handle multiple emails
+      // Handle multiple emails directly
       if (emails && Array.isArray(emails)) {
-        recipients = [...recipients, ...emails];
-        
-        try {
-          // Attempt to find users if MongoDB is available
-          if (mongoose.connection.readyState === 1) {
-            const users = await User.find({ email: { $in: emails } });
-            userIds = [...userIds, ...users.map(u => u._id)];
-          }
-        } catch (e) {
-          logger.warn("Skipping MongoDB user lookup (Supabase active mode)");
-        }
+        recipients = [...new Set([...recipients, ...emails])]; // Deduplicate
       }
+
+      // Filter out absolute junk or empty
+      recipients = recipients.filter(e => e && typeof e === 'string' && e.includes('@'));
 
       if (recipients.length === 0) {
         return res.status(400).json({
           success: false,
-          message: 'No recipients specified'
+          message: 'No valid recipients specified'
         });
       }
 
       // Generate bulk ID for tracking
       const bulkId = recipients.length > 1 ? uuidv4() : null;
 
-      // Send emails in parallel with proper error isolation
-      const emailPromises = recipients.map(async (recipient, index) => {
-        const uid = userIds[index] || null;
-        
+      // Send emails in parallel, pure Nodemailer
+      const emailPromises = recipients.map(async (recipient) => {
         try {
           const result = await emailService.sendEmail(recipient, subject, message);
           
-          try {
-            if (mongoose.connection.readyState === 1 && uid) {
-              // Log email
-              const emailLog = new EmailLog({
-                messageId: result.messageId || uuidv4(),
-                recipient,
-                subject,
-                message,
-                admin: adminId,
-                userId: uid,
-                status: result.success ? 'sent' : 'failed',
-                type,
-                bulkId,
-                providerMessageId: result.messageId,
-                error: result.success ? null : {
-                  message: result.error
-                }
-              });
-
-              await emailLog.save();
-            }
-          } catch (e) {
-             logger.warn('Skipping MongoDB email log save (Supabase active mode)');
-          }
-
           return {
             recipient,
             success: result.success,
@@ -253,31 +203,6 @@ class AdminController {
           };
         } catch (error) {
           logger.error('Failed to send email to recipient:', error);
-          
-          try {
-            if (mongoose.connection.readyState === 1 && uid) {
-              // Log failed email
-              const emailLog = new EmailLog({
-                messageId: uuidv4(),
-                recipient,
-                subject,
-                message,
-                admin: adminId,
-                userId: uid,
-                status: 'failed',
-                type,
-                bulkId,
-                error: {
-                  message: error.message
-                }
-              });
-
-              await emailLog.save();
-            }
-          } catch (e) {
-             logger.warn('Skipping MongoDB email log save (Supabase active mode)');
-          }
-
           return {
             recipient,
             success: false,
@@ -311,7 +236,7 @@ class AdminController {
 
       return res.status(200).json({
         success: true,
-        message: `Email sent successfully to ${successCount} recipient${successCount !== 1 ? 's' : ''}${failureCount > 0 ? ` (${failureCount} failed)` : ''}`,
+        message: `Email sent successfully to ${successCount} recipient(s) (${failureCount} failed)`,
         data: {
           bulkId,
           results: emailResults,

@@ -148,44 +148,41 @@ export default function AdminEmailSubscribers() {
         .filter(user => selectedUsers.includes(String(user.id)))
         .map(user => user.email);
 
-      // Call the existing backend API endpoint to dispatch emails
-      const response = await fetch("/api/admin/send-email", {
+      // Call the broadcast API endpoint to queue emails
+      const isSendingToAll = Boolean(isAllSelected);
+      
+      const payload: any = {
+        subject,
+        message,
+        targetGroup: isSendingToAll ? "both" : "custom"
+      };
+      
+      // Only include specific emails if not sending to absolutely everyone
+      if (!isSendingToAll) {
+        payload.emails = recipientEmails;
+      }
+
+      const response = await fetch("/api/admin/broadcast-email", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
         },
-        body: JSON.stringify({
-          subject,
-          message,
-          emails: recipientEmails,
-          type: "bulk_campaign"
-        })
+        body: JSON.stringify(payload)
       });
 
       const data = await response.json();
 
       if (data.success) {
-        const deliveredCount = data.data?.summary?.success ?? 0;
-        const failedCount = data.data?.summary?.failed ?? 0;
+        toast({
+          title: "Broadcast Queued!",
+          description: `Successfully queued email to ${data.totalRecipients || recipientEmails.length} recipient(s). They will be delivered shortly.`,
+          variant: "default"
+        });
         
-        if (deliveredCount === 0 && failedCount > 0) {
-          toast({
-            title: "Broadcast Failed (Mock Mode?)",
-            description: `0 delivered, ${failedCount} failed. Check your backend SMTP/EMAIL_USER credentials.`,
-            variant: "destructive"
-          });
-        } else {
-          toast({
-            title: "Broadcast Processed!",
-            description: `Delivered to ${deliveredCount} recipient(s). ${failedCount > 0 ? `${failedCount} failed.` : ''}`,
-            variant: "default"
-          });
-          
-          // Reset form after successful send
-          setSubject("");
-          setMessage("");
-        }
+        // Reset form after successful send
+        setSubject("");
+        setMessage("");
       } else {
         throw new Error(data.message || "Failed to send email");
       }

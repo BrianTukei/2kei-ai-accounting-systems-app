@@ -130,7 +130,8 @@ router.post(
   [
     body('subject').trim().notEmpty().withMessage('Subject is required'),
     body('message').trim().notEmpty().withMessage('Message is required'),
-    body('sendTo').notEmpty().withMessage('sendTo is required')
+body('targetGroup').optional(),
+      body('emails').optional().isArray()
   ],
   emailController.broadcastEmail
 );

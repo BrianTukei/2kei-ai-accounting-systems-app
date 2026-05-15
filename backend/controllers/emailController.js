@@ -36,9 +36,14 @@ async function addSubscriber(req, res) {
 
 async function broadcastEmail(req, res) {
   try {
-    const { targetGroup, subject, message, scheduledTime } = req.body;
+    const { targetGroup, emails, subject, message, scheduledTime } = req.body;
 
-    const recipients = await getAllRecipients(targetGroup);
+    let recipients = [];
+    if (emails && Array.isArray(emails) && emails.length > 0) {
+      recipients = emails;
+    } else {
+      recipients = await getAllRecipients(targetGroup);
+    }
 
     for (let email of recipients) {
       const jobOptions = { attempts: 3 };

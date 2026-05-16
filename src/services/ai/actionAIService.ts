@@ -1,4 +1,5 @@
 import { fallbackAIService } from './fallbackAIService';
+import { v4 as uuidv4 } from 'uuid';
 
 export interface AIAction {
   action: string;
@@ -26,6 +27,70 @@ export interface FinancialInsight {
   recommendation: string;
   data?: any;
 }
+
+const INVOICE_LS_KEY = '2kai-invoices';
+const INVOICE_COUNTER_KEY = '2kai-invoice-counter';
+
+const roundMoney = (value: number) => Math.round(value * 100) / 100;
+
+const toNumber = (value: any, fallback = 0): number => {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string') {
+    const cleaned = value.replace(/,/g, '').trim();
+    const parsed = Number.parseFloat(cleaned);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return fallback;
+};
+
+const getNextInvoiceNumber = (): string => {
+  const raw = localStorage.getItem(INVOICE_COUNTER_KEY);
+  const next = raw ? Number.parseInt(raw, 10) + 1 : 100;
+  localStorage.setItem(INVOICE_COUNTER_KEY, String(next));
+  return `INV-${String(next).padStart(4, '0')}`;
+};
+
+const buildInvoiceItems = (params: any, amount: number) => {
+  const rawItems = Array.isArray(params.items) ? params.items : [];
+
+  const normalized = rawItems.map((item: any, index: number) => {
+    const description = String(
+      item?.description ?? item?.name ?? item?.item ?? `Item ${index + 1}`
+    ).trim();
+    const quantity = Math.max(1, toNumber(item?.quantity, 1));
+    const unitPrice = Math.max(0, toNumber(item?.unitPrice ?? item?.price ?? item?.amount, 0));
+    const total = roundMoney(quantity * unitPrice);
+    return {
+      id: uuidv4(),
+      description,
+      quantity,
+      unitPrice,
+      total
+    };
+  }).filter((item: any) => item.description);
+
+  if (normalized.length > 0) {
+    return normalized;
+  }
+
+  const safeAmount = Math.max(0, amount);
+  return [
+    {
+      id: uuidv4(),
+      description: String(params.description || 'Services').trim(),
+      quantity: 1,
+      unitPrice: safeAmount,
+      total: roundMoney(safeAmount)
+    }
+  ];
+};
+
+const computeInvoiceTotals = (items: Array<{ total: number }>, taxRate: number, discount: number) => {
+  const subtotal = roundMoney(items.reduce((sum, item) => sum + (item.total || 0), 0));
+  const taxAmount = roundMoney(subtotal * (taxRate / 100));
+  const total = Math.max(0, roundMoney(subtotal + taxAmount - discount));
+  return { subtotal, taxAmount, total };
+};
 
 class ActionAIService {
   private availableActions = [
@@ -71,12 +136,16 @@ Your role is to understand user requests and convert them into structured JSON c
 
 📋 **Action Parameters:**
 
-create_invoice:
-- client: string (client name)
-- amount: number (invoice amount)
-- description: string (optional, invoice details)
-- due_date: string (optional, YYYY-MM-DD)
-- items: array (optional, list of items with prices)
+ create_invoice:
+ - client: string (client name)
+ - amount: number (invoice amount)
+ - description: string (optional, invoice details)
+ - due_date: string (optional, YYYY-MM-DD)
+ - items: array (optional, list of items with prices)
+ - currency: string (optional, currency code like USD, EUR)
+ - tax_rate: number (optional, percentage)
+ - discount: number (optional)
+ - issue_date: string (optional, YYYY-MM-DD)
 
 create_expense:
 - vendor: string (vendor name)
@@ -320,30 +389,68 @@ Return JSON array of insights:
         };
       }
 
-      // Create invoice (in real app, save to database)
+      const amount = toNumber(params.amount);
+      if (!Number.isFinite(amount) || amount <= 0) {
+        return {
+          success: false,
+          action: 'create_invoice',
+          error: 'Invoice amount must be a positive number',
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      if (typeof localStorage === 'undefined') {
+        return {
+          success: false,
+          action: 'create_invoice',
+          error: 'Invoice storage is unavailable in this environment',
+          timestamp: new Date().toISOString()
+        };
+      }
+      const taxRate = Math.max(0, toNumber(params.tax_rate ?? params.taxRate, 0));
+      const discount = Math.max(0, toNumber(params.discount, 0));
+      const currency = String(params.currency || params.currency_code || 'USD').toUpperCase();
+      const issueDate = String(params.issue_date || params.issueDate || new Date().toISOString().split('T')[0]);
+      const dueDate = String(
+        params.due_date || params.dueDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      );
+
+      const items = buildInvoiceItems(params, amount);
+      const { subtotal, taxAmount, total } = computeInvoiceTotals(items, taxRate, discount);
+
       const invoice = {
-        id: `inv-${Date.now()}`,
-        client: params.client,
-        amount: parseFloat(params.amount),
-        description: params.description || `Invoice for ${params.client}`,
-        dueDate: params.due_date || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        status: 'pending',
-        items: params.items || [{ description: 'Services', quantity: 1, price: parseFloat(params.amount) }],
+        id: uuidv4(),
+        invoiceNumber: getNextInvoiceNumber(),
+        clientName: String(params.client).trim(),
+        clientEmail: String(params.clientEmail || params.email || '').trim(),
+        clientAddress: String(params.clientAddress || params.address || '').trim(),
+        issueDate,
+        dueDate,
+        status: 'draft',
+        items,
+        subtotal,
+        taxRate,
+        taxAmount,
+        discount,
+        total,
+        notes: String(params.notes || params.description || '').trim(),
+        currency,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
         userId,
-        companyId,
-        createdAt: new Date().toISOString()
+        companyId
       };
 
-      // Simulate database save
-      const invoices = JSON.parse(localStorage.getItem('invoices') || '[]');
-      invoices.push(invoice);
-      localStorage.setItem('invoices', JSON.stringify(invoices));
+      const stored = localStorage.getItem(INVOICE_LS_KEY);
+      const invoices = stored ? JSON.parse(stored) : [];
+      invoices.unshift(invoice);
+      localStorage.setItem(INVOICE_LS_KEY, JSON.stringify(invoices));
 
       return {
         success: true,
         action: 'create_invoice',
         result: invoice,
-        message: `✅ Invoice created for ${params.client} for $${params.amount}`,
+        message: `✅ Invoice created for ${invoice.clientName} — ${currency} ${total.toLocaleString()}`,
         timestamp: new Date().toISOString()
       };
 

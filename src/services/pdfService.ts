@@ -82,19 +82,27 @@ class PDFService {
       currencyService.formatAmount(item.price, receipt.currency),
     ]);
 
+    const originalTax = receipt.original_tax ?? receipt.tax;
+    const convertedTax = receipt.original_tax
+      ? currencyService.convert(receipt.original_tax, receipt.original_currency, receipt.currency)
+      : receipt.tax;
+
+    const originalSubtotal = receipt.original_total - (originalTax || 0);
+    const convertedSubtotal = receipt.total - (convertedTax || 0);
+
     tableData.push([
       'Subtotal',
       '',
-      currencyService.formatAmount(receipt.original_total - receipt.tax, receipt.original_currency),
-      currencyService.formatAmount(receipt.total - receipt.tax, receipt.currency),
+      currencyService.formatAmount(originalSubtotal, receipt.original_currency),
+      currencyService.formatAmount(convertedSubtotal, receipt.currency),
     ]);
 
-    if (receipt.tax > 0) {
+    if (originalTax > 0) {
       tableData.push([
         'Tax',
         '',
-        currencyService.formatAmount(receipt.tax, receipt.original_currency),
-        currencyService.formatAmount(receipt.tax, receipt.currency),
+        currencyService.formatAmount(originalTax, receipt.original_currency),
+        currencyService.formatAmount(convertedTax, receipt.currency),
       ]);
     }
 

@@ -22,6 +22,7 @@ interface OCRResult {
   transactionType: 'income' | 'expense';
   suggestedAccount: string;          // chart-of-accounts category name
   rawText: string;                   // original OCR text for debugging
+  warnings: string[];
 }
 
 // ─────────────────────────────────────────
@@ -47,6 +48,27 @@ function detectCurrency(text: string): string {
     if (text.includes(symbol)) return code;
   }
   return 'USD';
+}
+
+function parseMoneyValue(raw: string): number | null {
+  if (!raw) return null;
+  const cleaned = raw.replace(/[^\d,.-]/g, '').trim();
+  if (!cleaned) return null;
+
+  const hasDot = cleaned.includes('.');
+  const hasComma = cleaned.includes(',');
+
+  let normalized = cleaned;
+  if (hasComma && !hasDot) {
+    // Treat comma as decimal separator when no dot present
+    normalized = cleaned.replace(',', '.');
+  } else if (hasComma && hasDot) {
+    // Treat commas as thousands separators
+    normalized = cleaned.replace(/,/g, '');
+  }
+
+  const parsed = Number.parseFloat(normalized);
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
 // ─────────────────────────────────────────
@@ -138,51 +160,50 @@ function extractVendor(lines: string[]): string {
   return 'Unknown Vendor';
 }
 
-/** Extract the total amount — tries many common receipt patterns */
-function extractTotal(text: string): number {
+/** Extract the total amount — only when explicitly labeled */
+function extractTotal(text: string): number | null {
   const patterns = [
-    /(?:grand\s*)?total\s*(?:due|amt|amount)?[:\s]*[\$£€₹₦₵]?\s*([0-9,]+\.?\d{0,2})/i,
-    /(?:amount\s*(?:due|paid|tendered))[:\s]*[\$£€₹₦₵]?\s*([0-9,]+\.?\d{0,2})/i,
-    /(?:balance\s*due)[:\s]*[\$£€₹₦₵]?\s*([0-9,]+\.?\d{0,2})/i,
-    /(?:net\s*(?:total|amount))[:\s]*[\$£€₹₦₵]?\s*([0-9,]+\.?\d{0,2})/i,
-    /total[:\s]*[\$£€₹₦₵]?\s*([0-9,]+\.?\d{0,2})/i,
+    /(?:grand\s*)?total\s*(?:due|amt|amount|paid|payable)?[:\s]*[\$£€₹₦₵]?\s*([0-9,]+(?:\.\d{1,2})?)/i,
+    /(?:amount\s*(?:due|paid|tendered))[:\s]*[\$£€₹₦₵]?\s*([0-9,]+(?:\.\d{1,2})?)/i,
+    /(?:balance\s*due)[:\s]*[\$£€₹₦₵]?\s*([0-9,]+(?:\.\d{1,2})?)/i,
+    /(?:net\s*(?:total|amount))[:\s]*[\$£€₹₦₵]?\s*([0-9,]+(?:\.\d{1,2})?)/i,
   ];
   for (const rx of patterns) {
     const m = text.match(rx);
     if (m) {
-      const v = parseFloat(m[1].replace(/,/g, ''));
-      if (v > 0) return v;
+      const v = parseMoneyValue(m[1]);
+      if (v && v > 0) return v;
     }
   }
-  // Fallback: pick the largest dollar amount in the text
-  const allAmounts = [...text.matchAll(/[\$£€₹₦₵]?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2}))/g)]
-    .map(m => parseFloat(m[1].replace(/,/g, '')))
-    .filter(n => n > 0);
-  return allAmounts.length > 0 ? Math.max(...allAmounts) : 0;
+  return null;
 }
 
-/** Extract subtotal */
-function extractSubtotal(text: string, total: number): number {
-  const m = text.match(/sub\s*-?\s*total[:\s]*[\$£€₹₦₵]?\s*([0-9,]+\.?\d{0,2})/i);
-  if (m) return parseFloat(m[1].replace(/,/g, ''));
-  return total > 0 ? Math.round(total * 0.9 * 100) / 100 : 0;
+/** Extract subtotal (explicit only) */
+function extractSubtotal(text: string): number | null {
+  const m = text.match(/sub\s*-?\s*total[:\s]*[\$£€₹₦₵]?\s*([0-9,]+(?:\.\d{1,2})?)/i);
+  if (!m) return null;
+  const v = parseMoneyValue(m[1]);
+  return v && v > 0 ? v : null;
 }
 
-/** Extract tax amount */
-function extractTax(text: string, total: number, subtotal: number): number {
+/** Extract tax amount (explicit only) */
+function extractTax(text: string): number | null {
   const patterns = [
-    /(?:tax|vat|gst|hst)[:\s]*[\$£€₹₦₵]?\s*([0-9,]+\.?\d{0,2})/i,
-    /(?:sales\s*tax)[:\s]*[\$£€₹₦₵]?\s*([0-9,]+\.?\d{0,2})/i,
+    /(?:tax|vat|gst|hst)[:\s]*[\$£€₹₦₵]?\s*([0-9,]+(?:\.\d{1,2})?)/i,
+    /(?:sales\s*tax)[:\s]*[\$£€₹₦₵]?\s*([0-9,]+(?:\.\d{1,2})?)/i,
   ];
   for (const rx of patterns) {
     const m = text.match(rx);
-    if (m) return parseFloat(m[1].replace(/,/g, ''));
+    if (m) {
+      const v = parseMoneyValue(m[1]);
+      if (v && v > 0) return v;
+    }
   }
-  return Math.round((total - subtotal) * 100) / 100;
+  return null;
 }
 
 /** Extract date from receipt — handles many date formats */
-function extractDate(text: string): string {
+function extractDate(text: string): string | null {
   const patterns = [
     // MM/DD/YYYY or DD/MM/YYYY
     /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})/,
@@ -199,11 +220,11 @@ function extractDate(text: string): string {
     const m = text.match(rx);
     if (m) return m[1].trim();
   }
-  return new Date().toLocaleDateString();
+  return null;
 }
 
 /** Extract receipt / order number */
-function extractReceiptNumber(text: string): string {
+function extractReceiptNumber(text: string): string | null {
   const patterns = [
     /(?:receipt|invoice|order|trans(?:action)?|ref(?:erence)?|check|ticket)\s*(?:#|no\.?|number)?\s*[:\s]*([A-Za-z0-9\-]+)/i,
     /#\s*([A-Za-z0-9\-]{4,})/,
@@ -212,7 +233,7 @@ function extractReceiptNumber(text: string): string {
     const m = text.match(rx);
     if (m) return m[1];
   }
-  return `R${Date.now()}`;
+  return null;
 }
 
 /** Extract payment method */
@@ -243,28 +264,52 @@ function extractItems(text: string): Array<{ name: string; price: number; quanti
     const line = raw.trim();
     if (!line || line.length < 4) continue;
 
-    // Pattern: "Item name    $12.34" or "Item name 12.34"
-    const priceMatch = line.match(/^(.+?)\s{2,}[\$£€₹₦₵]?\s*(\d+\.?\d{0,2})\s*$/);
-    // Alt pattern: trailing number after descriptive text
-    const altMatch = !priceMatch ? line.match(/^(.+?)\s+[\$£€₹₦₵]?\s*(\d+\.?\d{0,2})\s*$/) : null;
-    const m = priceMatch || altMatch;
+    if (skipWords.test(line)) continue;
+
+    const qtyPrefix = line.match(/^(\d+)\s*x\s+(.+?)\s+([\$£€₹₦₵]?\s*[0-9,]+(?:\.\d{1,2})?)\s*$/i);
+    if (qtyPrefix) {
+      const quantity = Number.parseInt(qtyPrefix[1], 10);
+      const name = qtyPrefix[2].trim();
+      const price = parseMoneyValue(qtyPrefix[3]);
+      if (name && price && price > 0) {
+        items.push({ name, price, quantity });
+      }
+      continue;
+    }
+
+    const qtySuffix = line.match(/^(.+?)\s+x\s*(\d+)\s+([\$£€₹₦₵]?\s*[0-9,]+(?:\.\d{1,2})?)\s*$/i);
+    if (qtySuffix) {
+      const quantity = Number.parseInt(qtySuffix[2], 10);
+      const name = qtySuffix[1].trim();
+      const price = parseMoneyValue(qtySuffix[3]);
+      if (name && price && price > 0) {
+        items.push({ name, price, quantity });
+      }
+      continue;
+    }
+
+    const qtyUnitTotal = line.match(/^(.+?)\s+(\d+)\s+([\$£€₹₦₵]?\s*[0-9,]+(?:\.\d{1,2})?)\s+[\$£€₹₦₵]?\s*[0-9,]+(?:\.\d{1,2})?\s*$/i);
+    if (qtyUnitTotal) {
+      const name = qtyUnitTotal[1].trim();
+      const quantity = Number.parseInt(qtyUnitTotal[2], 10);
+      const unitPrice = parseMoneyValue(qtyUnitTotal[3]);
+      if (name && unitPrice && unitPrice > 0) {
+        items.push({ name, price: unitPrice, quantity });
+      }
+      continue;
+    }
+
+    const simple = line.match(/^(.+?)\s{2,}[\$£€₹₦₵]?\s*([0-9,]+(?:\.\d{1,2})?)\s*$/);
+    const alt = !simple ? line.match(/^(.+?)\s+[\$£€₹₦₵]?\s*([0-9,]+(?:\.\d{1,2})?)\s*$/) : null;
+    const m = simple || alt;
     if (!m) continue;
 
     const name = m[1].replace(/[\.\-_]{3,}/g, '').trim();
-    const price = parseFloat(m[2]);
-    if (!name || name.length < 2 || price <= 0 || price > 50000) continue;
+    const price = parseMoneyValue(m[2]);
+    if (!name || name.length < 2 || !price || price <= 0 || price > 50000) continue;
     if (skipWords.test(name)) continue;
 
-    // Quantity check: "2 x Item" or "2x Item" or "Item x2"
-    const qtyBefore = name.match(/^(\d+)\s*x\s+(.+)/i);
-    const qtyAfter  = name.match(/(.+?)\s*x\s*(\d+)$/i);
-    if (qtyBefore) {
-      items.push({ name: qtyBefore[2].trim(), price, quantity: parseInt(qtyBefore[1]) });
-    } else if (qtyAfter) {
-      items.push({ name: qtyAfter[1].trim(), price, quantity: parseInt(qtyAfter[2]) });
-    } else {
-      items.push({ name, price, quantity: 1 });
-    }
+    items.push({ name, price, quantity: 1 });
   }
   return items;
 }
@@ -328,7 +373,7 @@ function aiCategorise(vendor: string, fullText: string): { category: string; typ
 // Confidence scorer
 // ─────────────────────────────────────────
 
-function calculateConfidence(result: Partial<OCRResult>): number {
+function calculateConfidence(result: Partial<OCRResult>, warnings: string[]): number {
   let score = 0;
   if (result.vendor && result.vendor !== 'Unknown Vendor') score += 20;
   if (result.amount && result.amount > 0) score += 25;
@@ -338,6 +383,7 @@ function calculateConfidence(result: Partial<OCRResult>): number {
   if (result.paymentMethod && result.paymentMethod !== 'Unknown') score += 5;
   if (result.category && result.category !== 'Miscellaneous Expense') score += 10;
   if (result.receiptNumber && !result.receiptNumber.startsWith('R1')) score += 5;
+  score -= warnings.length * 5;
   return Math.min(score, 100);
 }
 
@@ -363,11 +409,11 @@ export const performReceiptOCR = async (imageElement: HTMLImageElement): Promise
 
   // Step 2 — Field extraction
   const vendor       = extractVendor(lines);
-  const amount       = extractTotal(rawText);
-  const subtotal     = extractSubtotal(rawText, amount);
-  const taxAmount    = extractTax(rawText, amount, subtotal);
-  const date         = extractDate(rawText);
-  const receiptNumber = extractReceiptNumber(rawText);
+  const amountMatch = extractTotal(rawText);
+  const subtotalMatch = extractSubtotal(rawText);
+  const taxAmountMatch = extractTax(rawText);
+  const dateMatch = extractDate(rawText);
+  const receiptNumberMatch = extractReceiptNumber(rawText);
   const paymentMethod = extractPaymentMethod(rawText);
   const items        = extractItems(rawText);
   const currency     = detectCurrency(rawText);
@@ -379,8 +425,23 @@ export const performReceiptOCR = async (imageElement: HTMLImageElement): Promise
     : `${vendor} purchase`;
 
   // Step 4 — Confidence
+  const warnings: string[] = [];
+  if (!amountMatch) warnings.push('Total amount not found');
+  if (!subtotalMatch) warnings.push('Subtotal not found');
+  if (!taxAmountMatch) warnings.push('Tax amount not found');
+  if (!dateMatch) warnings.push('Date not found');
+  if (!receiptNumberMatch) warnings.push('Receipt number not found');
+  if (!items.length) warnings.push('No line items detected');
+  if (vendor === 'Unknown Vendor') warnings.push('Vendor name unclear');
+
+  const amount = amountMatch ?? 0;
+  const subtotal = subtotalMatch ?? 0;
+  const taxAmount = taxAmountMatch ?? 0;
+  const date = dateMatch ?? '';
+  const receiptNumber = receiptNumberMatch ?? '';
+
   const partial: Partial<OCRResult> = { vendor, amount, date, items, paymentMethod, category, receiptNumber };
-  const confidence = calculateConfidence(partial);
+  const confidence = calculateConfidence(partial, warnings);
 
   const result: OCRResult = {
     vendor,
@@ -398,6 +459,7 @@ export const performReceiptOCR = async (imageElement: HTMLImageElement): Promise
     transactionType,
     suggestedAccount: category,
     rawText,
+    warnings,
   };
 
   console.log('[receiptOCR] AI result:', result);

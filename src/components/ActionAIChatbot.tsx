@@ -15,6 +15,7 @@ import {
   Zap,
   Brain,
   FileText,
+  Download,
   TrendingUp,
   DollarSign,
   Users,
@@ -24,6 +25,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AIAction, ActionResult } from '@/services/ai/actionAIService';
+import { pdfService } from '@/services/pdfService';
 
 interface Message {
   id: string;
@@ -275,6 +277,33 @@ ${isServiceAvailable ? 'The Action AI service is available, but there might be a
     return 'text-red-600';
   };
 
+  const handleInvoiceDownload = (invoice: any) => {
+    try {
+      const invoiceData = {
+        invoiceNumber: invoice.invoiceNumber,
+        date: invoice.issueDate,
+        dueDate: invoice.dueDate,
+        status: invoice.status,
+        currency: invoice.currency,
+        items: invoice.items,
+        billTo: invoice.clientName || invoice.clientAddress
+          ? {
+              street: invoice.clientName || '',
+              city: invoice.clientAddress || ''
+            }
+          : undefined
+      };
+
+      const pdf = pdfService.generateInvoicePDF(invoiceData);
+      const filename = `invoice-${invoice.invoiceNumber}.pdf`;
+      pdfService.downloadPDF(pdf, filename);
+      toast.success('📄 Invoice PDF downloaded');
+    } catch (error) {
+      console.error('Invoice PDF generation failed:', error);
+      toast.error('Failed to generate invoice PDF');
+    }
+  };
+
   return (
     <div className={`h-full flex flex-col ${className}`}>
       <Card className="flex-1 flex flex-col">
@@ -412,24 +441,38 @@ ${isServiceAvailable ? 'The Action AI service is available, but there might be a
                       {message.content}
                     </div>
                     
-                    {message.actionResult && (
-                      <div className={`mt-2 p-2 rounded text-xs ${
-                        message.actionResult.success
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        <div className="flex items-center gap-1">
-                          {message.actionResult.success ? (
-                            <CheckCircle className="h-3 w-3" />
-                          ) : (
-                            <AlertCircle className="h-3 w-3" />
-                          )}
-                          <span>
-                            {message.actionResult.success ? 'Success' : 'Failed'}
-                          </span>
-                        </div>
-                      </div>
-                    )}
+                     {message.actionResult && (
+                       <div className={`mt-2 p-2 rounded text-xs ${
+                         message.actionResult.success
+                           ? 'bg-green-100 text-green-800'
+                           : 'bg-red-100 text-red-800'
+                       }`}>
+                         <div className="flex items-center gap-1">
+                           {message.actionResult.success ? (
+                             <CheckCircle className="h-3 w-3" />
+                           ) : (
+                             <AlertCircle className="h-3 w-3" />
+                           )}
+                           <span>
+                             {message.actionResult.success ? 'Success' : 'Failed'}
+                           </span>
+                         </div>
+                       </div>
+                     )}
+
+                     {message.action?.action === 'create_invoice' && message.actionResult?.success && message.actionResult?.result?.invoiceNumber && (
+                       <div className="mt-2">
+                         <Button
+                           variant="outline"
+                           size="sm"
+                           className="gap-2"
+                           onClick={() => handleInvoiceDownload(message.actionResult?.result)}
+                         >
+                           <Download className="h-3 w-3" />
+                           Download Invoice PDF
+                         </Button>
+                       </div>
+                     )}
                     
                     <div className={`text-xs mt-1 ${
                       message.role === 'user' ? 'text-blue-100' : 'text-gray-500'

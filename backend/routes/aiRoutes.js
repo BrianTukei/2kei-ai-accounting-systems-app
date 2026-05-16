@@ -14,6 +14,45 @@ const logger = require('../utils/logger');
 router.use(authenticate);
 
 /**
+ * @route   POST /api/ai/chat
+ * @desc    General chat proxy to Google AI
+ * @access  Private
+ * @body    { prompt: string }
+ */
+router.post('/chat', async (req, res) => {
+  try {
+    const { prompt } = req.body;
+
+    if (!prompt || prompt.trim().length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Prompt is required'
+      });
+    }
+
+    if (!googleAIService.isServiceReady()) {
+      return res.status(503).json({
+        success: false,
+        error: 'Google AI Service is not available'
+      });
+    }
+
+    const responseText = await googleAIService.query(prompt);
+
+    res.json({
+      success: true,
+      data: { response: responseText }
+    });
+  } catch (error) {
+    logger.error('Chat endpoint error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to process chat'
+    });
+  }
+});
+
+/**
  * @route   POST /api/ai/parse-receipt
  * @desc    Parse receipt text using Google AI
  * @access  Private

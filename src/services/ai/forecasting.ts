@@ -157,9 +157,9 @@ export function generateForecast(snap: FinancialSnapshot): ForecastResult {
   }
 
   if (projectedProfit > 0) {
-    summary += `\n\nProjected average monthly profit: **${fmtCur(projectedProfit)}** over next 3 months.`;
+    summary += `\n\nProjected average monthly profit: **${fmtCur(projectedProfit)}** over the next 90 days.`;
   } else if (projectedProfit < 0) {
-    summary += `\n\nProjected average monthly loss: **${fmtCur(Math.abs(projectedProfit))}** over next 3 months.`;
+    summary += `\n\nProjected average monthly loss: **${fmtCur(Math.abs(projectedProfit))}** over the next 90 days.`;
   }
 
   return {
@@ -181,27 +181,30 @@ export function generateForecastResponse(snap: FinancialSnapshot): string {
   }
 
   const forecast = generateForecast(snap);
+  const horizons = ['30 days', '60 days', '90 days'];
 
-  let response = `## 📈 3-Month Financial Forecast\n\n`;
+  let response = `## 📈 30/60/90-Day Financial Forecast\n\n`;
 
   // Revenue projection table
   response += `### Revenue Projection\n`;
   response += `| Month | Projected | Confidence |\n`;
   response += `|-------|----------:|-----------:|\n`;
-  for (const r of forecast.revenueProjection) {
+  forecast.revenueProjection.forEach((r, index) => {
+    const horizon = horizons[index] || r.month;
     const confBar = '█'.repeat(Math.round(r.confidence * 5)) + '░'.repeat(5 - Math.round(r.confidence * 5));
-    response += `| ${r.month} | ${fmtCur(r.projected)} | ${(r.confidence * 100).toFixed(0)}% ${confBar} |\n`;
-  }
+    response += `| ${horizon} | ${fmtCur(r.projected)} | ${(r.confidence * 100).toFixed(0)}% ${confBar} |\n`;
+  });
   response += '\n';
 
   // Expense projection table
   response += `### Expense Projection\n`;
   response += `| Month | Projected | Confidence |\n`;
   response += `|-------|----------:|-----------:|\n`;
-  for (const e of forecast.expenseProjection) {
+  forecast.expenseProjection.forEach((e, index) => {
+    const horizon = horizons[index] || e.month;
     const confBar = '█'.repeat(Math.round(e.confidence * 5)) + '░'.repeat(5 - Math.round(e.confidence * 5));
-    response += `| ${e.month} | ${fmtCur(e.projected)} | ${(e.confidence * 100).toFixed(0)}% ${confBar} |\n`;
-  }
+    response += `| ${horizon} | ${fmtCur(e.projected)} | ${(e.confidence * 100).toFixed(0)}% ${confBar} |\n`;
+  });
   response += '\n';
 
   // Key metrics
@@ -216,7 +219,7 @@ export function generateForecastResponse(snap: FinancialSnapshot): string {
   // Summary
   response += `### Summary\n`;
   response += forecast.summary;
-  response += `\n\n*Forecast based on ${snap.monthlyData.length} months of historical data. Confidence decreases for distant projections.*`;
+  response += `\n\n*Forecast based on ${snap.monthlyData.length} months of historical data. Confidence decreases for longer horizons.*`;
 
   return response;
 }

@@ -153,29 +153,30 @@ Financial History: ${JSON.stringify(memory.financialHistory || {})}`;
 
   private async callLlama3(prompt: string): Promise<string> {
     try {
-      const response = await fetch(`${this.ollamaUrl}/api/generate`, {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify({
-          model: this.model,
-          prompt: prompt,
-          temperature: 0.3,
-          max_tokens: 2000,
-          stream: false
+          prompt: prompt
         }),
         signal: AbortSignal.timeout(30000)
       });
 
       if (!response.ok) {
-        throw new Error(`Llama 3 request failed: ${response.status}`);
+        throw new Error(`Google AI request failed: ${response.status}`);
       }
 
       const data = await response.json();
-      return data.response;
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to get AI response');
+      }
+      return data.data.response;
     } catch (error) {
-      console.error('Llama 3 call failed:', error);
+      console.error('Google AI call failed:', error);
       throw error;
     }
   }

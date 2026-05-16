@@ -230,33 +230,36 @@ Always return valid JSON with the exact structure specified.`;
 
   async generateResponse(request: BackendAIRequest): Promise<BackendAIResponse> {
     try {
-      const response = await fetch(`${this.ollamaBaseUrl}/api/generate`, {
+      const token = localStorage.getItem('token');
+      // Always direct chat requests through Google AI API endpoint via backend proxy
+      const response = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify({
-          model: request.model || this.defaultModel,
-          prompt: request.prompt,
-          system: request.system || this.accountingSystemPrompt,
-          temperature: request.temperature || 0.7,
-          max_tokens: request.max_tokens || 2000,
-          stream: false
+          prompt: request.system ? `${request.system}\n\n${request.prompt}` : request.prompt
         }),
         signal: AbortSignal.timeout(30000) // 30 second timeout
       });
 
       if (!response.ok) {
-        throw new Error(`Ollama request failed: ${response.status} ${response.statusText}`);
+        throw new Error(`Google AI request failed: ${response.status} ${response.statusText}`);
       }
 
-      const data: BackendAIResponse = await response.json();
+      const data = await response.json();
       
-      if (!data.response) {
-        throw new Error('Empty response from Ollama');
+      if (!data.success) {
+        throw new Error(data.error || 'Empty response from Google AI');
       }
 
-      return data;
+      return {
+        model: 'gemini-1.5-pro',
+        created_at: new Date().toISOString(),
+        response: data.data.response,
+        done: true
+      } as BackendAIResponse;
     } catch (error) {
       console.error('Backend AI generation failed:', error);
       throw error;
@@ -479,12 +482,21 @@ Return JSON:
 
   async isServiceAvailable(): Promise<boolean> {
     try {
-      const response = await fetch(`${this.ollamaBaseUrl}/api/tags`, {
+      const token = localStorage.getItem('token');
+      // Always point to real backend instead of ollama
+      const response = await fetch('/api/ai/status', {
         method: 'GET',
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         signal: AbortSignal.timeout(5000)
       });
       
-      return response.ok;
+      if (response.ok) {
+        const data = await response.json();
+        return data.success && data.data && data.data.ready;
+      }
+      return false;
     } catch (error) {
       console.warn('Backend AI service not available:', error);
       return false;
@@ -492,18 +504,7 @@ Return JSON:
   }
 
   async listAvailableModels(): Promise<string[]> {
-    try {
-      const response = await fetch(`${this.ollamaBaseUrl}/api/tags`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch models');
-      }
-
-      const data = await response.json();
-      return data.models?.map((model: any) => model.name) || [];
-    } catch (error) {
-      console.error('Failed to fetch models:', error);
-      return [];
-    }
+    return ['gemini-1.5-pro'];
   }
 
   getServiceInfo(): {
@@ -512,8 +513,8 @@ Return JSON:
     systemPrompt: string;
   } {
     return {
-      baseUrl: this.ollamaBaseUrl,
-      defaultModel: this.defaultModel,
+      baseUrl: '/api/ai',
+      defaultModel: 'gemini-1.5-pro',
       systemPrompt: this.accountingSystemPrompt
     };
   }

@@ -76,7 +76,7 @@ export default function AIEnhancedReceiptScanner({ onScanComplete, className }: 
         ? { type: "document", source: { type: "base64", media_type: "application/pdf", data: base64 } }
         : { type: "image", source: { type: "base64", media_type: file.type, data: base64 } };
 
-      const prompt = `You are an expert accounting AI. Analyze this invoice or receipt and extract all data.
+      const prompt = `You are an expert accounting AI. Analyze this invoice or receipt and extract only exact, verifiable data.
 Return ONLY a valid JSON object (no markdown, no explanation) with this exact structure:
 {
   "vendor": "string",
@@ -94,7 +94,12 @@ Return ONLY a valid JSON object (no markdown, no explanation) with this exact st
   "confidence": number,
   "warnings": ["string"]
 }
-If any field cannot be determined, use reasonable defaults like null or 0. Return only the JSON.`;
+Rules:
+- Do NOT infer or calculate missing totals
+- Do NOT guess dates, vendor names, or items
+- If a field is missing, set it to null and add a warning explaining what is missing
+- Preserve item names exactly as shown on the receipt
+Return only the JSON.`;
 
       setScanProgress(30);
 
@@ -123,29 +128,55 @@ If any field cannot be determined, use reasonable defaults like null or 0. Retur
       const text = data.content?.map((c: any) => c.text || "").join("") || "";
       const clean = text.replace(new RegExp("```json|```", "g"), "").trim();
       const aiExtracted = JSON.parse(clean);
+
+      const normalizedWarnings = Array.isArray(aiExtracted.warnings) ? [...aiExtracted.warnings] : [];
+      if (!aiExtracted.vendor) normalizedWarnings.push('Vendor not found');
+      if (!aiExtracted.date) normalizedWarnings.push('Date not found');
+      if (!aiExtracted.total) normalizedWarnings.push('Total not found');
+      if (!aiExtracted.items || aiExtracted.items.length === 0) normalizedWarnings.push('No line items detected');
+
+      const normalized = {
+        vendor: aiExtracted.vendor || 'Not Found',
+        date: aiExtracted.date || 'Not Found',
+        items: Array.isArray(aiExtracted.items) ? aiExtracted.items.map((item: any) => ({
+          name: item?.name || 'Unknown Item',
+          price: Number.isFinite(Number(item?.price)) ? Number(item.price) : 0,
+          quantity: Number.isFinite(Number(item?.quantity)) ? Number(item.quantity) : 1,
+          category: item?.category || 'Other'
+        })) : [],
+        subtotal: Number.isFinite(Number(aiExtracted.subtotal)) ? Number(aiExtracted.subtotal) : 0,
+        tax: Number.isFinite(Number(aiExtracted.tax)) ? Number(aiExtracted.tax) : 0,
+        total: Number.isFinite(Number(aiExtracted.total)) ? Number(aiExtracted.total) : 0,
+        currency: aiExtracted.currency || aiExtracted.originalCurrency || 'USD',
+        originalCurrency: aiExtracted.originalCurrency || aiExtracted.currency || 'USD',
+        paymentMethod: aiExtracted.paymentMethod || 'Not Found',
+        category: aiExtracted.category || 'Other',
+        confidence: Number.isFinite(Number(aiExtracted.confidence)) ? Number(aiExtracted.confidence) : 0.7,
+        warnings: normalizedWarnings
+      };
       
       setOriginalText('Processed by Claude AI from image/pdf');
-      setExtractedData(aiExtracted);
+      setExtractedData(normalized);
       setScanProgress(70);
 
       // Validation
       setScanProgress(80);
       const existingExpenses = getExistingExpenses();
-      const validation = await aiReceiptScannerService.validateReceipt(aiExtracted, existingExpenses);
+      const validation = await aiReceiptScannerService.validateReceipt(normalized, existingExpenses);
       setValidationResult(validation);
       setScanProgress(90);
 
       // Duplicate Detection
-      const duplicateExpenses = await aiReceiptScannerService.detectDuplicateExpenses(aiExtracted, existingExpenses);
+      const duplicateExpenses = await aiReceiptScannerService.detectDuplicateExpenses(normalized, existingExpenses);
       setDuplicates(duplicateExpenses);
       setScanProgress(100);
 
-      setConfidence(aiExtracted.confidence || 0.9);
+      setConfidence(normalized.confidence || 0.9);
       
       if (validation.isValid) {
         toast.success(`✅ Receipt scanned successfully! Confidence: ${((aiExtracted.confidence || 0.9) * 100).toFixed(1)}%`);
         if (onScanComplete) {
-            onScanComplete(aiExtracted);
+            onScanComplete(normalized);
         }
       } else {
         toast.warning(`⚠️ Receipt scanned with issues. Confidence: ${((aiExtracted.confidence || 0.9) * 100).toFixed(1)}%`);

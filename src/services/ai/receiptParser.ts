@@ -15,6 +15,7 @@ export interface ParsedReceipt {
   payment_method: string;
   items: ReceiptItem[];
   tax: number;
+  original_tax?: number;
   total: number;
   original_total: number;
 }
@@ -82,7 +83,7 @@ class ReceiptParser {
     }
 
     // Return first non-empty line as fallback
-    return lines[0] || 'Unknown Merchant';
+    return lines[0] || 'Not Found';
   }
 
   private extractDate(text: string): string {
@@ -105,7 +106,7 @@ class ReceiptParser {
       }
     }
 
-    return new Date().toISOString().split('T')[0]; // Default to today
+    return 'Not Found';
   }
 
   private extractPaymentMethod(text: string): string {
@@ -181,7 +182,7 @@ class ReceiptParser {
     return 'Other';
   }
 
-  private extractTax(text: string, currency: string): number {
+  private extractTax(text: string): number {
     const taxPatterns = [
       /tax\s*[:=]?\s*([\d,]+\.?\d*)/i,
       /vat\s*[:=]?\s*([\d,]+\.?\d*)/i,
@@ -192,14 +193,14 @@ class ReceiptParser {
       const match = text.match(pattern);
       if (match) {
         const taxAmount = parseFloat(match[1].replace(',', ''));
-        return this.convertToUSD(taxAmount, currency);
+        return taxAmount > 0 ? taxAmount : 0;
       }
     }
 
     return 0;
   }
 
-  private extractTotal(text: string, currency: string): number {
+  private extractTotal(text: string): number {
     const totalPatterns = [
       /total\s*[:=]?\s*([\d,]+\.?\d*)/i,
       /amount\s*[:=]?\s*([\d,]+\.?\d*)/i,
@@ -210,7 +211,7 @@ class ReceiptParser {
       const match = text.match(pattern);
       if (match) {
         const totalAmount = parseFloat(match[1].replace(',', ''));
-        return this.convertToUSD(totalAmount, currency);
+        return totalAmount > 0 ? totalAmount : 0;
       }
     }
 
@@ -238,11 +239,10 @@ class ReceiptParser {
     const originalCurrency = this.detectCurrency(text);
     
     const items = this.extractItems(text, originalCurrency);
-    const tax = this.extractTax(text, originalCurrency);
-    const total = this.extractTotal(text, originalCurrency);
-    
-    // Calculate original total from items if not found
-    const originalTotal = total > 0 ? total : items.reduce((sum, item) => sum + item.original_price, 0) + tax;
+    const originalTax = this.extractTax(text);
+    const originalTotal = this.extractTotal(text);
+    const tax = originalTax > 0 ? this.convertToUSD(originalTax, originalCurrency) : 0;
+    const total = originalTotal > 0 ? this.convertToUSD(originalTotal, originalCurrency) : 0;
 
     return {
       merchant: this.extractMerchant(text),
@@ -252,7 +252,8 @@ class ReceiptParser {
       payment_method: this.extractPaymentMethod(text),
       items,
       tax,
-      total: this.convertToUSD(originalTotal, originalCurrency),
+      original_tax: originalTax || undefined,
+      total,
       original_total: originalTotal
     };
   }

@@ -1,5 +1,4 @@
 import { localAIService } from './localAIService';
-import { currencyService } from '../currencyService';
 import { userCompanyService } from '../userCompanyService';
 
 export interface AIExtractedReceipt {
@@ -406,12 +405,19 @@ Return only the category name as a single word.`;
   async validateReceipt(receiptData: AIExtractedReceipt, existingExpenses: any[] = []): Promise<ReceiptValidationResult> {
     const issues: ReceiptValidationResult['issues'] = [];
     let confidence = receiptData.confidence || 0.8;
+    const receiptTotal = Number.isFinite(receiptData.total) ? receiptData.total : 0;
+    const receiptDate = receiptData.date ? new Date(receiptData.date) : null;
 
     // Check for duplicates
     const duplicates = existingExpenses.filter(expense => 
       expense.vendor === receiptData.vendor &&
-      expense.total === receiptData.total &&
-      Math.abs(new Date(expense.date).getTime() - new Date(receiptData.date).getTime()) < 86400000 // 24 hours
+      Number.isFinite(expense.total) &&
+      receiptTotal > 0 &&
+      Math.abs(expense.total - receiptTotal) < 0.01 &&
+      expense.date &&
+      receiptDate &&
+      !isNaN(receiptDate.getTime()) &&
+      Math.abs(new Date(expense.date).getTime() - receiptDate.getTime()) < 86400000 // 24 hours
     );
 
     if (duplicates.length > 0) {
@@ -425,11 +431,11 @@ Return only the category name as a single word.`;
     }
 
     // Check for unusual amounts
-    if (receiptData.total > 1000) {
+    if (receiptTotal > 1000) {
       issues.push({
         type: 'unusual_amount',
         severity: 'medium',
-        description: `High amount detected: ${receiptData.total} ${receiptData.currency}`,
+        description: `High amount detected: ${receiptTotal} ${receiptData.currency}`,
         suggestion: 'Verify this large expense is legitimate'
       });
       confidence -= 0.1;
@@ -454,6 +460,16 @@ Return only the category name as a single word.`;
         suggestion: 'Manually enter the receipt date'
       });
       confidence -= 0.25;
+    }
+
+    if (!Number.isFinite(receiptData.total) || receiptTotal === 0) {
+      issues.push({
+        type: 'missing_info',
+        severity: 'medium',
+        description: 'Total amount appears to be missing',
+        suggestion: 'Verify the total amount from the receipt'
+      });
+      confidence -= 0.2;
     }
 
     // Check for fake receipt indicators
@@ -490,8 +506,14 @@ Return only the category name as a single word.`;
   async detectDuplicateExpenses(newReceipt: AIExtractedReceipt, existingExpenses: any[]): Promise<any[]> {
     const potentialDuplicates = existingExpenses.filter(expense => {
       const sameVendor = expense.vendor?.toLowerCase() === newReceipt.vendor.toLowerCase();
-      const sameAmount = Math.abs(expense.total - newReceipt.total) < 0.01; // Account for rounding
-      const sameDate = Math.abs(new Date(expense.date).getTime() - new Date(newReceipt.date).getTime()) < 86400000; // 24 hours
+      const receiptTotal = Number.isFinite(newReceipt.total) ? newReceipt.total : 0;
+      const expenseTotal = Number.isFinite(expense.total) ? expense.total : NaN;
+      const sameAmount = Number.isFinite(expenseTotal) && receiptTotal > 0 && Math.abs(expenseTotal - receiptTotal) < 0.01;
+      const receiptDate = newReceipt.date ? new Date(newReceipt.date) : null;
+      const expenseDate = expense.date ? new Date(expense.date) : null;
+      const sameDate = receiptDate && expenseDate && !isNaN(receiptDate.getTime()) && !isNaN(expenseDate.getTime())
+        ? Math.abs(expenseDate.getTime() - receiptDate.getTime()) < 86400000
+        : false;
       const sameCurrency = expense.currency === newReceipt.currency;
 
       return sameVendor && sameAmount && sameDate && sameCurrency;
@@ -566,15 +588,15 @@ Return JSON:
   private validateAndEnhanceReceipt(extracted: any, originalText: string): AIExtractedReceipt {
     // Ensure all required fields exist
     const receipt: AIExtractedReceipt = {
-      vendor: extracted.vendor || 'Unknown Vendor',
-      date: extracted.date || new Date().toISOString().split('T')[0],
+      vendor: extracted.vendor || 'Not Found',
+      date: extracted.date || 'Not Found',
       items: Array.isArray(extracted.items) ? extracted.items : [],
-      subtotal: extracted.subtotal || 0,
-      tax: extracted.tax || 0,
-      total: extracted.total || 0,
-      currency: extracted.currency || 'USD',
-      originalCurrency: extracted.originalCurrency || 'USD',
-      paymentMethod: extracted.paymentMethod || 'other',
+      subtotal: typeof extracted.subtotal === 'number' ? extracted.subtotal : 0,
+      tax: typeof extracted.tax === 'number' ? extracted.tax : 0,
+      total: typeof extracted.total === 'number' ? extracted.total : 0,
+      currency: extracted.currency || extracted.originalCurrency || 'USD',
+      originalCurrency: extracted.originalCurrency || extracted.currency || 'USD',
+      paymentMethod: extracted.paymentMethod || extracted.payment_method || 'Not Found',
       category: extracted.category || 'Other',
       confidence: extracted.confidence || 0.8,
       warnings: Array.isArray(extracted.warnings) ? extracted.warnings : []
@@ -583,32 +605,10 @@ Return JSON:
     // Validate items
     receipt.items = receipt.items.map(item => ({
       name: item.name || 'Unknown Item',
-      price: parseFloat(item.price) || 0,
-      quantity: parseInt(item.quantity) || 1,
+      price: Number.isFinite(Number(item.price)) ? Number(item.price) : 0,
+      quantity: Number.isFinite(Number(item.quantity)) ? Number(item.quantity) : 1,
       category: item.category || 'Other'
     }));
-
-    // Calculate totals if missing
-    if (receipt.subtotal === 0) {
-      receipt.subtotal = receipt.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    }
-
-    if (receipt.total === 0) {
-      receipt.total = receipt.subtotal + receipt.tax;
-    }
-
-    // Currency conversion if needed
-    if (receipt.originalCurrency !== 'USD' && receipt.originalCurrency !== receipt.currency) {
-      const convertedTotal = currencyService.convert(receipt.total, receipt.originalCurrency, 'USD');
-      receipt.total = convertedTotal;
-      receipt.currency = 'USD';
-      
-      // Convert item prices too
-      receipt.items = receipt.items.map(item => ({
-        ...item,
-        price: currencyService.convert(item.price, receipt.originalCurrency, 'USD')
-      }));
-    }
 
     return receipt;
   }

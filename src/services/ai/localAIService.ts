@@ -7,21 +7,8 @@ interface LocalAIRequest {
   stream?: boolean;
 }
 
-interface LocalAIResponse {
-  model: string;
-  created_at: string;
-  response: string;
-  done: boolean;
-  total_duration?: number;
-  prompt_eval_count?: number;
-  prompt_eval_duration?: number;
-  eval_count?: number;
-  eval_duration?: number;
-}
-
 class LocalAIService {
-  private baseUrl: string = 'http://localhost:11434';
-  private defaultModel: string = 'llama3';
+  private defaultModel: string = 'gemini-1.5-pro';
   private isAvailable: boolean = false;
   private lastCheck: Date = new Date(0);
 
@@ -30,30 +17,26 @@ class LocalAIService {
   }
 
   private async checkAvailability(): Promise<boolean> {
-    // Don't check too frequently
     const now = new Date();
-    if (now.getTime() - this.lastCheck.getTime() < 30000) { // 30 seconds
+    if (now.getTime() - this.lastCheck.getTime() < 30000) {
       return this.isAvailable;
     }
 
     try {
-      const response = await fetch(`${this.baseUrl}/api/tags`, {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/ai/status', {
         method: 'GET',
-        signal: AbortSignal.timeout(5000) // 5 second timeout
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        signal: AbortSignal.timeout(5000)
       });
       
       this.isAvailable = response.ok;
       this.lastCheck = now;
       
-      if (this.isAvailable) {
-        console.log('✅ Local AI (Ollama) is available');
-      } else {
-        console.warn('⚠️ Local AI (Ollama) is not available');
-      }
-      
       return this.isAvailable;
     } catch (error) {
-      console.warn('⚠️ Failed to connect to Local AI (Ollama):', error);
       this.isAvailable = false;
       this.lastCheck = now;
       return false;
@@ -70,41 +53,39 @@ class LocalAIService {
   ): Promise<string> {
     const available = await this.checkAvailability();
     if (!available) {
-      throw new Error('Local AI service is not available. Please ensure Ollama is running.');
+      throw new Error('AI service is not available.');
     }
 
-    const request: LocalAIRequest = {
-      model: options.model || this.defaultModel,
-      prompt,
-      system: options.system || this.getDefaultSystemPrompt(),
-      temperature: options.temperature || 0.7,
-      max_tokens: options.max_tokens || 2000,
-      stream: false
-    };
-
     try {
-      const response = await fetch(`${this.baseUrl}/api/generate`, {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
-        body: JSON.stringify(request),
-        signal: AbortSignal.timeout(30000) // 30 second timeout
+        body: JSON.stringify({
+          prompt,
+          system: options.system || this.getDefaultSystemPrompt(),
+          temperature: options.temperature || 0.7,
+          max_tokens: options.max_tokens || 2000
+        }),
+        signal: AbortSignal.timeout(30000)
       });
 
       if (!response.ok) {
-        throw new Error(`Local AI request failed: ${response.status} ${response.statusText}`);
+        throw new Error(`AI request failed: ${response.status} ${response.statusText}`);
       }
 
-      const data: LocalAIResponse = await response.json();
+      const data = await response.json();
       
-      if (!data.response) {
-        throw new Error('Empty response from Local AI');
+      if (!data.success || !data.data || !data.data.response) {
+        throw new Error('Empty response from AI');
       }
 
-      return data.response.trim();
+      return data.data.response.trim();
     } catch (error) {
-      console.error('Local AI generation failed:', error);
+      console.error('AI generation failed:', error);
       throw error;
     }
   }
@@ -113,126 +94,30 @@ class LocalAIService {
     messages: Array<{ role: 'user' | 'assistant' | 'system'; content: string }>,
     options: Partial<LocalAIRequest> = {}
   ): Promise<string> {
-    // Convert chat messages to a single prompt for Llama
     let prompt = '';
-    
-    // Add system message if provided
     const systemMessage = messages.find(m => m.role === 'system');
     const systemPrompt = systemMessage?.content || this.getDefaultSystemPrompt();
-    
-    // Build conversation history
     const conversationMessages = messages.filter(m => m.role !== 'system');
     
-    prompt = `<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n${systemPrompt}<|eot_id|>`;
-    
     for (const message of conversationMessages) {
-      const role = message.role === 'user' ? 'user' : 'assistant';
-      prompt += `<|start_header_id|>${role}<|end_header_id|>\n\n${message.content}<|eot_id|>`;
+      const role = message.role 
+=== 'user' ? 'User' : 'Assistant';
+      prompt += `${role}: ${message.content}\n\n`;
     }
-    
-    prompt += `<|start_header_id|>assistant<|end_header_id|>\n\n`;
 
-    return this.generateResponse(prompt, options);
+    return this.generateResponse(prompt, { ...options, system: systemPrompt });
   }
 
   private getDefaultSystemPrompt(): string {
-    return `You are the AI assistant for 2K AI Accounting Systems, a comprehensive accounting and expense management platform. Your role is to help users with:
-
-🎯 Core Features:
-- Receipt scanning with AI-powered OCR and data extraction
-- Multi-currency expense tracking and conversion
-- Invoice creation and management
-- Financial reporting and analytics
-- Team collaboration and user management
-- Subscription and billing management
-
-🔧 Capabilities:
-- Analyze receipt images and extract transaction details
-- Convert between 30+ currencies including African currencies
-- Generate professional PDFs with company branding
-- Provide financial insights and recommendations
-- Guide users through the platform features
-- Help with expense categorization and budgeting
-
-💬 Communication Style:
-- Professional, friendly, and helpful
-- Provide clear, actionable guidance
-- Ask clarifying questions when needed
-- Offer step-by-step instructions
-- Suggest relevant features and tools
-
-🚀 Current Context:
-The user is interacting with the 2K AI Accounting Systems web application. They may need help with:
-- Navigating the interface
-- Using the receipt scanner
-- Managing expenses and invoices
-- Understanding reports and analytics
-- Setting up their company profile
-- Managing team members and subscriptions
-
-📋 When users ask for help:
-1. Understand their specific need
-2. Provide clear, step-by-step guidance
-3. Suggest relevant features
-4. Offer to walk them through the process
-5. Follow up with additional tips
-
-Example responses:
-- "To scan a receipt, click the 'AI Receipt Scanner' button and upload your receipt image. Our AI will automatically extract the merchant, date, items, and amounts."
-- "For currency conversion, our system automatically detects the currency on your receipt and converts it to your base currency. We support 30+ currencies including UGX, KES, TZS, and more."
-- "To generate a PDF report, go to the Reports section, select your date range, and click 'Generate PDF'. Your company logo and branding will be included automatically."
-
-Always be helpful, accurate, and guide users toward success with the platform!`;
+    return 'You are the AI assistant for 2K AI Accounting Systems, a comprehensive accounting and expense management platform.\n\nAlways be helpful, accurate, and guide users toward success with the platform!';
   }
 
   async listAvailableModels(): Promise<string[]> {
-    const available = await this.checkAvailability();
-    if (!available) {
-      return [];
-    }
-
-    try {
-      const response = await fetch(`${this.baseUrl}/api/tags`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch models');
-      }
-
-      const data = await response.json();
-      return data.models?.map((model: any) => model.name) || [];
-    } catch (error) {
-      console.error('Failed to fetch models:', error);
-      return [];
-    }
+    return ['gemini-1.5-pro'];
   }
 
   async pullModel(modelName: string): Promise<boolean> {
-    const available = await this.checkAvailability();
-    if (!available) {
-      throw new Error('Local AI service is not available');
-    }
-
-    try {
-      const response = await fetch(`${this.baseUrl}/api/pull`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: modelName
-        }),
-        signal: AbortSignal.timeout(300000) // 5 minute timeout for model download
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to pull model: ${response.status}`);
-      }
-
-      console.log(`✅ Successfully pulled model: ${modelName}`);
-      return true;
-    } catch (error) {
-      console.error('Failed to pull model:', error);
-      throw error;
-    }
+    return true;
   }
 
   setDefaultModel(modelName: string): void {
@@ -250,7 +135,7 @@ Always be helpful, accurate, and guide users toward success with the platform!`;
     lastChecked: Date;
   } {
     return {
-      baseUrl: this.baseUrl,
+      baseUrl: '/api/ai',
       defaultModel: this.defaultModel,
       isAvailable: this.isAvailable,
       lastChecked: this.lastCheck

@@ -22,6 +22,7 @@ interface ReceiptResultsProps {
     paymentMethod: string;
     transactionType?: 'income' | 'expense';
     suggestedAccount?: string;
+    warnings?: string[];
   };
   confidence: number;
   onRescan: () => void;
@@ -65,11 +66,11 @@ export default function ReceiptResults({
           <div className="grid grid-cols-2 gap-2">
             <div>
               <p className="text-sm text-slate-500">Vendor</p>
-              <p className="font-medium">{scanResults.vendor}</p>
+              <p className="font-medium">{scanResults.vendor || 'Not Found'}</p>
             </div>
             <div>
               <p className="text-sm text-slate-500">Date</p>
-              <p className="font-medium">{scanResults.date}</p>
+              <p className="font-medium">{scanResults.date || 'Not Found'}</p>
             </div>
             <div>
               <p className="text-sm text-slate-500">AI Category</p>
@@ -80,7 +81,7 @@ export default function ReceiptResults({
             </div>
             <div>
               <p className="text-sm text-slate-500">Payment Method</p>
-              <p className="font-medium">{scanResults.paymentMethod}</p>
+              <p className="font-medium">{scanResults.paymentMethod || 'Not Found'}</p>
             </div>
           </div>
 
@@ -104,6 +105,18 @@ export default function ReceiptResults({
                     <span>{item.quantity || 1}x {item.name}</span>
                     <span>{formatCurrency(item.price * (item.quantity || 1), scanResults.currency || selectedCurrency.code)}</span>
                   </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          {scanResults.warnings && scanResults.warnings.length > 0 && (
+            <>
+              <Separator />
+              <div className="rounded-md bg-amber-50 p-2 text-xs text-amber-700">
+                <p className="font-semibold mb-1">Extraction warnings</p>
+                {scanResults.warnings.map((warning, index) => (
+                  <p key={index}>• {warning}</p>
                 ))}
               </div>
             </>

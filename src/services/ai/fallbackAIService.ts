@@ -32,19 +32,21 @@ class FallbackAIService {
   // Check if real AI is available
   private async checkRealAIAvailability(): Promise<boolean> {
     try {
-      // Try to check if Ollama is available and has Llama models
-      const response = await fetch('http://localhost:11434/api/tags', {
+      const token = localStorage.getItem('token');
+      // Try to check if Google AI is available via backend
+      const response = await fetch('/api/ai/status', {
         method: 'GET',
-        signal: AbortSignal.timeout(2000) // 2 second timeout
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        signal: AbortSignal.timeout(5000)
       });
       
       if (response.ok) {
         const data = await response.json();
-        const hasLlama = data.models?.some((model: any) => 
-          model.name.includes('llama') || model.name.includes('llama3')
-        );
-        console.log('[FallbackAIService] Ollama available, has Llama:', hasLlama);
-        return hasLlama;
+        const isReady = data.success && data.data && data.data.ready;
+        console.log('[FallbackAIService] Google AI available:', isReady);
+        return isReady;
       }
       return false;
     } catch (error) {

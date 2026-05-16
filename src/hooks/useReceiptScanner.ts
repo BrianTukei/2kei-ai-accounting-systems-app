@@ -18,6 +18,7 @@ export interface ReceiptData {
   paymentMethod?: string;
   transactionType?: 'income' | 'expense';
   suggestedAccount?: string;
+  warnings?: string[];
 }
 
 interface UseReceiptScannerProps {
@@ -171,6 +172,14 @@ export const useReceiptScanner = ({ onScanComplete }: UseReceiptScannerProps) =>
 
       // Perform OCR scanning
       const ocrResult = await performOCRScanning(file);
+
+      if (!ocrResult.amount || !ocrResult.date) {
+        throw new Error('Receipt data is incomplete. Please rescan with a clearer image.');
+      }
+
+      if (ocrResult.warnings.length > 0) {
+        toast.warning(`Receipt scanned with warnings: ${ocrResult.warnings.join(', ')}`);
+      }
       
       // Upload image to Supabase storage
       const imageUrl = await uploadImageToSupabase(file);
@@ -193,6 +202,7 @@ export const useReceiptScanner = ({ onScanComplete }: UseReceiptScannerProps) =>
         currency: ocrResult.currency,
         transactionType: ocrResult.transactionType,
         suggestedAccount: ocrResult.suggestedAccount,
+        warnings: ocrResult.warnings,
       });
       
       setConfidence(ocrResult.confidence);

@@ -17,6 +17,7 @@ import Transactions from './pages/Transactions';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import Billing from './pages/Billing';
+import FinancialAssistant from './pages/FinancialAssistant';
 
 // Admin Components
 import AdminDashboard from './components/admin/AdminDashboard';
@@ -45,6 +46,7 @@ function App() {
               <Route path="onboarding" element={<Onboarding />} />
               <Route path="transactions" element={<Transactions />} />
               <Route path="reports" element={<Reports />} />
+              <Route path="ai-assistant" element={<FinancialAssistant />} />
               <Route path="settings" element={<Settings />} />
               <Route path="billing" element={<Billing />} />
               

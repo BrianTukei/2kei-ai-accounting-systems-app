@@ -54,17 +54,20 @@ const handlePaymentSuccess = async (payload) => {
       id: transactionId,
       tx_ref: reference,
       amount,
-    currency
-  } = payload;
+      currency
+    } = payload;
 
-  if (!payload.customer?.email) throw new Error('Missing customer email in webhook');
-  if (!payload.meta?.userId) throw new Error('Missing user ID in webhook metadata');
+    if (!payload.customer?.email) throw new Error('Missing customer email in webhook');
+    if (!payload.meta?.userId) throw new Error('Missing user ID in webhook metadata');
 
-  const { email } = payload.customer;
-  const { userId, planSlug } = payload.meta;
+    const { email } = payload.customer;
+    const { userId, planSlug } = payload.meta;
+
+    logger.info('Handling payment success', {
       userId,
       amount,
-      planSlug
+      planSlug,
+      reference
     });
 
     // Verify transaction reference format

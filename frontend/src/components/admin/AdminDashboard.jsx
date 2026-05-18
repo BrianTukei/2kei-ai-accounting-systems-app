@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import DemoBookingsPanel from './DemoBookingsPanel';
 import { 
   MessageSquare, 
   Mail, 
@@ -149,10 +150,14 @@ export function AdminDashboard() {
 
       {/* Main Content Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="messaging" className="flex items-center gap-2">
             <MessageSquare className="w-4 h-4" />
             Messaging
+          </TabsTrigger>
+          <TabsTrigger value="demos" className="flex items-center gap-2">
+            <Users className="w-4 h-4" />
+            Demo Bookings
           </TabsTrigger>
           <TabsTrigger value="templates" className="flex items-center gap-2">
             <FileText className="w-4 h-4" />
@@ -173,6 +178,10 @@ export function AdminDashboard() {
             <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-50" />
             <p>Select the Messaging tab to access the Admin Messaging Panel</p>
           </div>
+        </TabsContent>
+
+        <TabsContent value="demos" className="mt-6">
+          <DemoBookingsPanel />
         </TabsContent>
 
         <TabsContent value="templates" className="mt-6">

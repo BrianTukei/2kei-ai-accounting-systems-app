@@ -17,6 +17,7 @@ import Transactions from './pages/Transactions';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import Billing from './pages/Billing';
+import BookDemo from './pages/BookDemo';
 
 // Admin Components
 import AdminDashboard from './components/admin/AdminDashboard';
@@ -35,6 +36,7 @@ function App() {
             {/* Public Routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/book-demo" element={<BookDemo />} />
             
             {/* Protected Routes */}
             <Route path="/" element={

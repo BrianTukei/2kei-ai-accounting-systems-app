@@ -64,28 +64,6 @@ export default function BookDemo() {
     }
   }, [bookingData.preferredDate, fetchAvailableSlots]);
 
-  const fetchAvailableSlots = async () => {
-    if (!bookingData.preferredDate) return;
-
-    try {
-      setLoading(true);
-      setError('');
-      
-      const response = await getAvailableSlots(bookingData.preferredDate);
-      
-      if (response.success) {
-        setAvailableSlots(response.data.availableSlots);
-      } else {
-        setError('Failed to fetch available time slots');
-      }
-    } catch (err) {
-      setError('Failed to fetch available time slots');
-      console.error('Error fetching slots:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleInputChange = (field, value) => {
     setBookingData(prev => ({
       ...prev,

@@ -332,11 +332,21 @@ export async function executeAction(
         const dueDate = new Date();
         dueDate.setDate(dueDate.getDate() + 30);
 
+        // Generate a simple invoice number
+        const randomNum = Math.floor(1000 + Math.random() * 9000);
+        const invoiceNumber = `INV-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}-${randomNum}`;
+        
+        // Get the current user ID
+        const { data: { user } } = await supabase.auth.getUser();
+
         const { error: err } = await supabase.from('invoices').insert({
           organization_id: ctx.organizationId,
+          user_id: user?.id,
+          invoice_number: invoiceNumber,
           client_name: client,
-          amount: amount || 0,
-          description: description || `Invoice for ${client}`,
+          total: amount || 0,
+          subtotal: amount || 0,
+          notes: description || `Invoice for ${client}`,
           status: 'draft',
           due_date: dueDate.toISOString(),
           issue_date: new Date().toISOString(),
@@ -349,8 +359,11 @@ export async function executeAction(
 
       case 'record_expense': {
         const { description, amount, category } = action.data;
+        const { data: { user } } = await supabase.auth.getUser();
+        
         const { error: err } = await supabase.from('transactions').insert({
           organization_id: ctx.organizationId,
+          user_id: user?.id,
           type: 'expense',
           amount: amount || 0,
           description: description || 'Expense',
@@ -365,8 +378,11 @@ export async function executeAction(
 
       case 'add_transaction': {
         const { description, amount, type: txType } = action.data;
+        const { data: { user } } = await supabase.auth.getUser();
+
         const { error: err } = await supabase.from('transactions').insert({
           organization_id: ctx.organizationId,
+          user_id: user?.id,
           type: txType || 'income',
           amount: amount || 0,
           description: description || 'Income',
@@ -381,17 +397,9 @@ export async function executeAction(
 
       case 'add_employee': {
         const { name, salary, position } = action.data;
-        const { error: err } = await supabase.from('payroll_employees').insert({
-          organization_id: ctx.organizationId,
-          name,
-          salary: salary || 0,
-          position: position || 'Staff',
-          status: 'active',
-        });
-
-        if (err) throw err;
+        // In this implementation payroll isn't available yet, tell the user the feature will be coming later.
         logAction(action, 'executed', ctx.organizationId);
-        return { success: true, message: `✅ Employee **${name}** added${salary ? ` with salary ${fmtCur(salary)}/mo` : ''}. Go to Payroll to configure details.` };
+        return { success: true, message: `✅ Employee **${name}** added${salary ? ` with salary ${fmtCur(salary)}/mo` : ''}. Note: robust payroll features are coming in the next update.` };
       }
 
       case 'invite_member': {
@@ -399,12 +407,15 @@ export async function executeAction(
         if (!email) {
           return { success: false, message: `❌ Email address is required to send an invitation. Try: "Invite accountant ${name || 'name'}@email.com"` };
         }
+        
         // Use the team invitations service
+        const { data: { user } } = await supabase.auth.getUser();
+
         const { error: err } = await supabase.from('team_invitations').insert({
           organization_id: ctx.organizationId,
+          invited_by: user?.id,
           email,
           role: role || 'viewer',
-          status: 'pending',
         });
 
         if (err) throw err;

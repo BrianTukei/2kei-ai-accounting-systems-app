@@ -273,7 +273,7 @@ export class ReceiptScannerAPI {
 
       const { text } = req.body;
       
-      if (!text || typeof text !== '') {
+      if (!text || typeof text !== 'string') {
         return res.status(400).json({ error: 'Receipt text is required' });
       }
 

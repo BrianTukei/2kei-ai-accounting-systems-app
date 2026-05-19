@@ -243,7 +243,7 @@ class AdminBillingController {
           result = await subscriptionService.cancelSubscription(userId, reason || 'Admin cancelled');
           break;
         
-        case 'activate':
+        case 'activate': {
           // Manually activate subscription
           const subscription = await Subscription.findByUser(userId);
           if (!subscription) {
@@ -260,8 +260,9 @@ class AdminBillingController {
           
           result = { subscription };
           break;
+        }
         
-        case 'suspend':
+        case 'suspend': {
           // Suspend subscription
           const suspendSubscription = await Subscription.findByUser(userId);
           if (!suspendSubscription) {
@@ -276,6 +277,7 @@ class AdminBillingController {
           
           result = { subscription: suspendSubscription };
           break;
+        }
         
         default:
           return res.status(400).json({

@@ -272,7 +272,8 @@ Extract the structured data and return only valid JSON:`;
       const parts = cleaned.split('-');
       
       if (parts.length === 3) {
-        let [part1, part2, part3] = parts;
+        const [part1, part2, rawPart3] = parts;
+        let part3 = rawPart3;
         
         // Determine if it's DD-MM-YYYY or MM-DD-YYYY
         if (part3.length === 2) {

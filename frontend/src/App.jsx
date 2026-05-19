@@ -18,6 +18,7 @@ import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import Billing from './pages/Billing';
 import BookDemo from './pages/BookDemo';
+import FinancialAssistant from './pages/FinancialAssistant';
 
 // Admin Components
 import AdminDashboard from './components/admin/AdminDashboard';
@@ -49,12 +50,15 @@ function App() {
               <Route path="onboarding" element={<Onboarding />} />
               <Route path="transactions" element={<Transactions />} />
               <Route path="reports" element={<Reports />} />
+              <Route path="ai-assistant" element={<FinancialAssistant />} />
               <Route path="settings" element={<Settings />} />
               <Route path="billing" element={<Billing />} />
               
               {/* Admin Routes */}
                 <Route path="admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-                <Route path="admin/messaging" element={<AdminRoute><AdminMessagingPage /></AdminRoute>} />              <Route path="admin/campaigns" element={<AdminRoute><EmailCampaignManager /></AdminRoute>} />                <Route path="admin/email-logs" element={<AdminRoute><EmailLogsDashboard /></AdminRoute>} />
+                <Route path="admin/messaging" element={<AdminRoute><AdminMessagingPanel /></AdminRoute>} />
+                <Route path="admin/campaigns" element={<AdminRoute><EmailCampaignManager /></AdminRoute>} />
+                <Route path="admin/email-logs" element={<AdminRoute><EmailLogsDashboard /></AdminRoute>} />
                 <Route path="admin/templates" element={<AdminRoute><EmailTemplates /></AdminRoute>} />
             </Route>
 

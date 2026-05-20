@@ -14,8 +14,52 @@ if (supabaseUrl && supabaseKey) {
   supabase = createClient(supabaseUrl, supabaseKey);
 }
 
+const ensureSupabaseConfigured = (res: Response) => {
+  if (supabase) {
+    return true;
+  }
+
+  res.status(503).json({
+    success: false,
+    error: 'Supabase is not configured. Demo booking is temporarily unavailable.',
+    details: 'Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (or SUPABASE_SERVICE_KEY) in .env.local.'
+  });
+
+  return false;
+};
+
+const formatSupabaseError = (error: any) => {
+  const rawMessage = error?.message || 'Unknown Supabase error';
+  const details = error?.details || error?.hint || undefined;
+
+  if (typeof rawMessage === 'string') {
+    if (rawMessage.includes('relation') && rawMessage.includes('does not exist')) {
+      return {
+        error: 'Supabase table is missing for demo bookings.',
+        details: 'Create demo_bookings, users, and companies tables or run migrations.'
+      };
+    }
+
+    if (rawMessage.toLowerCase().includes('permission denied') || rawMessage.toLowerCase().includes('not allowed')) {
+      return {
+        error: 'Supabase permission denied while booking demo.',
+        details: 'Check RLS policies and service role key permissions.'
+      };
+    }
+  }
+
+  return {
+    error: rawMessage,
+    details
+  };
+};
+
 export const createBooking = async (req: Request, res: Response) => {
   try {
+    if (!ensureSupabaseConfigured(res)) {
+      return;
+    }
+
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({
@@ -39,13 +83,22 @@ export const createBooking = async (req: Request, res: Response) => {
     } = req.body;
 
     // Check if slot exists in DB
-    const { data: existingBooking } = await supabase
+    const { data: existingBooking, error: existingBookingError } = await supabase
       .from('demo_bookings')
       .select('id')
       .eq('preferred_date', preferredDate.split('T')[0])
       .eq('preferred_time', preferredTime)
       .in('status', ['pending', 'confirmed'])
       .maybeSingle();
+
+    if (existingBookingError) {
+      const formatted = formatSupabaseError(existingBookingError);
+      return res.status(500).json({
+        success: false,
+        error: formatted.error,
+        details: formatted.details
+      });
+    }
 
     if (existingBooking) {
       return res.status(409).json({
@@ -55,7 +108,20 @@ export const createBooking = async (req: Request, res: Response) => {
     }
 
     // 1. Get or create user
-    let { data: user } = await supabase.from('users').select('id').eq('email', email).maybeSingle();
+    let { data: user, error: userLookupError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .maybeSingle();
+
+    if (userLookupError) {
+      const formatted = formatSupabaseError(userLookupError);
+      return res.status(500).json({
+        success: false,
+        error: formatted.error,
+        details: formatted.details
+      });
+    }
     
     if (!user) {
       const { data: newUser, error: userError } = await supabase.from('users').insert({
@@ -66,12 +132,32 @@ export const createBooking = async (req: Request, res: Response) => {
         status: 'active'
       }).select('id').single();
       
-      if (userError) throw userError;
+      if (userError) {
+        const formatted = formatSupabaseError(userError);
+        return res.status(500).json({
+          success: false,
+          error: formatted.error,
+          details: formatted.details
+        });
+      }
       user = newUser;
     }
 
     // 2. Get or create company
-    let { data: companyRecord } = await supabase.from('companies').select('id').eq('name', company).maybeSingle();
+    let { data: companyRecord, error: companyLookupError } = await supabase
+      .from('companies')
+      .select('id')
+      .eq('name', company)
+      .maybeSingle();
+
+    if (companyLookupError) {
+      const formatted = formatSupabaseError(companyLookupError);
+      return res.status(500).json({
+        success: false,
+        error: formatted.error,
+        details: formatted.details
+      });
+    }
 
     if (!companyRecord) {
       const { data: newCompany, error: companyError } = await supabase.from('companies').insert({
@@ -81,7 +167,14 @@ export const createBooking = async (req: Request, res: Response) => {
         status: 'active'
       }).select('id').single();
 
-      if (companyError) throw companyError;
+      if (companyError) {
+        const formatted = formatSupabaseError(companyError);
+        return res.status(500).json({
+          success: false,
+          error: formatted.error,
+          details: formatted.details
+        });
+      }
       companyRecord = newCompany;
     }
 
@@ -101,7 +194,14 @@ export const createBooking = async (req: Request, res: Response) => {
       }
     }).select().single();
 
-    if (bookingError) throw bookingError;
+    if (bookingError) {
+      const formatted = formatSupabaseError(bookingError);
+      return res.status(500).json({
+        success: false,
+        error: formatted.error,
+        details: formatted.details
+      });
+    }
 
     // Send notifications
     try {
@@ -127,16 +227,22 @@ export const createBooking = async (req: Request, res: Response) => {
       message: 'Demo booking created successfully!'
     });
   } catch (error) {
+    const formatted = formatSupabaseError(error);
     logger.error('Failed to create demo booking:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to create booking. Please try again.'
+      error: formatted.error,
+      details: formatted.details
     });
   }
 };
 
 export const getAvailableSlots = async (req: Request, res: Response) => {
   try {
+    if (!ensureSupabaseConfigured(res)) {
+      return;
+    }
+
     const { date, timezone = 'UTC', duration = 30 } = req.query;
     if (!date) return res.status(400).json({ success: false, error: 'Date required' });
 
@@ -146,11 +252,20 @@ export const getAvailableSlots = async (req: Request, res: Response) => {
       return res.json({ success: true, data: { availableSlots: [] } });
     }
 
-    const { data: existing } = await supabase
+    const { data: existing, error: existingError } = await supabase
       .from('demo_bookings')
       .select('preferred_time')
       .eq('preferred_date', targetDate.toISOString().split('T')[0])
       .in('status', ['pending', 'confirmed']);
+
+    if (existingError) {
+      const formatted = formatSupabaseError(existingError);
+      return res.status(500).json({
+        success: false,
+        error: formatted.error,
+        details: formatted.details
+      });
+    }
 
     const bookedTimes = new Set((existing || []).map(b => b.preferred_time));
     const slots = [];
@@ -165,8 +280,13 @@ export const getAvailableSlots = async (req: Request, res: Response) => {
     
     res.json({ success: true, data: { availableSlots: slots } });
   } catch (error) {
+    const formatted = formatSupabaseError(error);
     logger.error('Failed to fetch available slots:', error);
-    res.status(500).json({ success: false, error: 'Failed' });
+    res.status(500).json({
+      success: false,
+      error: formatted.error,
+      details: formatted.details
+    });
   }
 };
 

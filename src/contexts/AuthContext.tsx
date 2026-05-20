@@ -27,7 +27,7 @@ async function logAuthEvent(
   metadata?: Record<string, any>,
 ) {
   try {
-    await supabase.from('auth_events').insert({
+    await (supabase as any).from('auth_events').insert({
       user_id: userId,
       event_type: eventType,
       user_agent: navigator.userAgent,

@@ -333,7 +333,8 @@ function StepPlan({
       if (billing === 'annual') periodEnd.setFullYear(periodEnd.getFullYear() + 1);
       else periodEnd.setMonth(periodEnd.getMonth() + 1);
 
-      await supabase.from('subscriptions').upsert({
+      try {
+        await supabase.from('subscriptions').upsert({
         organization_id: orgId,
         plan_id: planId,
         status: 'active',
@@ -343,11 +344,11 @@ function StepPlan({
         cancel_at_period_end: false,
         payment_provider: 'demo',
         updated_at: new Date().toISOString(),
-      }, { onConflict: 'organization_id' }).then(() => {
+        }, { onConflict: 'organization_id' });
         console.log('[StepPlan] Subscription persisted to DB');
-      }).catch(() => {
+      } catch {
         console.warn('[StepPlan] DB persist failed (non-critical)');
-      });
+      }
     } catch (e) {
       console.warn('[StepPlan] Local activation error (non-critical):', e);
     }

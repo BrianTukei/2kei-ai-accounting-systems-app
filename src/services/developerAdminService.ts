@@ -216,7 +216,7 @@ export const AdminAuthService = {
     if (!user) return false;
 
     // Check admin_users table
-    const { data } = await supabase
+    const { data } = await (supabase as any)
       .from('admin_users' as any)
       .select('id, is_active')
       .eq('user_id', user.id)
@@ -250,7 +250,7 @@ export const AdminAuthService = {
       .eq('is_active', true)
       .maybeSingle();
 
-    return data?.admin_role ?? 'support_admin';
+    return (data as any)?.admin_role ?? 'support_admin';
   },
 
   /**

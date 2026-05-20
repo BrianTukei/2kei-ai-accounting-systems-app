@@ -3,11 +3,15 @@ import { ReceiptScannerAPI } from '../api/receiptScanner';
 import { ChatbotAPI } from '../api/chatbot';
 import { ActionAIController } from '../api/actionAI';
 import authRoutes from './auth';
+import { adminEmailController } from '../controllers/adminEmail';
 
 const router = Router();
 
 // Auth Routes
 router.use('/auth', authRoutes);
+
+// Backward-compatible admin broadcast endpoint used by AdminEmailSubscribers
+router.post('/admin/broadcast-email', adminEmailController.sendLegacyBroadcast);
 
 // Receipt Scanner Routes
 router.post('/scan-receipt', ReceiptScannerAPI.scanReceipt);

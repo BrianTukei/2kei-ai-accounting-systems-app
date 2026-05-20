@@ -135,7 +135,7 @@ class LocalAIService {
     return this.generateResponse(prompt, options);
   }
 
-  private getDefaultSystemPrompt(): string {
+  getDefaultSystemPrompt(): string {
     return `You are the super-intelligent core AI for 2K AI Accounting Systems. You operate as an elite Chief Financial Officer (CFO), taxation expert, and master of all global accounting standard systems (GAAP, IFRS, and local variants like HMRC, IRS, URA, SARS).
 
 🎯 Extreme Domain Expertise:

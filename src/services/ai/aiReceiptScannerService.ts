@@ -583,8 +583,8 @@ Return JSON:
     // Validate items
     receipt.items = receipt.items.map(item => ({
       name: item.name || 'Unknown Item',
-      price: parseFloat(item.price) || 0,
-      quantity: parseInt(item.quantity) || 1,
+      price: parseFloat(String(item.price ?? 0)) || 0,
+      quantity: parseInt(String(item.quantity ?? 1), 10) || 1,
       category: item.category || 'Other'
     }));
 
@@ -642,7 +642,7 @@ Return JSON:
 
     const trends = Object.entries(categoryTotals).map(([category, amount]) => ({
       category,
-      amount,
+      amount: Number(amount) || 0,
       change: 0 // No historical data for comparison
     }));
 

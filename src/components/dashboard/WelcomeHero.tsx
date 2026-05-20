@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export default function WelcomeHero() {
   const { user } = useAuth();
-  const { organization } = useOrganization();
+  const { org } = useOrganization();
   const [userName, setUserName] = useState('');
   const [adminMessage, setAdminMessage] = useState<any>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -31,7 +31,7 @@ export default function WelcomeHero() {
       if (!user?.id) return;
 
       try {
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
           .from('admin_messages')
           .select('*')
           .eq('user_id', user.id)
@@ -110,7 +110,7 @@ export default function WelcomeHero() {
               </div>
 
               <h2 className="text-xl md:text-2xl font-bold mb-2 tracking-tight">
-                {organization?.name ? `Welcome to ${organization.name}` : 'Focus on growth. We handle the numbers.'}
+                {org?.name ? `Welcome to ${org.name}` : 'Focus on growth. We handle the numbers.'}
               </h2>
               <p className="text-sm text-muted-foreground leading-relaxed max-w-lg">
                 Your dashboard surfaces the most important insights: cash flow, activity, and quick actions to keep your books current.

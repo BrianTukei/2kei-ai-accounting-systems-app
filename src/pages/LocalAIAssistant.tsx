@@ -17,7 +17,8 @@ import {
   FileText,
   Users,
   Shield,
-  Globe
+  Globe,
+  Terminal
 } from 'lucide-react';
 import { toast } from 'sonner';
 import LocalAIChatbot from '@/components/LocalAIChatbot';

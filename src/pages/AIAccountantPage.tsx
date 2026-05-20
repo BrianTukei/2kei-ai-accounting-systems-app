@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -27,7 +27,8 @@ import {
   Receipt,
   CreditCard,
   Building,
-  Settings
+  Settings,
+  Database
 } from 'lucide-react';
 import { toast } from 'sonner';
 import AIAccountant from '@/components/AIAccountant';
@@ -38,7 +39,7 @@ export default function AIAccountantPage() {
   const [isServiceAvailable, setIsServiceAvailable] = useState(false);
   const [showSetup, setShowSetup] = useState(false);
 
-  useState(() => {
+  useEffect(() => {
     checkServiceAvailability();
   }, []);
 

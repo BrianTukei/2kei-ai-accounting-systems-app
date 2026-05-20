@@ -20,6 +20,9 @@ export interface Transaction {
   base_currency_amount?: number;    // Amount converted to base currency (USD)
   exchange_rate_used?: number;      // Exchange rate at time of creation
   exchange_rate_date?: string;      // When the rate was captured
+  convertedAmount?: number;
+  conversionRate?: number;
+  lastUpdated?: string;
   metadata?: {
     vendor?: string;
     items?: Array<{ name: string; price: number; quantity?: number }>;

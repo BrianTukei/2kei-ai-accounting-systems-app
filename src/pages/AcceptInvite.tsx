@@ -136,7 +136,7 @@ export default function AcceptInvite() {
 
     try {
       // 1. Add user to organization_users
-      const { error: joinErr } = await supabase
+      const { error: joinErr } = await (supabase as any)
         .from('organization_users')
         .insert({
           organization_id: invite.organizationId,

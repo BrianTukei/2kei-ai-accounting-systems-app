@@ -55,10 +55,11 @@ export default function AdminAccessCheck({ children }: AdminAccessCheckProps) {
   const setupAdminDbEntries = async (userId: string) => {
     try {
       // Try RPC bootstrap
-      await supabase.rpc('bootstrap_admin_if_owner').catch(() => {});
+      await (supabase as any).rpc('bootstrap_admin_if_owner').catch(() => {});
       
       // Upsert admin_users
-      await (supabase as any)
+      try {
+        await (supabase as any)
         .from('admin_users')
         .upsert({
           user_id: userId,
@@ -66,14 +67,19 @@ export default function AdminAccessCheck({ children }: AdminAccessCheckProps) {
           department: 'Platform',
           permissions: ['*'],
           is_active: true
-        }, { onConflict: 'user_id' })
-        .catch(() => {});
+        }, { onConflict: 'user_id' });
+      } catch {
+        // Non-fatal bootstrap helper.
+      }
       
       // Upsert user_roles
-      await supabase
+      try {
+        await supabase
         .from('user_roles')
-        .upsert({ user_id: userId, role: 'admin' }, { onConflict: 'user_id,role' })
-        .catch(() => {});
+        .upsert({ user_id: userId, role: 'admin' }, { onConflict: 'user_id,role' });
+      } catch {
+        // Non-fatal bootstrap helper.
+      }
     } catch (e) {
       console.log('[AdminAccessCheck] DB setup error (non-fatal):', e);
     }

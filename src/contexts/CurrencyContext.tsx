@@ -296,7 +296,7 @@ export function CurrencyProvider({ children }: CurrencyProviderProps) {
   const displayAmount = useCallback((amount: number, fromCurrency: string, toCurrency?: string): string => {
     const to = (toCurrency || selectedCurrency.code).toUpperCase();
     const converted = convertTo(amount, fromCurrency, to);
-    const symbol = getCurrencySymbol(to); // Use module-level function, not hook
+    const symbol = CURRENCIES.find(currency => currency.code === to)?.symbol || to;
 
     // Format with proper decimals for the target currency
     const zeroDecimalCurrencies = ['UGX', 'KES', 'TZS', 'RWF', 'NGN', 'JPY', 'VND', 'IDR'];

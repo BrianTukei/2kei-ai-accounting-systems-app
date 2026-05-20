@@ -204,7 +204,23 @@ If any field cannot be determined, use reasonable defaults like null or 0. Retur
         s.userCompanyService.getCompany(organization.id)
       ) : undefined;
       
-      const pdf = pdfService.generateReceiptPDF(extractedData, company, user || undefined);
+      const pdfReceipt = {
+        merchant: extractedData.vendor,
+        date: extractedData.date,
+        currency: extractedData.currency,
+        original_currency: extractedData.originalCurrency || extractedData.currency,
+        payment_method: extractedData.paymentMethod || 'Unknown',
+        items: extractedData.items.map(item => ({
+          name: item.name,
+          price: item.price,
+          original_price: item.price,
+          category: item.category,
+        })),
+        tax: extractedData.tax,
+        total: extractedData.total,
+        original_total: extractedData.total,
+      };
+      const pdf = pdfService.generateReceiptPDF(pdfReceipt, company, user as any);
       const filename = `ai-receipt-${extractedData.vendor}-${extractedData.date}.pdf`;
       pdfService.downloadPDF(pdf, filename);
       toast.success('📄 PDF downloaded successfully!');

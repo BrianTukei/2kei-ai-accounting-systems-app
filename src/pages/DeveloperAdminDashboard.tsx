@@ -1,7 +1,23 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { adminApiCall } from '@/services/adminService';
-import { Layers, Building2, MoreVertical, ShieldCheck, MailPlus } from 'lucide-react';
+import {
+  Layers,
+  Building2,
+  MoreVertical,
+  ShieldCheck,
+  MailPlus,
+  Ban,
+  CheckCircle2,
+  Crown,
+  Download,
+  Plus,
+  Filter,
+  XCircle,
+  Server,
+  Eye,
+  Database,
+} from 'lucide-react';
 
 const StatsCard = ({ label, value, icon: Icon, iconColor }: any) => (
   <div className="bg-slate-800 rounded-xl p-4 border border-slate-700/50 flex items-center justify-between shadow-sm">
@@ -18,8 +34,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 
 // Mock component placeholders for development
-const NotificationsSection = () => <div className="text-white p-4">Notifications Section content</div>;
-const DevelopersSection = () => <div className="text-white p-4">Developers Section content</div>;
+const NotificationsSection = (_props: any) => <div className="text-white p-4">Notifications Section content</div>;
+const DevelopersSection = (_props: any) => <div className="text-white p-4">Developers Section content</div>;
 import {
   LayoutDashboard,
   Users,
@@ -86,6 +102,8 @@ type NavSection =
   | 'modules'
   | 'monitoring'
   | 'audit'
+  | 'stats'
+  | 'auth'
   | 'notifications'
   | 'developers'
   | 'announcements'
@@ -128,6 +146,13 @@ const HEALTH_BG = {
   down: 'bg-red-500/20',
   maintenance: 'bg-blue-500/20',
 };
+
+const fmtCur = (amount: number) =>
+  new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+  }).format(amount || 0);
 
 // ─────────────────────────────────────────
 // Main Component
@@ -558,6 +583,20 @@ function OrganizationsSection() {
 // ─────────────────────────────────────────
 // Auth Events Section
 // ─────────────────────────────────────────
+function AuditLogSection() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Audit Log</CardTitle>
+        <CardDescription>Recent admin and authentication activity.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <DevAdminLoginAudit />
+      </CardContent>
+    </Card>
+  );
+}
+
 function AuthEventsSection() {
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -1568,9 +1607,7 @@ function DeveloperToolsSection() {
                         <TableCell>
                           <Switch
                             checked={wh.is_active}
-                            onCheckedChange={(active) =>
-                              toggleWebhook({ id: wh.id, active })
-                            }
+                            onCheckedChange={(active) => toggleWebhook(wh.id, active)}
                           />
                         </TableCell>
                         <TableCell className="text-right">

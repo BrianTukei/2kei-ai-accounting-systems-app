@@ -39,7 +39,7 @@ interface QuickAction {
 export default function LocalAIChatbot() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
-  [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [isServiceAvailable, setIsServiceAvailable] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [availableModels, setAvailableModels] = useState<string[]>([]);

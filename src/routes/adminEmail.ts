@@ -6,6 +6,9 @@ const router = Router();
 // GET /api/admin/broadcasts/recipients
 router.get('/recipients', adminEmailController.getRecipients);
 
+// GET /api/admin/broadcasts
+router.get('/', adminEmailController.getBroadcasts);
+
 // POST /api/admin/broadcasts
 router.post('/', adminEmailController.createBroadcast);
 

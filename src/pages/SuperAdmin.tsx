@@ -339,7 +339,7 @@ export default function SuperAdmin() {
   // ── Suspend / activate ────────────────
 
   const suspendOrg = async (orgId: string) => {
-    await supabase.from('subscriptions').update({ status: 'suspended' }).eq('organization_id', orgId);
+    await supabase.from('subscriptions').update({ status: 'paused' }).eq('organization_id', orgId);
     setOrgs((prev) => prev.map((o) => o.id === orgId ? { ...o, sub_status: 'suspended' } : o));
     toast.success('Organization suspended.');
   };

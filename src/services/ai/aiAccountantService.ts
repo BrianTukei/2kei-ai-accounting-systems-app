@@ -440,14 +440,14 @@ Format as JSON:
     }
   }
 
-  private getTopCategories(transactions: TransactionData[]): Array<{ category: string; amount: number }> {
+  private getTopCategories(transactions: TransactionData[]): Array<{ category: string; amount: number; change: number }> {
     const categoryTotals = transactions.reduce((acc, transaction) => {
       acc[transaction.category] = (acc[transaction.category] || 0) + transaction.amount;
       return acc;
     }, {} as Record<string, number>);
 
     return Object.entries(categoryTotals)
-      .map(([category, amount]) => ({ category, amount }))
+      .map(([category, amount]) => ({ category, amount, change: 0 }))
       .sort((a, b) => b.amount - a.amount)
       .slice(0, 5);
   }

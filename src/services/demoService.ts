@@ -1,4 +1,24 @@
 import { logger } from '../utils/logger';
+import nodemailer from 'nodemailer';
+import { OWNER_EMAILS } from '../lib/adminEmails';
+
+const SMTP_USER = process.env.SMTP_USER || process.env.EMAIL_USER || '';
+const SMTP_PASS = process.env.SMTP_PASS || process.env.EMAIL_PASS || '';
+const FROM_EMAIL = process.env.FROM_EMAIL || process.env.EMAIL_FROM || SMTP_USER || 'no-reply@2kai.com';
+
+const transporter = nodemailer.createTransport(
+  process.env.SMTP_HOST
+    ? {
+        host: process.env.SMTP_HOST,
+        port: Number(process.env.SMTP_PORT) || 587,
+        secure: process.env.SMTP_SECURE === 'true',
+        auth: SMTP_USER && SMTP_PASS ? { user: SMTP_USER, pass: SMTP_PASS } : undefined
+      }
+    : {
+        service: 'gmail',
+        auth: SMTP_USER && SMTP_PASS ? { user: SMTP_USER, pass: SMTP_PASS } : undefined
+      }
+);
 
 interface DemoBooking {
   _id: string;
@@ -170,13 +190,26 @@ export const sendDemoConfirmation = async (booking: DemoBooking) => {
 </html>
       `;
 
-    // Mock email service - replace with actual email service
-    logger.info(`Demo confirmation sent to ${booking.email}`, {
-      bookingId: booking._id,
-      subject
-    });
-
-    return { success: true, messageId: 'mock-message-id' };
+    if (SMTP_USER && SMTP_PASS) {
+      const info = await transporter.sendMail({
+        from: `"2K AI Accounting Systems" <${FROM_EMAIL}>`,
+        to: booking.email,
+        subject,
+        html: message
+      });
+      logger.info(`Demo confirmation sent to ${booking.email}`, {
+        bookingId: booking._id,
+        subject,
+        messageId: info.messageId
+      });
+      return { success: true, messageId: info.messageId };
+    } else {
+      logger.warn(`Mock: Demo confirmation sent to ${booking.email} (Email not configured)`, {
+        bookingId: booking._id,
+        subject
+      });
+      return { success: true, messageId: 'mock-message-id' };
+    }
   } catch (error) {
     logger.error('Failed to send demo confirmation:', error);
     throw error;
@@ -337,14 +370,30 @@ export const sendDemoNotification = async (booking: DemoBooking) => {
 </html>
       `;
 
-    // Mock email service - replace with actual email service
-    logger.info(`Demo notification sent to admin`, {
-      bookingId: booking._id,
-      customerEmail: booking.email,
-      subject
-    });
-
-    return { success: true, messageId: 'mock-message-id' };
+    if (SMTP_USER && SMTP_PASS) {
+      // Send to all owners
+      const toEmails = OWNER_EMAILS.join(', ');
+      const info = await transporter.sendMail({
+        from: `"2K AI Accounting Systems" <${FROM_EMAIL}>`,
+        to: toEmails,
+        subject,
+        html: message
+      });
+      logger.info(`Demo notification sent to admin emails (${toEmails})`, {
+        bookingId: booking._id,
+        customerEmail: booking.email,
+        subject,
+        messageId: info.messageId
+      });
+      return { success: true, messageId: info.messageId };
+    } else {
+      logger.warn(`Mock: Demo notification logged to admin (Email not configured)`, {
+        bookingId: booking._id,
+        customerEmail: booking.email,
+        subject
+      });
+      return { success: true, messageId: 'mock-message-id' };
+    }
   } catch (error) {
     logger.error('Failed to send demo notification:', error);
     throw error;
@@ -375,14 +424,28 @@ export const sendBookingStatusUpdate = async (booking: DemoBooking) => {
         return; // No email for other statuses
     }
 
-    // Mock email service - replace with actual email service
-    logger.info(`Status update sent to ${booking.email}`, {
-      bookingId: booking._id,
-      status: booking.status,
-      subject
-    });
-
-    return { success: true, messageId: 'mock-message-id' };
+    if (SMTP_USER && SMTP_PASS) {
+      const info = await transporter.sendMail({
+        from: `"2K AI Accounting Systems" <${FROM_EMAIL}>`,
+        to: booking.email,
+        subject,
+        html: message
+      });
+      logger.info(`Status update sent to ${booking.email}`, {
+        bookingId: booking._id,
+        status: booking.status,
+        subject,
+        messageId: info.messageId
+      });
+      return { success: true, messageId: info.messageId };
+    } else {
+      logger.warn(`Mock: Status update sent to ${booking.email} (Email not configured)`, {
+        bookingId: booking._id,
+        status: booking.status,
+        subject
+      });
+      return { success: true, messageId: 'mock-message-id' };
+    }
   } catch (error) {
     logger.error('Failed to send status update:', error);
     throw error;
@@ -484,13 +547,25 @@ export const sendRescheduleNotification = async (booking: DemoBooking, oldDateTi
 </html>
       `;
 
-    // Mock email service - replace with actual email service
-    logger.info(`Reschedule notification sent to ${booking.email}`, {
-      bookingId: booking._id,
-      messageId: 'mock-message-id'
-    });
-
-    return { success: true, messageId: 'mock-message-id' };
+    if (SMTP_USER && SMTP_PASS) {
+      const info = await transporter.sendMail({
+        from: `"2K AI Accounting Systems" <${FROM_EMAIL}>`,
+        to: booking.email,
+        subject,
+        html: message
+      });
+      logger.info(`Reschedule notification sent to ${booking.email}`, {
+        bookingId: booking._id,
+        messageId: info.messageId
+      });
+      return { success: true, messageId: info.messageId };
+    } else {
+      logger.warn(`Mock: Reschedule notification sent to ${booking.email} (Email not configured)`, {
+        bookingId: booking._id,
+        messageId: 'mock-message-id'
+      });
+      return { success: true, messageId: 'mock-message-id' };
+    }
   } catch (error) {
     logger.error('Failed to send reschedule notification:', error);
     throw error;

@@ -108,20 +108,13 @@ export const createBooking = async (req: Request, res: Response) => {
     }
 
     // 1. Get or create user
-    let { data: user, error: userLookupError } = await supabase
+    let { data: user } = await supabase
       .from('users')
       .select('id')
       .eq('email', email)
       .maybeSingle();
 
-    if (userLookupError) {
-      const formatted = formatSupabaseError(userLookupError);
-      return res.status(500).json({
-        success: false,
-        error: formatted.error,
-        details: formatted.details
-      });
-    }
+    // Removed unused userLookupError assignment
     
     if (!user) {
       const { data: newUser, error: userError } = await supabase.from('users').insert({
@@ -144,21 +137,14 @@ export const createBooking = async (req: Request, res: Response) => {
     }
 
     // 2. Get or create company
-    let { data: companyRecord, error: companyLookupError } = await supabase
+    let { data: companyRecord } = await supabase
       .from('companies')
       .select('id')
       .eq('name', company)
       .maybeSingle();
 
-    if (companyLookupError) {
-      const formatted = formatSupabaseError(companyLookupError);
-      return res.status(500).json({
-        success: false,
-        error: formatted.error,
-        details: formatted.details
-      });
-    }
-
+    // Removed unused companyLookupError assignment
+    
     if (!companyRecord) {
       const { data: newCompany, error: companyError } = await supabase.from('companies').insert({
         id: uuidv4(),

@@ -195,7 +195,7 @@ export class ReceiptScannerAPI {
 
   /**
    * Save extracted expense data to database
-   * In a real implementation, this would save to MongoDB
+   * In a real implementation, this would save to Supabase
    */
   private static async saveExpenseToDatabase(
     data: ExtractedReceiptData,
@@ -203,7 +203,7 @@ export class ReceiptScannerAPI {
     companyId?: string
   ): Promise<void> {
     try {
-      // In a real implementation, this would save to MongoDB
+      // In a real implementation, this would save to Supabase
       // For now, we'll simulate the database save with localStorage
       
       const expense = {
@@ -222,7 +222,7 @@ export class ReceiptScannerAPI {
         status: 'active'
       };
 
-      // Simulate database save (in real app, use MongoDB/Mongoose)
+      // Simulate database save (in real app, use Supabase/Supabase)
       const existingExpenses = JSON.parse(localStorage.getItem('expenses') || '[]');
       existingExpenses.push(expense);
       localStorage.setItem('expenses', JSON.stringify(existingExpenses));
@@ -244,7 +244,7 @@ export class ReceiptScannerAPI {
         return res.status(401).json({ error: 'Authentication required' });
       }
 
-      // In a real implementation, query MongoDB
+      // In a real implementation, query Supabase
       const expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
       const userExpenses = expenses.filter((expense: any) => 
         expense.userId === req.user.id && expense.source === 'ai-receipt-scanner'
@@ -330,7 +330,7 @@ export class ReceiptScannerAPI {
         return res.status(400).json({ error: 'Receipt ID is required' });
       }
 
-      // In a real implementation, delete from MongoDB
+      // In a real implementation, delete from Supabase
       const expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
       const updatedExpenses = expenses.filter((expense: any) => 
         !(expense.id === id && expense.userId === req.user.id)

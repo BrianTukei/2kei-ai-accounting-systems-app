@@ -1,8 +1,0 @@
-﻿const express = require("express");
-const router = express.Router();
-const { upload, uploadAndProcessReceipt } = require("../controllers/receiptScannerController");
-
-router.post("/upload", upload.single("receipt"), uploadAndProcessReceipt);
-
-module.exports = router;
-

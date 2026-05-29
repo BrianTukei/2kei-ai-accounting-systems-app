@@ -140,7 +140,7 @@ export default function AIReceiptScannerPage() {
       title: 'Validation & Storage',
       description: 'System validates data, checks for duplicates, and saves to database',
       icon: <Database className="h-6 w-6" />,
-      tech: 'Validation Engine + MongoDB'
+      tech: 'Validation Engine + Supabase'
     }
   ];
 
@@ -527,7 +527,7 @@ export default function AIReceiptScannerPage() {
                       <li>• Llama 3 (AI Model)</li>
                       <li>• Ollama (Local Runtime)</li>
                       <li>• REST API Integration</li>
-                      <li>• MongoDB Storage</li>
+                      <li>• Supabase Storage</li>
                     </ul>
                   </div>
                 </div>

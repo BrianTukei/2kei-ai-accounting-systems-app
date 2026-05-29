@@ -207,7 +207,7 @@ export default function ActionAIPage() {
       title: 'Action Execution',
       description: 'Backend executes the action and updates database',
       icon: <Play className="h-6 w-6" />,
-      tech: 'Express.js + MongoDB'
+      tech: 'Express.js + Supabase'
     },
     {
       step: 4,
@@ -605,7 +605,7 @@ export default function ActionAIPage() {
                       <li>• Express.js API endpoints</li>
                       <li>• Llama 3 via Ollama</li>
                       <li>• Action execution engine</li>
-                      <li>• MongoDB data persistence</li>
+                      <li>• Supabase data persistence</li>
                     </ul>
                   </div>
                 </div>

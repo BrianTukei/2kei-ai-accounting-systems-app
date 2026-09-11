@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import AdminAccessCheck from "@/components/admin/AdminAccessCheck";
 import PageLayout from "@/components/layout/PageLayout";
-import { Mail, Send, Users, CheckCircle, Search, AlertCircle } from "lucide-react";
+import { Mail, Send, Users, CheckCircle, Search, AlertCircle, RefreshCw } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,16 @@ interface User {
   isActive?: boolean;
 }
 
+interface OutboxEntry {
+  id: string;
+  recipient_email: string;
+  subject: string;
+  status: 'accepted' | 'rejected' | 'failed' | 'pending';
+  provider_message_id?: string;
+  error_message?: string;
+  created_at: string;
+}
+
 export default function AdminEmailSubscribers() {
   const { toast } = useToast();
   
@@ -30,6 +40,8 @@ export default function AdminEmailSubscribers() {
   
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [outbox, setOutbox] = useState<OutboxEntry[]>([]);
+  const [outboxLoading, setOutboxLoading] = useState(false);
 
   // Fetch already registered users from the database
   const fetchUsers = useCallback(async () => {
@@ -87,6 +99,26 @@ export default function AdminEmailSubscribers() {
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
+
+  const fetchOutbox = useCallback(async () => {
+    try {
+      setOutboxLoading(true);
+      const response = await fetch('/api/admin/broadcasts/outbox?limit=25', {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token') || ''}` }
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || 'Failed to load outbox');
+      setOutbox(data.data || []);
+    } catch (error) {
+      console.error('Failed to load email outbox:', error);
+    } finally {
+      setOutboxLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchOutbox();
+  }, [fetchOutbox]);
 
   // Filter users based on search
   const filteredUsers = useMemo(() => {
@@ -186,6 +218,7 @@ export default function AdminEmailSubscribers() {
       setSubject("");
       setMessage("");
       setSelectedUsers([]);
+      await fetchOutbox();
     } catch (error: any) {
       console.error("Error sending broadcast:", error);
       toast({
@@ -214,6 +247,58 @@ export default function AdminEmailSubscribers() {
               <span className="font-semibold">{users.length} Total Users</span>
             </div>
           </div>
+
+          <Card className="border-slate-200 shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-lg flex items-center space-x-2">
+                  <Mail className="h-5 w-5 text-blue-500" />
+                  <span>Outbox</span>
+                </CardTitle>
+                <CardDescription>Per-recipient SMTP acceptance and rejection history.</CardDescription>
+              </div>
+              <Button type="button" variant="outline" size="sm" onClick={fetchOutbox} disabled={outboxLoading}>
+                <RefreshCw className={`h-4 w-4 mr-2 ${outboxLoading ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {outbox.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No sent email attempts recorded yet.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b text-left text-muted-foreground">
+                        <th className="py-2 pr-4">Recipient</th>
+                        <th className="py-2 pr-4">Subject</th>
+                        <th className="py-2 pr-4">Status</th>
+                        <th className="py-2">Time</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {outbox.map((entry) => (
+                        <tr key={entry.id} className="border-b last:border-0">
+                          <td className="py-3 pr-4">{entry.recipient_email}</td>
+                          <td className="py-3 pr-4 max-w-[240px] truncate">{entry.subject}</td>
+                          <td className="py-3 pr-4">
+                            <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
+                              entry.status === 'accepted' ? 'bg-green-100 text-green-700' :
+                              entry.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                              'bg-red-100 text-red-700'
+                            }`} title={entry.error_message || entry.provider_message_id || undefined}>
+                              {entry.status === 'accepted' ? 'Accepted by Gmail' : entry.status}
+                            </span>
+                          </td>
+                          <td className="py-3 text-muted-foreground">{new Date(entry.created_at).toLocaleString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             

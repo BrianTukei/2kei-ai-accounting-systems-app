@@ -5,6 +5,7 @@ const router = Router();
 
 // GET /api/admin/broadcasts/recipients
 router.get('/recipients', adminEmailController.getRecipients);
+router.get('/outbox', adminEmailController.getOutbox);
 
 // GET /api/admin/broadcasts
 router.get('/', adminEmailController.getBroadcasts);

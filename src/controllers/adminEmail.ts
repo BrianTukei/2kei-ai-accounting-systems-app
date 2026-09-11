@@ -164,11 +164,40 @@ async function sendBroadcastEmails(emails: string[], subject: string, message: s
     }
   }
 
+  await recordOutboxResults(results, subject, message);
+
   return {
     results,
     sentCount: results.filter(result => result.success).length,
     failedCount: results.filter(result => !result.success).length
   };
+}
+
+async function recordOutboxResults(results: any[], subject: string, message: string) {
+  if (!supabase || results.length === 0) return;
+
+  const rows = results.map(result => ({
+    recipient_email: result.email,
+    subject,
+    message,
+    status: result.success
+      ? result.rejected?.length > 0 && result.accepted?.length === 0 ? 'rejected'
+        : result.pending?.length > 0 ? 'pending'
+          : result.accepted?.length > 0 ? 'accepted' : 'pending'
+      : 'failed',
+    provider: 'gmail-smtp',
+    provider_message_id: result.messageId || null,
+    provider_accepted: result.accepted || [],
+    provider_rejected: result.rejected || [],
+    provider_pending: result.pending || [],
+    error_message: result.error || null,
+    sent_at: result.success ? new Date().toISOString() : null
+  }));
+
+  const { error } = await supabase.from('email_outbox').insert(rows);
+  if (error) {
+    logger.warn(`Unable to record email outbox results: ${error.message}`);
+  }
 }
 
 function validateEmailPayload(subject: unknown, message: unknown): string | null {
@@ -355,6 +384,40 @@ export const adminEmailController = {
       res.json({ success: true, count: data?.length || 0, data: data || [] });
     } catch (err: any) {
       logger.error(`Error fetching broadcasts: ${err.message}`);
+      res.status(500).json({ success: false, error: err.message });
+    }
+  },
+
+  getOutbox: async (req: Request, res: Response) => {
+    try {
+      ensureSupabase();
+
+      const page = Math.max(1, Number(req.query.page) || 1);
+      const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 25));
+      const status = typeof req.query.status === 'string' ? req.query.status : '';
+      const from = (page - 1) * limit;
+      const to = from + limit - 1;
+
+      let query = supabase
+        .from('email_outbox')
+        .select('*', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(from, to);
+
+      if (['accepted', 'rejected', 'failed', 'pending'].includes(status)) {
+        query = query.eq('status', status);
+      }
+
+      const { data, error, count } = await query;
+      if (error) throw error;
+
+      res.json({
+        success: true,
+        data: data || [],
+        pagination: { page, limit, total: count || 0 }
+      });
+    } catch (err: any) {
+      logger.error(`Error fetching email outbox: ${err.message}`);
       res.status(500).json({ success: false, error: err.message });
     }
   },

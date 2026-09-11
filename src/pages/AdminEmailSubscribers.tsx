@@ -148,44 +148,44 @@ export default function AdminEmailSubscribers() {
         .filter(user => selectedUsers.includes(String(user.id)))
         .map(user => user.email);
 
-      // Call the broadcast API endpoint to queue emails
-      const isSendingToAll = Boolean(isAllSelected);
-      
-      const payload: any = {
-        subject,
-        message,
-        targetGroup: isSendingToAll ? "both" : "custom"
-      };
-      
-      // Only include specific emails if not sending to absolutely everyone
-      if (!isSendingToAll) {
-        payload.emails = recipientEmails;
-      }
-
-      const response = await fetch("/api/admin/broadcast-email", {
+      // Send exactly to the selected users. This endpoint returns per-recipient results.
+      const response = await fetch("/api/admin/send-email", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({
+          emails: recipientEmails,
+          subject: subject.trim(),
+          message: message.trim(),
+          type: "admin_message"
+        })
       });
 
       const data = await response.json();
 
-      if (data.success) {
-        toast({
-          title: "Broadcast Queued!",
-          description: `Successfully queued email to ${data.totalRecipients || recipientEmails.length} recipient(s). They will be delivered shortly.`,
-          variant: "default"
-        });
-        
-        // Reset form after successful send
-        setSubject("");
-        setMessage("");
-      } else {
-        throw new Error(data.message || "Failed to send email");
+      if (!response.ok || !data.success) {
+        const failed = data.data?.results?.filter((result: any) => !result.success) || [];
+        const failureDetails = failed[0]?.error;
+        throw new Error(failureDetails || data.error || data.message || "Failed to send email");
       }
+
+      const summary = data.data?.summary || {
+        sent: data.sentCount || 0,
+        failed: data.failedCount || 0
+      };
+
+      toast({
+        title: summary.failed > 0 ? "Email partially sent" : "Email sent successfully",
+        description: `${summary.sent} accepted by the mail server${summary.failed > 0 ? `, ${summary.failed} failed` : ""}. Check recipient spam folders if needed.`,
+        variant: summary.failed > 0 ? "destructive" : "default"
+      });
+
+      // Reset form after the request has been accepted by SMTP
+      setSubject("");
+      setMessage("");
+      setSelectedUsers([]);
     } catch (error: any) {
       console.error("Error sending broadcast:", error);
       toast({

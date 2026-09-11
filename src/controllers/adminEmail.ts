@@ -398,7 +398,14 @@ export const adminEmailController = {
       res.status(result.sentCount > 0 ? 200 : 502).json({
         success: result.sentCount > 0,
         message: result.failedCount > 0 ? 'Email sending completed with some failures' : 'Email sent successfully',
-        data: result,
+        data: {
+          ...result,
+          summary: {
+            total: recipients.length,
+            sent: result.sentCount,
+            failed: result.failedCount
+          }
+        },
         ...result
       });
     } catch (err: any) {

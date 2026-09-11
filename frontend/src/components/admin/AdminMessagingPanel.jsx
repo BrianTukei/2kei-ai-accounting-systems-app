@@ -112,7 +112,11 @@ export function AdminMessagingPanel() {
         setSelectedUsers([]);
         
         // Show detailed results
-        const { summary } = response.data.data;
+        const resultData = response.data.data || response.data;
+        const summary = resultData.summary || {
+          sent: resultData.sentCount || 0,
+          failed: resultData.failedCount || 0
+        };
         if (summary.failed > 0) {
           toast.error(`${summary.failed} emails failed to send`);
         }

@@ -40,12 +40,24 @@ export async function runJobWorker() {
 
 async function workerLoop() {
   let delayMs = 5000;
+  let consecutiveFailures = 0;
 
   while (true) {
     try {
       await processNextJob();
+      consecutiveFailures = 0;
       delayMs = 5000;
     } catch (err: any) {
+      consecutiveFailures += 1;
+
+      if (consecutiveFailures >= 3) {
+        logger.error(
+          `[WORKER_LOOP] Disabled after ${consecutiveFailures} consecutive polling failures. ` +
+          `Check SUPABASE_URL and database connectivity, then restart the backend. Last error: ${err.message}`
+        );
+        return;
+      }
+
       logger.warn(`[WORKER_LOOP] Job polling unavailable; retrying in 30 seconds: ${err.message}`);
       delayMs = 30000;
     }

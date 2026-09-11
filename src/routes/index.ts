@@ -12,6 +12,8 @@ router.use('/auth', authRoutes);
 
 // Backward-compatible admin broadcast endpoint used by AdminEmailSubscribers
 router.post('/admin/broadcast-email', adminEmailController.sendLegacyBroadcast);
+router.post('/admin/send-email', adminEmailController.sendEmail);
+router.get('/admin/email-status', adminEmailController.verifyTransport);
 
 // Receipt Scanner Routes
 router.post('/scan-receipt', ReceiptScannerAPI.scanReceipt);

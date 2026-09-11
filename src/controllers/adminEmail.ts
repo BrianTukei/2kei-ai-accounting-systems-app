@@ -156,6 +156,14 @@ async function sendBroadcastEmails(emails: string[], subject: string, message: s
   };
 }
 
+function validateEmailPayload(subject: unknown, message: unknown): string | null {
+  if (typeof subject !== 'string' || !subject.trim()) return 'Email subject is required';
+  if (subject.trim().length > 200) return 'Email subject must be 200 characters or fewer';
+  if (typeof message !== 'string' || !message.trim()) return 'Email message is required';
+  if (message.length > 200000) return 'Email message is too large';
+  return null;
+}
+
 export const adminEmailController = {
   // Get counts for recipient group selection
   getRecipients: async (req: Request, res: Response) => {
@@ -340,8 +348,9 @@ export const adminEmailController = {
     try {
       const { subject, message, targetGroup = 'all', emails = [] } = req.body;
 
-      if (!subject || !message) {
-        return res.status(400).json({ success: false, message: 'Subject and message are required' });
+      const validationError = validateEmailPayload(subject, message);
+      if (validationError) {
+        return res.status(400).json({ success: false, message: validationError, error: validationError });
       }
 
       const recipients = targetGroup === 'custom'
@@ -365,6 +374,55 @@ export const adminEmailController = {
     } catch (err: any) {
       logger.error(`Legacy broadcast failed: ${err.message}`);
       res.status(500).json({ success: false, message: err.message, error: err.message });
+    }
+  },
+
+  // Backward-compatible direct send endpoint used by the legacy admin screens
+  sendEmail: async (req: Request, res: Response) => {
+    try {
+      const { subject, message, emails = [], userId } = req.body;
+      const validationError = validateEmailPayload(subject, message);
+      if (validationError) {
+        return res.status(400).json({ success: false, error: validationError });
+      }
+
+      let recipients = uniqueEmails(Array.isArray(emails) ? emails : []);
+      if (recipients.length === 0 && userId) {
+        recipients = await getRegisteredUserEmails();
+      }
+      if (recipients.length === 0) {
+        return res.status(400).json({ success: false, error: 'At least one valid recipient email is required' });
+      }
+
+      const result = await sendBroadcastEmails(recipients, subject.trim(), message);
+      res.status(result.sentCount > 0 ? 200 : 502).json({
+        success: result.sentCount > 0,
+        message: result.failedCount > 0 ? 'Email sending completed with some failures' : 'Email sent successfully',
+        data: result,
+        ...result
+      });
+    } catch (err: any) {
+      logger.error(`Direct admin email failed: ${err.message}`);
+      res.status(500).json({ success: false, error: err.message, message: err.message });
+    }
+  },
+
+  // Verify SMTP credentials without sending an email
+  verifyTransport: async (_req: Request, res: Response) => {
+    try {
+      if (!SMTP_USER || !SMTP_PASS) {
+        return res.status(503).json({
+          success: false,
+          configured: false,
+          error: 'SMTP credentials are not configured. Set SMTP_USER/SMTP_PASS or EMAIL_USER/EMAIL_PASS.'
+        });
+      }
+
+      await transporter.verify();
+      res.json({ success: true, configured: true, message: 'Email transport is ready' });
+    } catch (err: any) {
+      logger.error(`Email transport verification failed: ${err.message}`);
+      res.status(502).json({ success: false, configured: true, error: err.message });
     }
   }
 };

@@ -35,15 +35,23 @@ export async function runJobWorker() {
   }
 
   logger.info('[WORKER] Started background AI processing worker...');
+  void workerLoop();
+}
 
-  // Simple polling loop
-  setInterval(async () => {
+async function workerLoop() {
+  let delayMs = 5000;
+
+  while (true) {
     try {
       await processNextJob();
+      delayMs = 5000;
     } catch (err: any) {
-      logger.error(`[WORKER_LOOP] Critical worker error: ${err.message}`);
+      logger.warn(`[WORKER_LOOP] Job polling unavailable; retrying in 30 seconds: ${err.message}`);
+      delayMs = 30000;
     }
-  }, 5000); // Check for new jobs every 5 seconds
+
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+  }
 }
 
 async function processNextJob() {

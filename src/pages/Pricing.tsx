@@ -50,8 +50,12 @@ export default function PricingPage() {
     const fetchPlans = async () => {
       try {
         const response = await fetch('/api/billing/plans');
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
         const data = await response.json();
-        setPlans(data);
+        setPlans(data.data ?? data);
 
         // Get current user's plan
         if (user) {

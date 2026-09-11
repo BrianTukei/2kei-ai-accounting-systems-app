@@ -205,7 +205,10 @@ export async function getSubscriptionStatus() {
  */
 export async function checkUsageLimit(feature, currentUsage = null) {
   try {
-    const response = await fetch(`${API_BASE}/usage/check/${feature}`, {
+    const params = currentUsage === null
+      ? ''
+      : `?currentUsage=${encodeURIComponent(currentUsage)}`;
+    const response = await fetch(`${API_BASE}/usage/check/${feature}${params}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

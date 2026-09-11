@@ -135,14 +135,29 @@ async function sendBroadcastEmails(emails: string[], subject: string, message: s
   for (const email of emails) {
     try {
       const result = await transporter.sendMail({
-        from: `"${FROM_NAME}" <${FROM_EMAIL}>`,
+        from: `"${FROM_NAME}" <${SMTP_USER}>`,
+        replyTo: FROM_EMAIL,
+        envelope: {
+          from: SMTP_USER,
+          to: email
+        },
         to: email,
         subject,
         html: message,
-        text: String(message).replace(/<[^>]*>/g, '')
+        text: String(message).replace(/<[^>]*>/g, '').trim(),
+        headers: {
+          'X-Entity-Ref-ID': `2kai-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+        }
       });
 
-      results.push({ email, success: true, messageId: result.messageId });
+      results.push({
+        email,
+        success: true,
+        messageId: result.messageId,
+        accepted: result.accepted || [],
+        rejected: result.rejected || [],
+        pending: result.pending || []
+      });
     } catch (error: any) {
       logger.error(`Broadcast email failed for ${email}: ${error.message}`);
       results.push({ email, success: false, error: error.message });

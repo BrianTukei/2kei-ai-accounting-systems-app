@@ -178,7 +178,7 @@ export default function AdminEmailSubscribers() {
 
       toast({
         title: summary.failed > 0 ? "Email partially sent" : "Email sent successfully",
-        description: `${summary.sent} accepted by the mail server${summary.failed > 0 ? `, ${summary.failed} failed` : ""}. Check recipient spam folders if needed.`,
+        description: `${summary.sent} accepted by Gmail for delivery${summary.failed > 0 ? `, ${summary.failed} rejected` : ""}. Accepted does not guarantee final mailbox delivery; check recipient filters and verify addresses.`,
         variant: summary.failed > 0 ? "destructive" : "default"
       });
 

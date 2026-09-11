@@ -51,7 +51,7 @@ async function workerLoop() {
       if (errorMessage.includes("Could not find the table 'public.processing_jobs'")) {
         logger.error(
           '[WORKER_LOOP] Disabled because public.processing_jobs is missing. ' +
-          'Apply supabase/migrations/20260403000004_production_resilience_tables.sql, then restart the backend.'
+          'Apply supabase/migrations/20260911000000_create_processing_jobs_if_missing.sql, then restart the backend.'
         );
         return;
       }

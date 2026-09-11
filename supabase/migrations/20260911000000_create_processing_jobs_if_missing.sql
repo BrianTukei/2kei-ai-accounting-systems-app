@@ -1,7 +1,7 @@
 -- Ensure the background receipt-processing queue exists in environments
 -- where the broader production resilience migration was not applied.
 
-DO $$
+DO $job_status$
 BEGIN
   CREATE TYPE public.job_status AS ENUM (
     'queued',
@@ -13,7 +13,7 @@ BEGIN
   );
 EXCEPTION
   WHEN duplicate_object THEN NULL;
-END $$;
+END $job_status$;
 
 CREATE TABLE IF NOT EXISTS public.processing_jobs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -39,12 +39,12 @@ CREATE INDEX IF NOT EXISTS idx_processing_jobs_queue
 CREATE OR REPLACE FUNCTION public.update_processing_jobs_modtime()
 RETURNS TRIGGER
 LANGUAGE plpgsql
-AS $$
+AS $processing_jobs_modtime$
 BEGIN
   NEW.updated_at = NOW();
   RETURN NEW;
 END;
-$$;
+$processing_jobs_modtime$;
 
 DROP TRIGGER IF EXISTS update_processing_jobs_modtime ON public.processing_jobs;
 

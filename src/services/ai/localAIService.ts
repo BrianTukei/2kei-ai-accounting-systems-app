@@ -25,39 +25,11 @@ class LocalAIService {
   private isAvailable: boolean = false;
   private lastCheck: Date = new Date(0);
 
-  constructor() {
-    this.checkAvailability();
-  }
-
   private async checkAvailability(): Promise<boolean> {
-    // Don't check too frequently
     const now = new Date();
-    if (now.getTime() - this.lastCheck.getTime() < 30000) { // 30 seconds
-      return this.isAvailable;
-    }
-
-    try {
-      const response = await fetch(`${this.baseUrl}/api/tags`, {
-        method: 'GET',
-        signal: AbortSignal.timeout(5000) // 5 second timeout
-      });
-      
-      this.isAvailable = response.ok;
-      this.lastCheck = now;
-      
-      if (this.isAvailable) {
-        console.log('✅ Local AI (Ollama) is available');
-      } else {
-        console.warn('⚠️ Local AI (Ollama) is not available');
-      }
-      
-      return this.isAvailable;
-    } catch (error) {
-      this.isAvailable = false;
-      this.lastCheck = now;
-      console.warn('⚠️ Local AI (Ollama) is unavailable; AI features requiring Ollama are disabled.');
-      return false;
-    }
+    this.isAvailable = false;
+    this.lastCheck = now;
+    return false;
   }
 
   async isServiceAvailable(): Promise<boolean> {

@@ -9,7 +9,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { logger } from '../services/loggerService';
 import { RetryProcessor } from '../utils/retryProcessor';
-import { aiReceiptScannerService } from '../services/ai/aiReceiptScannerService';
 // Import your bank parser here when ready
 // import { BankImportService } from '../services/bankImportService';
 
@@ -24,8 +23,6 @@ if (supabaseUrl && supabaseKey) {
 } else {
   logger.warn('[WORKER] Supabase credentials not configured - job worker will be disabled');
 }
-
-const receiptScanner = aiReceiptScannerService;
 
 export async function runJobWorker() {
   // Skip if Supabase is not configured
@@ -112,9 +109,7 @@ async function processNextJob() {
       // const fileBuffer = await downloadFromUrl(job.file_url);
 
       if (job.job_type === 'receipt_parse') {
-        await updateProgress(job.id, 50);
-        // Replace "Sample Text" with extracted text from the fileBuffer
-        return await receiptScanner.extractReceiptData("Sample Text for OCR mapping...");
+        throw new Error('Receipt processing requires an AI provider and is not enabled on the background worker.');
       } 
       
       else if (job.job_type === 'bank_statement_parse') {

@@ -53,9 +53,9 @@ class LocalAIService {
       
       return this.isAvailable;
     } catch (error) {
-      console.warn('⚠️ Failed to connect to Local AI (Ollama):', error);
       this.isAvailable = false;
       this.lastCheck = now;
+      console.warn('⚠️ Local AI (Ollama) is unavailable; AI features requiring Ollama are disabled.');
       return false;
     }
   }

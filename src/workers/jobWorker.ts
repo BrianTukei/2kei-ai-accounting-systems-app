@@ -49,16 +49,25 @@ async function workerLoop() {
       delayMs = 5000;
     } catch (err: any) {
       consecutiveFailures += 1;
+      const errorMessage = err?.message || String(err);
 
-      if (consecutiveFailures >= 3) {
+      if (errorMessage.includes("Could not find the table 'public.processing_jobs'")) {
         logger.error(
-          `[WORKER_LOOP] Disabled after ${consecutiveFailures} consecutive polling failures. ` +
-          `Check SUPABASE_URL and database connectivity, then restart the backend. Last error: ${err.message}`
+          '[WORKER_LOOP] Disabled because public.processing_jobs is missing. ' +
+          'Apply supabase/migrations/20260403000004_production_resilience_tables.sql, then restart the backend.'
         );
         return;
       }
 
-      logger.warn(`[WORKER_LOOP] Job polling unavailable; retrying in 30 seconds: ${err.message}`);
+      if (consecutiveFailures >= 3) {
+        logger.error(
+          `[WORKER_LOOP] Disabled after ${consecutiveFailures} consecutive polling failures. ` +
+          `Check SUPABASE_URL and database connectivity, then restart the backend. Last error: ${errorMessage}`
+        );
+        return;
+      }
+
+      logger.warn(`[WORKER_LOOP] Job polling unavailable; retrying in 30 seconds: ${errorMessage}`);
       delayMs = 30000;
     }
 

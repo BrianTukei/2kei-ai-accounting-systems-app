@@ -8,10 +8,6 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
     proxy: {
-      '/api/admin/send-email': {
-        target: 'http://localhost:5000',
-        changeOrigin: true
-      },
       '/api': {
         target: 'http://localhost:3001',
         changeOrigin: true

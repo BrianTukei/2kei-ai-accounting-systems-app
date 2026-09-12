@@ -209,8 +209,8 @@ export default function AdminEmailSubscribers() {
       };
 
       toast({
-        title: summary.failed > 0 ? "Email partially sent" : "Email sent successfully",
-        description: `${summary.sent} accepted by Gmail for delivery${summary.failed > 0 ? `, ${summary.failed} rejected` : ""}. Accepted does not guarantee final mailbox delivery; check recipient filters and verify addresses.`,
+        title: summary.failed > 0 ? "Email partially accepted" : "Email accepted by provider",
+        description: `${summary.sent} accepted by the email provider${summary.failed > 0 ? `, ${summary.failed} rejected` : ""}. Final mailbox delivery is not confirmed; check the provider dashboard, recipient filters, and spam folders.`,
         variant: summary.failed > 0 ? "destructive" : "default"
       });
 
@@ -287,7 +287,7 @@ export default function AdminEmailSubscribers() {
                               entry.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
                               'bg-red-100 text-red-700'
                             }`} title={entry.error_message || entry.provider_message_id || undefined}>
-                              {entry.status === 'accepted' ? 'Accepted by Gmail' : entry.status}
+                              {entry.status === 'accepted' ? 'Accepted by provider' : entry.status}
                             </span>
                           </td>
                           <td className="py-3 text-muted-foreground">{new Date(entry.created_at).toLocaleString()}</td>

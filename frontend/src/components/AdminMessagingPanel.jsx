@@ -86,7 +86,7 @@ export default function AdminMessagingPanel() {
         
         setAlert({
           type: "success",
-          message: `Email sent successfully! ${sent} sent, ${failed} failed`,
+          message: `Email accepted by provider. ${sent} accepted, ${failed} failed`,
           details: response.data.results
         });
         

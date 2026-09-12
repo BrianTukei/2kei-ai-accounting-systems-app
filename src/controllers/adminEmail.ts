@@ -14,6 +14,7 @@ if (supabaseUrl && supabaseKey) {
 
 const SMTP_USER = process.env.SMTP_USER || process.env.EMAIL_USER || '';
 const SMTP_PASS = process.env.SMTP_PASS || process.env.EMAIL_PASS || '';
+const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
 const FROM_EMAIL = process.env.FROM_EMAIL || process.env.EMAIL_FROM || SMTP_USER || 'no-reply@2kai.com';
 const FROM_NAME = process.env.EMAIL_FROM_NAME || '2K AI Accounting Systems';
 
@@ -126,33 +127,60 @@ async function resolveBroadcastRecipients(group: string, specificRecipients: unk
 }
 
 async function sendBroadcastEmails(emails: string[], subject: string, message: string) {
-  if (!SMTP_USER || !SMTP_PASS) {
-    throw new Error('SMTP credentials are not configured. Set SMTP_USER/SMTP_PASS or EMAIL_USER/EMAIL_PASS.');
+  if (!RESEND_API_KEY && (!SMTP_USER || !SMTP_PASS)) {
+    throw new Error('Email provider is not configured. Set RESEND_API_KEY with a verified FROM_EMAIL, or SMTP_USER/SMTP_PASS.');
   }
 
   const results = [];
 
   for (const email of emails) {
     try {
-      const result = await transporter.sendMail({
-        from: `"${FROM_NAME}" <${SMTP_USER}>`,
-        replyTo: FROM_EMAIL,
-        envelope: {
-          from: SMTP_USER,
-          to: email
-        },
-        to: email,
-        subject,
-        html: message,
-        text: String(message).replace(/<[^>]*>/g, '').trim(),
-        headers: {
-          'X-Entity-Ref-ID': `2kai-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+      const text = String(message).replace(/<[^>]*>/g, '').trim();
+      let result: any;
+      let provider = 'gmail-smtp';
+
+      if (RESEND_API_KEY) {
+        provider = 'resend';
+        const response = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${RESEND_API_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            from: `${FROM_NAME} <${FROM_EMAIL}>`,
+            to: [email],
+            subject,
+            html: message,
+            text
+          })
+        });
+
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(payload?.message || payload?.error || `Resend request failed (${response.status})`);
         }
-      });
+
+        result = { messageId: payload?.id, accepted: [email], rejected: [], pending: [] };
+      } else {
+        result = await transporter.sendMail({
+          from: `"${FROM_NAME}" <${SMTP_USER}>`,
+          replyTo: FROM_EMAIL,
+          envelope: { from: SMTP_USER, to: email },
+          to: email,
+          subject,
+          html: message,
+          text,
+          headers: {
+            'X-Entity-Ref-ID': `2kai-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+          }
+        });
+      }
 
       results.push({
         email,
         success: true,
+        provider,
         messageId: result.messageId,
         accepted: result.accepted || [],
         rejected: result.rejected || [],
@@ -185,7 +213,7 @@ async function recordOutboxResults(results: any[], subject: string, message: str
         : result.pending?.length > 0 ? 'pending'
           : result.accepted?.length > 0 ? 'accepted' : 'pending'
       : 'failed',
-    provider: 'gmail-smtp',
+    provider: result.provider || 'gmail-smtp',
     provider_message_id: result.messageId || null,
     provider_accepted: result.accepted || [],
     provider_rejected: result.rejected || [],
@@ -357,8 +385,8 @@ export const adminEmailController = {
         message: recipients.length === 0
           ? 'No valid recipients found'
           : failedCount > 0
-            ? 'Broadcast completed with some failures'
-            : 'Broadcast sent successfully',
+            ? 'Broadcast accepted with some failures'
+            : 'Broadcast accepted by the email provider; mailbox delivery is not yet confirmed',
         queuedCount: recipients.length,
         totalRecipients: recipients.length,
         sentCount,
@@ -443,7 +471,7 @@ export const adminEmailController = {
 
       res.json({
         success: result.sentCount > 0,
-        message: result.failedCount > 0 ? 'Broadcast completed with some failures' : 'Broadcast sent successfully',
+        message: result.failedCount > 0 ? 'Broadcast accepted with some failures' : 'Broadcast accepted by the email provider; mailbox delivery is not yet confirmed',
         totalRecipients: recipients.length,
         sentCount: result.sentCount,
         failedCount: result.failedCount,
@@ -475,7 +503,7 @@ export const adminEmailController = {
       const result = await sendBroadcastEmails(recipients, subject.trim(), message);
       res.status(result.sentCount > 0 ? 200 : 502).json({
         success: result.sentCount > 0,
-        message: result.failedCount > 0 ? 'Email sending completed with some failures' : 'Email sent successfully',
+        message: result.failedCount > 0 ? 'Email accepted with some failures' : 'Email accepted by the email provider; mailbox delivery is not yet confirmed',
         data: {
           ...result,
           summary: {
@@ -495,11 +523,15 @@ export const adminEmailController = {
   // Verify SMTP credentials without sending an email
   verifyTransport: async (_req: Request, res: Response) => {
     try {
+      if (RESEND_API_KEY) {
+        return res.json({ success: true, configured: true, provider: 'resend', message: 'Resend email transport is configured' });
+      }
+
       if (!SMTP_USER || !SMTP_PASS) {
         return res.status(503).json({
           success: false,
           configured: false,
-          error: 'SMTP credentials are not configured. Set SMTP_USER/SMTP_PASS or EMAIL_USER/EMAIL_PASS.'
+          error: 'Email provider is not configured. Set RESEND_API_KEY with a verified FROM_EMAIL, or SMTP_USER/SMTP_PASS.'
         });
       }
 

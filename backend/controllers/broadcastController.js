@@ -162,7 +162,10 @@ exports.sendTestBroadcast = async (req, res) => {
         
         // Using email service to send a test email
         if(emailService && typeof emailService.sendEmail === 'function') {
-           await emailService.sendEmail(email, `[TEST] ${broadcast.subject}`, broadcast.message);
+           const result = await emailService.sendEmail(email, `[TEST] ${broadcast.subject}`, broadcast.message);
+           if (!result?.success) {
+               return res.status(500).json({ success: false, error: result?.error || 'Test email delivery failed' });
+           }
         } else {
            // fallback / mock if service is not injected perfectly
            logger.info(`Mocking test email to ${email} for broadcast: ${broadcast.subject}`);

@@ -10,7 +10,10 @@ const supabase = hasSupabaseConfig ? createClient(process.env.SUPABASE_URL, proc
 emailQueue.process(async (job) => {
   const { email, subject, message } = job.data;
   try {
-    await emailService.sendEmail(email, subject, message);
+    const sendResult = await emailService.sendEmail(email, subject, message);
+    if (!sendResult?.success) {
+      throw new Error(sendResult?.error || "Failed to send email");
+    }
     await EmailLog.create({
       email,
       subject,
@@ -33,22 +36,22 @@ emailQueue.process('send_broadcast', async (job) => {
   if (!emails || emails.length === 0) return;
   
   let successCount = 0;
+  let failureCount = 0;
   
   for (const email of emails) {
     try {
-      await emailService.sendEmail(email, subject, message);
+      const sendResult = await emailService.sendEmail(email, subject, message);
+      if (!sendResult?.success) {
+        throw new Error(sendResult?.error || "Failed to send broadcast email");
+      }
       await EmailLog.create({
         email,
         subject,
         status: "Success"
       });
       successCount++;
-      
-      // Update progress roughly every 10 emails or at the end
-      if (successCount % 10 === 0 || successCount === emails.length) {
-         job.progress(Math.floor((successCount / emails.length) * 100));
-      }
     } catch (error) {
+      failureCount++;
       await EmailLog.create({
         email,
         subject,
@@ -56,6 +59,11 @@ emailQueue.process('send_broadcast', async (job) => {
         error: error.message || "Failed to send broadcast email"
       });
       logger.error(`Broadcast sending failed for ${email}: ${error.message}`);
+    }
+
+    const processedCount = successCount + failureCount;
+    if (processedCount % 10 === 0 || processedCount === emails.length) {
+      job.progress(Math.floor((processedCount / emails.length) * 100));
     }
     
     // Optional delay to prevent rate-limiting from email provider
@@ -65,11 +73,10 @@ emailQueue.process('send_broadcast', async (job) => {
   // Update broadcast record in Supabase
   if (supabase && broadcastId) {
     await supabase.from('broadcasts').update({
-      status: 'sent',
+      status: failureCount > 0 ? (successCount > 0 ? 'partially_sent' : 'failed') : 'sent',
       sent_count: successCount
     }).eq('id', broadcastId);
   }
   
-  return { successCount, totalEmails: emails.length };
+  return { successCount, failureCount, totalEmails: emails.length };
 });
-

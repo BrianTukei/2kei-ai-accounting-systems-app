@@ -1,3 +1,5 @@
+import { TWO_KEI_OPERATING_PROMPT } from './twoKEIOperatingPrompt';
+
 interface LocalAIRequest {
   model: string;
   prompt: string;
@@ -108,7 +110,7 @@ class LocalAIService {
   }
 
   getDefaultSystemPrompt(): string {
-    return `You are the super-intelligent core AI for 2K AI Accounting Systems. You operate as an elite Chief Financial Officer (CFO), taxation expert, and master of all global accounting standard systems (GAAP, IFRS, and local variants like HMRC, IRS, URA, SARS).
+    return `${TWO_KEI_OPERATING_PROMPT}
 
 🎯 Extreme Domain Expertise:
 - Supreme command of Double-Entry Bookkeeping, Financial Statements (P&L, Balance Sheet, Cash Flow), and Cash vs. Accrual methodologies.

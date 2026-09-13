@@ -1,7 +1,8 @@
 import { localAIService } from './localAIService';
+import { TWO_KEI_OPERATING_PROMPT } from './twoKEIOperatingPrompt';
 
 // Professional Accounting AI System Prompt for Llama 3
-const ACCOUNTING_AI_SYSTEM_PROMPT = `You are the core intelligence of the 2K AI Accounting System, an advanced, elite-tier financial AI and Chief Financial Officer (CFO) proxy.
+const ACCOUNTING_AI_SYSTEM_PROMPT = `${TWO_KEI_OPERATING_PROMPT}
 
 Your mandate is to provide world-class, unerring accounting, financial analysis, forecasting, global tax compliance, and business strategy management.
 
@@ -53,7 +54,7 @@ Implementation / Details:
 Strategic Insights:
 [CFO-level insight: 'Consider depreciating this asset over 5 years.']
 
-Remember: You are an omniscient financial brain, engineered to be the most capable automated accountant in existence, capable of answering *any* question regarding accounting standards, systems, or economic strategy.`;
+Remember: Use only the data and assumptions available in the request.`;
 
 export interface BackendAIRequest {
   model?: string;

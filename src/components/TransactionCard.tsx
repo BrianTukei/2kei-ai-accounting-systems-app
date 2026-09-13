@@ -17,6 +17,8 @@ export interface Transaction {
   currency?: string;                // Currency of this transaction (e.g. 'EUR')
   original_amount?: number;         // Amount in original currency
   original_currency?: string;       // Original currency code
+  originalAmount?: number;           // Camel-case API equivalent
+  originalCurrency?: string;         // Camel-case API equivalent
   base_currency_amount?: number;    // Amount converted to base currency (USD)
   exchange_rate_used?: number;      // Exchange rate at time of creation
   exchange_rate_date?: string;      // When the rate was captured
@@ -45,9 +47,13 @@ export default function TransactionCard({
   onEdit,
   onDelete
 }: TransactionCardProps) {
-  const { displayAmount, selectedCurrency } = useCurrency();
+  const { displayAmount, formatCurrency, selectedCurrency } = useCurrency();
   const { id, type, amount, category, description, date, currency: txCurrency } = transaction;
   const isIncome = type === 'income';
+  const originalAmount = transaction.original_amount ?? transaction.originalAmount ?? amount;
+  const originalCurrency = (
+    transaction.original_currency ?? transaction.originalCurrency ?? txCurrency ?? 'USD'
+  ).toUpperCase();
   
   // Check if we have forex conversion data
   const hasForexData = transaction.convertedAmount !== undefined && transaction.conversionRate !== undefined;
@@ -56,16 +62,16 @@ export default function TransactionCard({
     : false;
 
   // Display converted amounts using context function (simple pattern like pricing plans)
-  const displayConverted = useMemo(() => {
-    const txCur = txCurrency || 'USD';
-    return displayAmount(Math.abs(amount), txCur, selectedCurrency.code);
-  }, [amount, txCurrency, selectedCurrency.code, displayAmount]);
+  const displayConverted = useMemo(
+    () => formatCurrency(Math.abs(originalAmount), originalCurrency),
+    [formatCurrency, originalAmount, originalCurrency]
+  );
 
   // Show original amount as reference if different currency
   const displayOriginal = useMemo(() => {
-    if (!txCurrency || txCurrency === selectedCurrency.code) return null;
-    return displayAmount(Math.abs(amount), txCurrency, txCurrency);
-  }, [amount, txCurrency, selectedCurrency.code, displayAmount]);
+    if (originalCurrency === selectedCurrency.code) return null;
+    return displayAmount(Math.abs(originalAmount), originalCurrency, originalCurrency);
+  }, [displayAmount, originalAmount, originalCurrency, selectedCurrency.code]);
   
   return (
     <Card 
@@ -91,16 +97,16 @@ export default function TransactionCard({
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <h3 className="font-medium text-sm">{category}</h3>
-                {txCurrency && txCurrency !== selectedCurrency.code && (
+                {originalCurrency !== selectedCurrency.code && (
                   <Badge variant="secondary" className="text-xs flex items-center gap-1">
                     <TrendingUp className="w-3 h-3" />
-                    {txCurrency}
+                    {originalCurrency}
                   </Badge>
                 )}
                 {hasForexData && (
                   <Badge variant="secondary" className="text-xs flex items-center gap-1">
                     <TrendingUp className="w-3 h-3" />
-                    {transaction.original_currency || txCurrency || 'USD'}
+                    {originalCurrency}
                   </Badge>
                 )}
                 {isStaleData && (

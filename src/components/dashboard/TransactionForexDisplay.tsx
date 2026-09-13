@@ -11,6 +11,10 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 interface Transaction {
   amount: number;
   currency: string;
+  original_amount?: number;
+  original_currency?: string;
+  originalAmount?: number;
+  originalCurrency?: string;
   convertedAmount?: number;
   conversionRate?: number;
   lastUpdated?: string;
@@ -31,8 +35,12 @@ export default function TransactionForexDisplay({
   showLastUpdated = true,
   compact = false,
 }: ForexDisplayProps) {
-  const { selectedCurrency, displayAmount } = useCurrency();
+  const { selectedCurrency, formatCurrency, displayAmount } = useCurrency();
   const resolvedTargetCurrency = targetCurrency || selectedCurrency.code;
+  const originalAmount = transaction.original_amount ?? transaction.originalAmount ?? transaction.amount;
+  const originalCurrency = (
+    transaction.original_currency ?? transaction.originalCurrency ?? transaction.currency
+  ).toUpperCase();
   const [updated, setUpdated] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -68,7 +76,7 @@ export default function TransactionForexDisplay({
       <div className="flex items-center gap-2">
         <div>
           <div className="text-sm font-semibold">
-            {displayAmount(transaction.convertedAmount || 0, resolvedTargetCurrency, resolvedTargetCurrency)}
+            {formatCurrency(originalAmount, originalCurrency)}
           </div>
           {showRate && (
             <div className="text-xs text-muted-foreground">
@@ -94,7 +102,7 @@ export default function TransactionForexDisplay({
         <div>
           <div className="text-xs text-muted-foreground mb-1">Original Amount</div>
           <div className="text-xl font-bold">
-            {displayAmount(transaction.amount || 0, transaction.currency, transaction.currency)}
+            {formatCurrency(originalAmount, originalCurrency)}
           </div>
         </div>
         <button
@@ -128,7 +136,7 @@ export default function TransactionForexDisplay({
       <div className="bg-slate-50 dark:bg-slate-900 rounded p-3 mb-3">
         <div className="text-xs text-muted-foreground mb-1">Converted Amount</div>
         <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-          {displayAmount(transaction.convertedAmount || 0, resolvedTargetCurrency, resolvedTargetCurrency)}
+          {formatCurrency(originalAmount, originalCurrency)}
         </div>
       </div>
 

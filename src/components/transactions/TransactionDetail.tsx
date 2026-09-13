@@ -24,11 +24,15 @@ export default function TransactionDetail({ transaction, onClose }: TransactionD
   const [currentTransaction, setCurrentTransaction] = useState<Transaction & { convertedAmount?: number; conversionRate?: number; lastUpdated?: string }>(transaction);
   const [trendData, setTrendData] = useState<Array<{ date: string; rate: number }> | null>(null);
   const [trendLoading, setTrendLoading] = useState(false);
+  const originalAmount = transaction.original_amount ?? transaction.originalAmount ?? transaction.amount;
+  const originalCurrency = (
+    transaction.original_currency ?? transaction.originalCurrency ?? transaction.currency ?? 'USD'
+  ).toUpperCase();
 
   // Fetch updated rates and trend data
   useEffect(() => {
     const fetchData = async () => {
-      const baseCurrency = transaction.original_currency || transaction.currency || 'USD';
+      const baseCurrency = originalCurrency;
       const targetCurrency = selectedCurrency.code;
 
       // Fetch updated rates
@@ -47,11 +51,11 @@ export default function TransactionDetail({ transaction, onClose }: TransactionD
     };
 
     fetchData();
-  }, [transaction, updateTransactionRates, getForexTrend, selectedCurrency.code]);
+  }, [transaction, originalCurrency, updateTransactionRates, getForexTrend, selectedCurrency.code]);
 
   const isStale = isTransactionDataStale(currentTransaction);
   const isIncome = transaction.type === 'income';
-  const baseCurrency = transaction.original_currency || transaction.currency || 'USD';
+  const baseCurrency = originalCurrency;
 
   const handleRefresh = async () => {
     const updated = await updateTransactionRates(currentTransaction, selectedCurrency.code);
@@ -88,7 +92,7 @@ export default function TransactionDetail({ transaction, onClose }: TransactionD
             <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-4">
               <p className="text-sm text-muted-foreground mb-1">Original Amount</p>
               <p className="text-2xl font-bold">
-                {isIncome ? '+' : '-'}{formatCurrency(Math.abs(transaction.amount), baseCurrency)}
+                {isIncome ? '+' : '-'}{formatCurrency(Math.abs(originalAmount), baseCurrency)}
               </p>
               <p className="text-xs text-muted-foreground mt-2">Currency: {baseCurrency}</p>
             </div>

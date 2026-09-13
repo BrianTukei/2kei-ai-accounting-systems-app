@@ -94,7 +94,10 @@ export default function RecurringTransactionList({
                           "font-semibold",
                           transaction.type === 'income' ? "text-green-600" : "text-red-600"
                         )}>
-                          {transaction.type === 'income' ? '+' : '-'}{formatCurrency(Math.abs(transaction.amount))}
+                          {transaction.type === 'income' ? '+' : '-'}{formatCurrency(
+                            Math.abs(transaction.original_amount ?? transaction.originalAmount ?? transaction.amount),
+                            transaction.original_currency ?? transaction.originalCurrency ?? transaction.currency ?? 'USD'
+                          )}
                         </p>
                       </div>
                       

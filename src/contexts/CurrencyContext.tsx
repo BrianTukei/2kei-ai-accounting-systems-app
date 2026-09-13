@@ -116,10 +116,17 @@ const FALLBACK_RATES: Record<string, number> = {
 
 export function CurrencyProvider({ children }: CurrencyProviderProps) {
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>(() => {
-    const storedCurrency = localStorage.getItem(STORAGE_KEY);
-    if (storedCurrency) {
-      const parsed = JSON.parse(storedCurrency);
-      return CURRENCIES.find(c => c.code === parsed.code) || CURRENCIES[0];
+    try {
+      const storedCurrency = localStorage.getItem(STORAGE_KEY);
+      if (storedCurrency) {
+        const parsed: unknown = JSON.parse(storedCurrency);
+        if (parsed && typeof parsed === 'object' && 'code' in parsed) {
+          const code = String((parsed as { code: string }).code).toUpperCase();
+          return CURRENCIES.find(c => c.code === code) || CURRENCIES[0];
+        }
+      }
+    } catch (error) {
+      console.warn('[CurrencyContext] Ignoring invalid stored currency:', error);
     }
     return CURRENCIES[0]; // Default to USD
   });

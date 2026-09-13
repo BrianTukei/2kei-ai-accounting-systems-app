@@ -12,6 +12,8 @@ import {
 } from '@/components/ui/command';
 import { navItems, type NavItem } from '@/components/navigation/NavigationItems';
 import { cn } from '@/lib/utils';
+import orgStorage, { STORAGE_KEYS } from '@/lib/orgStorage';
+import { useOrganization } from '@/contexts/OrganizationContext';
 import {
   ArrowUpRight,
   ArrowDownLeft,
@@ -55,13 +57,13 @@ export default function SearchCommandPalette({ open, onOpenChange }: SearchComma
   const navigate = useNavigate();
   const { isFullscreen, toggleFullscreen } = useFullscreen();
   const [query, setQuery] = useState('');
+  const { org } = useOrganization();
 
   // ─── load transactions from localStorage ──────────
   const transactions = useMemo<TransactionHit[]>(() => {
     try {
-      const raw = localStorage.getItem('finance-app-transactions');
-      if (!raw) return [];
-      const parsed = JSON.parse(raw) as any[];
+      if (!org) return [];
+      const parsed = orgStorage.getJSON<any[]>(org.id, STORAGE_KEYS.TRANSACTIONS, []);
       return parsed.map((t) => ({
         id: t.id ?? '',
         description: t.description ?? '',
@@ -73,7 +75,7 @@ export default function SearchCommandPalette({ open, onOpenChange }: SearchComma
     } catch {
       return [];
     }
-  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps -- re-read every time the palette opens
+  }, [open, org]);
 
   // ─── filtered transactions (max 6 shown) ──────────
   const filteredTransactions = useMemo(() => {

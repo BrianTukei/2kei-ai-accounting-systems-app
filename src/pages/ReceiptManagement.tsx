@@ -27,6 +27,7 @@ import { userCompanyService } from '@/services/userCompanyService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { currencyService } from '@/services/currencyService';
+import orgStorage from '@/lib/orgStorage';
 
 interface StoredReceipt extends ParsedReceipt {
   id: string;
@@ -51,7 +52,7 @@ export default function ReceiptManagement() {
   // Load receipts from storage
   useEffect(() => {
     loadReceipts();
-  }, []);
+  }, [organization]);
 
   // Filter receipts based on search and tab
   useEffect(() => {
@@ -98,11 +99,11 @@ export default function ReceiptManagement() {
 
   const loadReceipts = () => {
     try {
-      const stored = localStorage.getItem('scannedReceipts');
-      if (stored) {
-        const receipts = JSON.parse(stored);
-        setReceipts(receipts);
+      if (!organization) {
+        setReceipts([]);
+        return;
       }
+      setReceipts(orgStorage.getJSON<StoredReceipt[]>(organization.id, 'scannedReceipts', []));
     } catch (error) {
       console.error('Failed to load receipts:', error);
       toast.error('Failed to load receipts');
@@ -118,7 +119,8 @@ export default function ReceiptManagement() {
   const handleDeleteReceipt = (receiptId: string) => {
     try {
       const updated = receipts.filter(r => r.id !== receiptId);
-      localStorage.setItem('scannedReceipts', JSON.stringify(updated));
+      if (!organization) return;
+      orgStorage.setJSON(organization.id, 'scannedReceipts', updated);
       setReceipts(updated);
       toast.success('Receipt deleted successfully');
     } catch (error) {

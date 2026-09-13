@@ -1,27 +1,46 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Transaction } from '@/components/TransactionCard';
-import { allTransactions } from '@/data/mockTransactions';
 import { supabase } from '@/integrations/supabase/client';
 import { autoCategory, generateJournalEntry, appendJournalEntry } from '@/services/bookkeeping';
 import { exchangeService } from '@/services/exchangeService';
+import { useAuth } from '@/contexts/AuthContext';
+import { useOrganization } from '@/contexts/OrganizationContext';
+import orgStorage, { STORAGE_KEYS } from '@/lib/orgStorage';
+import { isOwnerEmail } from '@/lib/adminEmails';
 
-const LOCAL_STORAGE_KEY = 'finance-app-transactions';
 const BASE_CURRENCY = 'USD';
 
 export const useTransactions = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { user, authResolved } = useAuth();
+  const { org, loading: organizationLoading } = useOrganization();
+  const isPlatformAdmin = isOwnerEmail(user?.email || '');
+  const storageOrgId = org?.id || null;
 
-  // Load transactions from Supabase (if configured) or localStorage on initial render
+  // Accounting data is tenant-scoped. Never fall back to a global cache.
   useEffect(() => {
+    if (!authResolved || organizationLoading) return;
+
+    if (!user || !org || isPlatformAdmin) {
+      setTransactions([]);
+      setIsLoading(false);
+      return;
+    }
+
     const SUPABASE_ENABLED = Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
     const load = async () => {
       if (SUPABASE_ENABLED) {
         try {
-          const { data, error } = await supabase.from('transactions').select('*').order('created_at', { ascending: false });
-          if (!error && data && Array.isArray(data) && data.length > 0) {
+          const { data, error } = await supabase
+            .from('transactions')
+            .select('*')
+            .eq('organization_id', org.id)
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false });
+          if (!error && data && Array.isArray(data)) {
             const mapped = (data as any[]).map((t) => ({
               id: t.id ?? String(Date.now()),
               amount: t.amount ?? 0,
@@ -39,7 +58,7 @@ export const useTransactions = () => {
             } as Transaction));
 
             setTransactions(mapped);
-            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(mapped));
+            orgStorage.setJSON(org.id, STORAGE_KEYS.TRANSACTIONS, mapped);
             setIsLoading(false);
             return;
           }
@@ -50,28 +69,31 @@ export const useTransactions = () => {
       }
 
       // localStorage fallback
-      const storedTransactions = localStorage.getItem(LOCAL_STORAGE_KEY);
+      const storedTransactions = orgStorage.getJSON<Transaction[]>(org.id, STORAGE_KEYS.TRANSACTIONS, []);
       if (storedTransactions) {
-        setTransactions(JSON.parse(storedTransactions));
+        setTransactions(storedTransactions);
       } else {
-        setTransactions(allTransactions);
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(allTransactions));
+        setTransactions([]);
+        orgStorage.setJSON(org.id, STORAGE_KEYS.TRANSACTIONS, []);
       }
 
       setIsLoading(false);
     };
 
     load();
-  }, []);
+  }, [authResolved, organizationLoading, user, org, isPlatformAdmin]);
 
   // Save transactions to localStorage whenever they change
   useEffect(() => {
     if (!isLoading) {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(transactions));
+      if (storageOrgId && user && !isPlatformAdmin) {
+        orgStorage.setJSON(storageOrgId, STORAGE_KEYS.TRANSACTIONS, transactions);
+      }
     }
-  }, [transactions, isLoading]);
+  }, [transactions, isLoading, storageOrgId, user, isPlatformAdmin]);
 
-  const addTransaction = async (newTransaction: Omit<Transaction, 'id'>) => {
+  const addTransaction = useCallback(async (newTransaction: Omit<Transaction, 'id'>) => {
+    if (!user || !org || isPlatformAdmin) throw new Error('Accounting data requires a customer organization');
     // Auto-categorise if category is blank
     const enriched: Omit<Transaction, 'id'> = {
       ...newTransaction,
@@ -99,6 +121,8 @@ export const useTransactions = () => {
       try {
         const insertObj: any = {
           ...enriched,
+          user_id: user.id,
+          organization_id: org.id,
           created_at: new Date().toISOString(),
         };
 
@@ -138,14 +162,15 @@ export const useTransactions = () => {
     setTransactions(prevTransactions => [transactionWithId, ...prevTransactions]);
     // Auto-post to journal ledger
     appendJournalEntry(generateJournalEntry(transactionWithId, 'transaction'));
-  };
+  }, [user, org, isPlatformAdmin]);
 
-  const editTransaction = async (updatedTransaction: Transaction) => {
+  const editTransaction = useCallback(async (updatedTransaction: Transaction) => {
+    if (!user || !org || isPlatformAdmin) throw new Error('Accounting data requires a customer organization');
     const SUPABASE_ENABLED = Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
     if (SUPABASE_ENABLED) {
       try {
-        const { data, error } = await supabase.from('transactions').update(updatedTransaction).eq('id', updatedTransaction.id).select();
+        const { data, error } = await supabase.from('transactions').update(updatedTransaction).eq('id', updatedTransaction.id).eq('organization_id', org.id).eq('user_id', user.id).select();
         if (!error) {
           setTransactions(prevTransactions => 
             prevTransactions.map(transaction => 
@@ -165,14 +190,15 @@ export const useTransactions = () => {
         transaction.id === updatedTransaction.id ? updatedTransaction : transaction
       )
     );
-  };
+  }, [user, org, isPlatformAdmin]);
 
-  const deleteTransaction = async (id: string) => {
+  const deleteTransaction = useCallback(async (id: string) => {
+    if (!user || !org || isPlatformAdmin) throw new Error('Accounting data requires a customer organization');
     const SUPABASE_ENABLED = Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
     if (SUPABASE_ENABLED) {
       try {
-        const { error } = await supabase.from('transactions').delete().eq('id', id);
+        const { error } = await supabase.from('transactions').delete().eq('id', id).eq('organization_id', org.id).eq('user_id', user.id);
         if (!error) {
           setTransactions(prevTransactions => 
             prevTransactions.filter(transaction => transaction.id !== id)
@@ -188,7 +214,7 @@ export const useTransactions = () => {
     setTransactions(prevTransactions => 
       prevTransactions.filter(transaction => transaction.id !== id)
     );
-  };
+  }, [user, org, isPlatformAdmin]);
 
   return {
     transactions,

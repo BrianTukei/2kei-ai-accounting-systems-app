@@ -14,17 +14,21 @@ import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import UserComplaintForm from '@/components/UserComplaintForm';
 import { AlertCircle } from 'lucide-react';
+import { useOrganization } from '@/contexts/OrganizationContext';
+import orgStorage, { STORAGE_KEYS } from '@/lib/orgStorage';
 
 export default function Payroll() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [payrollData, setPayrollData] = useState<PayrollData[]>([]);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [complaintDialogOpen, setComplaintDialogOpen] = useState(false);
+  const { org } = useOrganization();
 
   // Load data from localStorage on component mount
   useEffect(() => {
-    const storedEmployees = localStorage.getItem('employees');
-    const storedPayroll = localStorage.getItem('payroll');
+    if (!org) return;
+    const storedEmployees = orgStorage.getItem(org.id, 'employees');
+    const storedPayroll = orgStorage.getItem(org.id, STORAGE_KEYS.PAYROLL);
     
     if (storedEmployees) {
       setEmployees(JSON.parse(storedEmployees));
@@ -33,16 +37,16 @@ export default function Payroll() {
     if (storedPayroll) {
       setPayrollData(JSON.parse(storedPayroll));
     }
-  }, []);
+  }, [org]);
 
   // Save data to localStorage whenever it changes
   useEffect(() => {
-    localStorage.setItem('employees', JSON.stringify(employees));
-  }, [employees]);
+    if (org) orgStorage.setItem(org.id, 'employees', JSON.stringify(employees));
+  }, [employees, org]);
 
   useEffect(() => {
-    localStorage.setItem('payroll', JSON.stringify(payrollData));
-  }, [payrollData]);
+    if (org) orgStorage.setItem(org.id, STORAGE_KEYS.PAYROLL, JSON.stringify(payrollData));
+  }, [payrollData, org]);
 
   const handleAddEmployee = (employee: Employee) => {
     setEmployees(prev => [employee, ...prev]);

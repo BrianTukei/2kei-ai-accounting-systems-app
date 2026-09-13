@@ -15,8 +15,10 @@ if (supabaseUrl && supabaseKey) {
 const SMTP_USER = process.env.SMTP_USER || process.env.EMAIL_USER || '';
 const SMTP_PASS = process.env.SMTP_PASS || process.env.EMAIL_PASS || '';
 const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
+const RESEND_WEBHOOK_SECRET = process.env.RESEND_WEBHOOK_SECRET || '';
 const FROM_EMAIL = process.env.FROM_EMAIL || process.env.EMAIL_FROM || SMTP_USER || 'no-reply@2kai.com';
 const FROM_NAME = process.env.EMAIL_FROM_NAME || '2K AI Accounting Systems';
+const MAX_PROVIDER_ATTEMPTS = 3;
 
 const transporter = nodemailer.createTransport(
   process.env.SMTP_HOST
@@ -126,7 +128,21 @@ async function resolveBroadcastRecipients(group: string, specificRecipients: unk
   return uniqueEmails(emails);
 }
 
-async function sendBroadcastEmails(emails: string[], subject: string, message: string) {
+function isRetryableProviderError(error: any): boolean {
+  const status = Number(error?.status || error?.statusCode || 0);
+  return status === 429 || status >= 500 || ['ETIMEDOUT', 'ECONNRESET', 'ECONNREFUSED', 'EAI_AGAIN'].includes(error?.code);
+}
+
+function wait(milliseconds: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, milliseconds));
+}
+
+async function sendBroadcastEmails(
+  emails: string[],
+  subject: string,
+  message: string,
+  broadcastId?: string
+) {
   if (!RESEND_API_KEY && (!SMTP_USER || !SMTP_PASS)) {
     throw new Error('Email provider is not configured. Set RESEND_API_KEY with a verified FROM_EMAIL, or SMTP_USER/SMTP_PASS.');
   }
@@ -134,13 +150,17 @@ async function sendBroadcastEmails(emails: string[], subject: string, message: s
   const results = [];
 
   for (const email of emails) {
-    try {
+    const provider = RESEND_API_KEY ? 'resend' : 'gmail-smtp';
+    let attemptCount = 0;
+    let completed = false;
+
+    while (attemptCount < MAX_PROVIDER_ATTEMPTS && !completed) {
+      attemptCount += 1;
+      try {
       const text = String(message).replace(/<[^>]*>/g, '').trim();
       let result: any;
-      let provider = 'gmail-smtp';
 
       if (RESEND_API_KEY) {
-        provider = 'resend';
         const response = await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: {
@@ -157,11 +177,20 @@ async function sendBroadcastEmails(emails: string[], subject: string, message: s
         });
 
         const payload = await response.json().catch(() => ({}));
+        logger.info(`Email provider response for ${email}`, {
+          provider,
+          status: response.status,
+          attempt: attemptCount,
+          body: payload
+        });
         if (!response.ok) {
-          throw new Error(payload?.message || payload?.error || `Resend request failed (${response.status})`);
+          const error: any = new Error(payload?.message || payload?.error || `Resend request failed (${response.status})`);
+          error.status = response.status;
+          error.providerResponse = payload;
+          throw error;
         }
 
-        result = { messageId: payload?.id, accepted: [email], rejected: [], pending: [] };
+        result = { messageId: payload?.id, accepted: [email], rejected: [], pending: [], providerResponse: payload };
       } else {
         result = await transporter.sendMail({
           from: `"${FROM_NAME}" <${SMTP_USER}>`,
@@ -175,6 +204,19 @@ async function sendBroadcastEmails(emails: string[], subject: string, message: s
             'X-Entity-Ref-ID': `2kai-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
           }
         });
+        logger.info(`SMTP provider response for ${email}`, {
+          provider,
+          attempt: attemptCount,
+          response: result
+        });
+        result.providerResponse = {
+          messageId: result.messageId,
+          response: result.response,
+          accepted: result.accepted,
+          rejected: result.rejected,
+          pending: result.pending,
+          envelope: result.envelope
+        };
       }
 
       results.push({
@@ -184,15 +226,36 @@ async function sendBroadcastEmails(emails: string[], subject: string, message: s
         messageId: result.messageId,
         accepted: result.accepted || [],
         rejected: result.rejected || [],
-        pending: result.pending || []
+        pending: result.pending || [],
+        attemptCount,
+        providerResponse: result.providerResponse || {}
       });
-    } catch (error: any) {
-      logger.error(`Broadcast email failed for ${email}: ${error.message}`);
-      results.push({ email, success: false, error: error.message });
+        completed = true;
+      } catch (error: any) {
+        logger.error(`Broadcast email attempt failed for ${email}`, {
+          provider,
+          attempt: attemptCount,
+          error: error.message,
+          providerResponse: error.providerResponse || null
+        });
+        if (attemptCount < MAX_PROVIDER_ATTEMPTS && isRetryableProviderError(error)) {
+          await wait(250 * 2 ** (attemptCount - 1));
+          continue;
+        }
+        results.push({
+          email,
+          success: false,
+          provider,
+          attemptCount,
+          error: error.message,
+          providerResponse: error.providerResponse || {}
+        });
+        completed = true;
+      }
     }
   }
 
-  await recordOutboxResults(results, subject, message);
+  await recordOutboxResults(results, subject, message, broadcastId);
 
   return {
     results,
@@ -201,10 +264,11 @@ async function sendBroadcastEmails(emails: string[], subject: string, message: s
   };
 }
 
-async function recordOutboxResults(results: any[], subject: string, message: string) {
+async function recordOutboxResults(results: any[], subject: string, message: string, broadcastId?: string) {
   if (!supabase || results.length === 0) return;
 
   const rows = results.map(result => ({
+    broadcast_id: broadcastId || null,
     recipient_email: result.email,
     subject,
     message,
@@ -218,6 +282,9 @@ async function recordOutboxResults(results: any[], subject: string, message: str
     provider_accepted: result.accepted || [],
     provider_rejected: result.rejected || [],
     provider_pending: result.pending || [],
+    provider_response: result.providerResponse || {},
+    attempt_count: result.attemptCount || 1,
+    last_attempt_at: new Date().toISOString(),
     error_message: result.error || null,
     sent_at: result.success ? new Date().toISOString() : null
   }));
@@ -290,7 +357,7 @@ export const adminEmailController = {
         if (recipients.length === 0) {
           await supabase.from('broadcasts').update({ status: 'sent', sent_count: 0 }).eq('id', data.id);
         } else {
-          const result = await sendBroadcastEmails(recipients, data.subject, data.message);
+          const result = await sendBroadcastEmails(recipients, data.subject, data.message, data.id);
           await supabase
             .from('broadcasts')
             .update({
@@ -326,7 +393,7 @@ export const adminEmailController = {
       const { data: broadcast } = await supabase.from('broadcasts').select('*').eq('id', id).single();
       if (!broadcast) return res.status(404).json({ success: false, error: 'Not found' });
       
-      const result = await sendBroadcastEmails([testEmail], `[TEST] ${broadcast.subject}`, broadcast.message);
+      const result = await sendBroadcastEmails([testEmail], `[TEST] ${broadcast.subject}`, broadcast.message, id);
 
       if (result.sentCount === 0) {
         return res.status(500).json({ success: false, error: result.results[0]?.error || 'Test email failed' });
@@ -363,7 +430,7 @@ export const adminEmailController = {
       let failedCount = 0;
 
       if (recipients.length > 0) {
-        const result = await sendBroadcastEmails(recipients, broadcast.subject, broadcast.message);
+        const result = await sendBroadcastEmails(recipients, broadcast.subject, broadcast.message, id);
         sentCount = result.sentCount;
         failedCount = result.failedCount;
 
@@ -432,7 +499,7 @@ export const adminEmailController = {
         .order('created_at', { ascending: false })
         .range(from, to);
 
-      if (['accepted', 'rejected', 'failed', 'pending'].includes(status)) {
+      if (['accepted', 'rejected', 'failed', 'pending', 'delivered', 'bounced'].includes(status)) {
         query = query.eq('status', status);
       }
 
@@ -447,6 +514,69 @@ export const adminEmailController = {
     } catch (err: any) {
       logger.error(`Error fetching email outbox: ${err.message}`);
       res.status(500).json({ success: false, error: err.message });
+    }
+  },
+
+  // Provider webhook: turns provider acceptance into observable delivery state.
+  providerWebhook: async (req: Request, res: Response) => {
+    try {
+      ensureSupabase();
+      if (!RESEND_WEBHOOK_SECRET || req.header('x-webhook-secret') !== RESEND_WEBHOOK_SECRET) {
+        return res.status(401).json({ success: false, error: 'Invalid webhook secret' });
+      }
+
+      const event = req.body || {};
+      const eventType = String(event.type || '').toLowerCase();
+      const statusByEvent: Record<string, string> = {
+        'email.delivered': 'delivered',
+        'email.bounced': 'bounced',
+        'email.complained': 'complained',
+        'email.failed': 'failed'
+      };
+      const status = statusByEvent[eventType];
+      const providerMessageId = event.data?.email_id || event.data?.id;
+
+      if (!status || !providerMessageId) {
+        return res.status(400).json({ success: false, error: 'Unsupported event or missing provider message ID' });
+      }
+
+      const update: Record<string, unknown> = {
+        status,
+        provider_response: event.data || event,
+        delivered_at: status === 'delivered' ? new Date().toISOString() : undefined,
+        bounced_at: status === 'bounced' ? new Date().toISOString() : undefined,
+      };
+      Object.keys(update).forEach(key => update[key] === undefined && delete update[key]);
+
+      const { error } = await supabase
+        .from('email_outbox')
+        .update(update)
+        .eq('provider_message_id', providerMessageId);
+      if (error) throw error;
+
+      const { data: outboxEntry } = await supabase
+        .from('email_outbox')
+        .select('broadcast_id')
+        .eq('provider_message_id', providerMessageId)
+        .maybeSingle();
+      if (outboxEntry?.broadcast_id) {
+        const [{ count: deliveredCount }, { count: bounceCount }] = await Promise.all([
+          supabase.from('email_outbox').select('*', { count: 'exact', head: true })
+            .eq('broadcast_id', outboxEntry.broadcast_id).eq('status', 'delivered'),
+          supabase.from('email_outbox').select('*', { count: 'exact', head: true })
+            .eq('broadcast_id', outboxEntry.broadcast_id).in('status', ['bounced', 'complained'])
+        ]);
+        await supabase.from('broadcasts').update({
+          delivered_count: deliveredCount || 0,
+          bounce_count: bounceCount || 0
+        }).eq('id', outboxEntry.broadcast_id);
+      }
+
+      logger.info(`Email delivery webhook recorded: ${eventType}`, { providerMessageId, status });
+      return res.json({ success: true, status });
+    } catch (err: any) {
+      logger.error(`Email delivery webhook failed: ${err.message}`);
+      return res.status(500).json({ success: false, error: err.message });
     }
   },
 

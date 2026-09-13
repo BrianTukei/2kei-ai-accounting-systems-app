@@ -3,28 +3,38 @@ import { useState, useEffect } from 'react';
 import { RecurringTransaction, RecurringTransactionFormData } from '@/types/RecurringTransaction';
 import { Transaction } from '@/components/TransactionCard';
 import { format, addDays, addWeeks, addMonths, addQuarters, addYears, parseISO } from 'date-fns';
+import { useAuth } from '@/contexts/AuthContext';
+import { useOrganization } from '@/contexts/OrganizationContext';
+import orgStorage from '@/lib/orgStorage';
 
 const LOCAL_STORAGE_KEY = 'finance-app-recurring-transactions';
 
 export const useRecurringTransactions = () => {
   const [recurringTransactions, setRecurringTransactions] = useState<RecurringTransaction[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const { user, authResolved } = useAuth();
+  const { org, loading: organizationLoading } = useOrganization();
+  const storageOrgId = org?.id || null;
 
-  // Load recurring transactions from localStorage on initial render
+  // Recurring transactions are tenant data and must never use the global key.
   useEffect(() => {
-    const storedTransactions = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (storedTransactions) {
-      setRecurringTransactions(JSON.parse(storedTransactions));
+    if (!authResolved || organizationLoading) return;
+    if (user && storageOrgId) {
+      setRecurringTransactions(orgStorage.getJSON(storageOrgId, LOCAL_STORAGE_KEY, []));
+    } else {
+      setRecurringTransactions([]);
     }
     setLoaded(true);
-  }, []);
+  }, [authResolved, organizationLoading, user, storageOrgId]);
 
   // Save recurring transactions to localStorage whenever they change
   useEffect(() => {
     if (loaded) {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(recurringTransactions));
+      if (storageOrgId && user) {
+        orgStorage.setJSON(storageOrgId, LOCAL_STORAGE_KEY, recurringTransactions);
+      }
     }
-  }, [recurringTransactions, loaded]);
+  }, [recurringTransactions, loaded, storageOrgId, user]);
 
   // Get next date based on frequency and start date
   const getNextDate = (startDate: string, frequency: RecurringTransaction['frequency']): string => {

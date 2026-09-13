@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { AuthProvider } from './contexts/AuthContext';
 import { OrganizationProvider } from './contexts/OrganizationContext';
+import { useAuth } from './contexts/AuthContext';
+import { useOrganization } from './contexts/OrganizationContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Index from './pages/Index';
 import Dashboard from './pages/Dashboard';
@@ -67,9 +69,12 @@ const queryClient = new QueryClient({
 import { loadSampleData } from './utils/sampleData';
 import { syncJournalFromTransactions } from './services/bookkeeping';
 import { useRecurringTransactions } from './hooks/useRecurringTransactions';
+import orgStorage, { STORAGE_KEYS } from './lib/orgStorage';
 
 function AppInner() {
   const { processDueTransactions, recurringTransactions } = useRecurringTransactions();
+  const { user } = useAuth();
+  const { org } = useOrganization();
 
   // Load sample data once
   useEffect(() => { loadSampleData(); }, []);
@@ -80,17 +85,17 @@ function AppInner() {
 
     const generated = processDueTransactions();
     if (generated.length > 0) {
-      const stored = localStorage.getItem('finance-app-transactions');
-      const existing = stored ? JSON.parse(stored) : [];
+      if (!user || !org) return;
+      const existing = orgStorage.getJSON<any[]>(org.id, STORAGE_KEYS.TRANSACTIONS, []);
       const withIds = generated.map((t) => ({ ...t, id: Date.now().toString() + Math.random() }));
-      localStorage.setItem('finance-app-transactions', JSON.stringify([...withIds, ...existing]));
+      orgStorage.setJSON(org.id, STORAGE_KEYS.TRANSACTIONS, [...withIds, ...existing]);
     }
 
-    const txStored = localStorage.getItem('finance-app-transactions');
-    if (txStored) {
-      try { syncJournalFromTransactions(JSON.parse(txStored)); } catch { /* ignore */ }
+    if (user && org) {
+      const transactions = orgStorage.getJSON<any[]>(org.id, STORAGE_KEYS.TRANSACTIONS, []);
+      try { syncJournalFromTransactions(transactions); } catch { /* ignore */ }
     }
-  }, [recurringTransactions]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [recurringTransactions, user, org]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <Routes>

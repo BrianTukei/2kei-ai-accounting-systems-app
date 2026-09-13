@@ -8,6 +8,7 @@ import { pdfService } from '@/services/pdfService';
 import { userCompanyService } from '@/services/userCompanyService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
+import orgStorage from '@/lib/orgStorage';
 import ReceiptImageUpload from './ReceiptImageUpload';
 import ReceiptResults from './ReceiptResults';
 import ReceiptGallery from './ReceiptGallery';
@@ -92,8 +93,8 @@ export default function EnhancedReceiptScanner({ onScanComplete }: EnhancedRecei
 
   const storeReceiptInGallery = async (results: ParsedReceipt, imageUrl: string) => {
     try {
-      const storedReceipts = localStorage.getItem('scannedReceipts');
-      const receipts = storedReceipts ? JSON.parse(storedReceipts) : [];
+      if (!organization) return;
+      const receipts = orgStorage.getJSON<any[]>(organization.id, 'scannedReceipts', []);
       
       receipts.push({
         id: `receipt-${Date.now()}`,
@@ -113,7 +114,7 @@ export default function EnhancedReceiptScanner({ onScanComplete }: EnhancedRecei
         companyId: organization?.id,
       });
       
-      localStorage.setItem('scannedReceipts', JSON.stringify(receipts));
+      orgStorage.setJSON(organization.id, 'scannedReceipts', receipts);
     } catch (error) {
       console.error('Error saving receipt to gallery:', error);
     }

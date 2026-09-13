@@ -26,6 +26,7 @@ import { receiptParser } from '@/services/ai/receiptParser';
 import { pdfService } from '@/services/pdfService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
+import orgStorage from '@/lib/orgStorage';
 
 interface AIEnhancedReceiptScannerProps {
   onScanComplete?: (data: AIExtractedReceipt) => void;
@@ -125,8 +126,8 @@ export default function AIEnhancedReceiptScanner({ onScanComplete, className }: 
 
   const getExistingExpenses = () => {
     // In a real app, this would fetch from your database
-    const stored = localStorage.getItem('finance-app-transactions');
-    return stored ? JSON.parse(stored) : [];
+    if (!organization) return [];
+    return orgStorage.getJSON<any[]>(organization.id, 'finance-app-transactions', []);
   };
 
   const handleAccept = () => {
@@ -144,7 +145,9 @@ export default function AIEnhancedReceiptScanner({ onScanComplete, className }: 
       };
       
       expenses.push(newExpense);
-      localStorage.setItem('finance-app-transactions', JSON.stringify(expenses));
+      if (organization) {
+        orgStorage.setJSON(organization.id, 'finance-app-transactions', expenses);
+      }
       
       onScanComplete?.(extractedData);
       toast.success('✅ Receipt saved to expenses!');

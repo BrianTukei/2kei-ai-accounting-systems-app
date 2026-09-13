@@ -67,12 +67,13 @@ const orgStorage = {
     orgStorage.setItem(orgId, key, JSON.stringify(value));
   },
 
-  /** Copy all legacy (non-namespaced) data into org namespace on first login */
+  /** Migrate only non-accounting preferences; never copy shared business data. */
   migrateFromLegacy(orgId: string): void {
     const migrated = localStorage.getItem(`_migrated_${orgId}`);
     if (migrated) return;
 
-    Object.values(STORAGE_KEYS).forEach((key) => {
+    const safeKeys: StorageKey[] = [STORAGE_KEYS.CURRENCY, STORAGE_KEYS.SETTINGS];
+    safeKeys.forEach((key) => {
       const legacyValue = localStorage.getItem(key);
       if (legacyValue && !localStorage.getItem(nsKey(orgId, key))) {
         localStorage.setItem(nsKey(orgId, key), legacyValue);

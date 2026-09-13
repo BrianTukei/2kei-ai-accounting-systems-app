@@ -9,6 +9,8 @@ import ReceiptImageUpload from './ReceiptImageUpload';
 import ReceiptResults from './ReceiptResults';
 import ReceiptGallery from './ReceiptGallery';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useOrganization } from '@/contexts/OrganizationContext';
+import orgStorage from '@/lib/orgStorage';
 
 interface ReceiptScannerProps {
   onScanComplete: (data: {
@@ -26,6 +28,7 @@ interface ReceiptScannerProps {
 export default function ReceiptScanner({ onScanComplete }: ReceiptScannerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>('scan');
+  const { org } = useOrganization();
   
   const {
     isScanning,
@@ -44,8 +47,8 @@ export default function ReceiptScanner({ onScanComplete }: ReceiptScannerProps) 
     // Store the receipt in the gallery
     if (scanResults && previewUrl) {
       try {
-        const storedReceipts = localStorage.getItem('scannedReceipts');
-        const receipts = storedReceipts ? JSON.parse(storedReceipts) : [];
+        if (!org) return;
+        const receipts = orgStorage.getJSON<any[]>(org.id, 'scannedReceipts', []);
         
         receipts.push({
           id: `receipt-${Date.now()}`,
@@ -57,7 +60,7 @@ export default function ReceiptScanner({ onScanComplete }: ReceiptScannerProps) 
           category: scanResults.category
         });
         
-        localStorage.setItem('scannedReceipts', JSON.stringify(receipts));
+        orgStorage.setJSON(org.id, 'scannedReceipts', receipts);
       } catch (error) {
         console.error('Error saving receipt to gallery:', error);
       }

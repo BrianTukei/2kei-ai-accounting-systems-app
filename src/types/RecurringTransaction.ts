@@ -4,6 +4,11 @@ export type RecurrenceFrequency = 'daily' | 'weekly' | 'monthly' | 'quarterly' |
 export interface RecurringTransaction {
   id: string;
   amount: number;
+  currency?: string;
+  original_amount?: number;
+  original_currency?: string;
+  originalAmount?: number;
+  originalCurrency?: string;
   type: 'income' | 'expense';
   category: string;
   description: string;
@@ -16,6 +21,7 @@ export interface RecurringTransaction {
 
 export interface RecurringTransactionFormData {
   amount: number;
+  currency?: string;
   type: 'income' | 'expense';
   category: string;
   description: string;

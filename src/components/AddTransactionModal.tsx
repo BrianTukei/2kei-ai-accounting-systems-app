@@ -23,7 +23,7 @@ export default function AddTransactionModal({
   onEditTransaction,
   transactionToEdit 
 }: AddTransactionModalProps) {
-  const { getCurrencySymbol } = useCurrency();
+  const { getCurrencySymbol, selectedCurrency } = useCurrency();
   const [amount, setAmount] = useState<string>('');
   const [type, setType] = useState<'income' | 'expense'>('income');
   const [category, setCategory] = useState<string>('');
@@ -86,6 +86,7 @@ export default function AddTransactionModal({
           type,
           category,
           description,
+          currency: selectedCurrency.code,
           date: 'Today'
         });
         toast.success(`${type === 'income' ? 'Income' : 'Expense'} added successfully`);

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, Clock, User, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface BookingData {
   name: string;
@@ -96,61 +97,27 @@ export default function BookDemo() {
       setSubmittingForm(true);
       setError('');
 
-      console.log('📤 Sending booking request to /api/demo/book with data:', bookingData);
-
-      const response = await fetch('/api/demo/book', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const { data: result, error: functionError } = await supabase.functions.invoke('book-demo', {
+        body: {
+          name: bookingData.name,
+          email: bookingData.email,
+          company: bookingData.company,
+          phone: bookingData.phone,
+          website: bookingData.website,
+          preferredDate: bookingData.preferredDate,
+          preferredTime: bookingData.preferredTime,
+          timezone: bookingData.timezone,
+          message: bookingData.message,
         },
-        body: JSON.stringify(bookingData)
       });
 
-      console.log('📥 Response status:', response.status);
-      console.log('📥 Response headers:', Object.fromEntries(response.headers));
-
-      // Check if response is ok before parsing
-      if (!response.ok) {
-        let errorText = `HTTP Error ${response.status}`;
-        
-        // Map common HTTP error codes to user-friendly messages
-        const errorMessages: { [key: number]: string } = {
-          400: 'Invalid form data. Please check all fields.',
-          404: 'Booking service not available.',
-          500: 'Server error. Please try again.',
-          503: 'Server temporarily unavailable. Please wait a moment and try again.',
-          408: 'Request timed out. Please try again.',
-          409: 'This time slot is already booked. Please select a different time.'
-        };
-        
-        // Try to get the actual error from response
-        try {
-          const result = await response.json();
-          errorText = result.details
-            ? `${result.error || result.message || errorText} ${result.details}`
-            : result.error || result.message || errorMessages[response.status] || errorText;
-        } catch (parseError) {
-          // If can't parse JSON, use mapped message
-          errorText = errorMessages[response.status] || errorText;
-          try {
-            const text = await response.text();
-            if (text) errorText = text.substring(0, 200);
-          } catch {
-            // Response is empty
-            errorText = errorMessages[response.status] || errorText;
-          }
-        }
-        setError(errorText);
-        console.error('❌ Booking request failed:', {
-          status: response.status,
-          statusText: response.statusText,
-          error: errorText
-        });
-        return;
+      if (functionError) {
+        console.error('Booking Edge Function failed:', functionError);
+        throw new Error(functionError.message || 'Booking service is unavailable.');
       }
-
-      const result = await response.json();
-      console.log('✅ Booking response:', result);
+      if (!result || result.error) {
+        throw new Error(result?.error || 'Booking service returned an invalid response.');
+      }
 
       if (result.success) {
         setBookingResult(result.data?.booking || bookingData);

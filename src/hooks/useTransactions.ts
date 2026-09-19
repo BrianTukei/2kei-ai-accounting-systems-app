@@ -117,8 +117,15 @@ export const useTransactions = () => {
 
     if (SUPABASE_ENABLED) {
       try {
-        const insertObj: any = {
-          ...enriched,
+        // Keep the insert aligned with the deployed transactions schema. The
+        // currency fields are presentation metadata and are added to the
+        // client model after the database row is created.
+        const insertObj = {
+          description: enriched.description,
+          amount: enriched.amount,
+          type: enriched.type,
+          category: enriched.category,
+          date: enriched.date,
           user_id: user.id,
           organization_id: org.id,
           created_at: new Date().toISOString(),
@@ -170,7 +177,19 @@ export const useTransactions = () => {
 
     if (SUPABASE_ENABLED) {
       try {
-        const { data, error } = await supabase.from('transactions').update(updatedTransaction).eq('id', updatedTransaction.id).eq('organization_id', org.id).eq('user_id', user.id).select();
+        const { data, error } = await supabase
+          .from('transactions')
+          .update({
+            amount: updatedTransaction.amount,
+            type: updatedTransaction.type,
+            category: updatedTransaction.category,
+            description: updatedTransaction.description,
+            date: updatedTransaction.date,
+          })
+          .eq('id', updatedTransaction.id)
+          .eq('organization_id', org.id)
+          .eq('user_id', user.id)
+          .select();
         if (error) throw new Error(`Transaction could not be updated: ${error.message}`);
         if (data) {
           setTransactions(prevTransactions => 

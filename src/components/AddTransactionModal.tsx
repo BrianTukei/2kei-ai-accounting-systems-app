@@ -11,8 +11,8 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 interface AddTransactionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddTransaction: (transaction: Omit<Transaction, 'id'>) => void;
-  onEditTransaction?: (transaction: Transaction) => void;
+  onAddTransaction: (transaction: Omit<Transaction, 'id'>) => Promise<void> | void;
+  onEditTransaction?: (transaction: Transaction) => Promise<void> | void;
   transactionToEdit?: Transaction;
 }
 
@@ -51,7 +51,7 @@ export default function AddTransactionModal({
   
   const categories = type === 'income' ? incomeCategories : expenseCategories;
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validation
@@ -70,24 +70,30 @@ export default function AddTransactionModal({
       return;
     }
     
-    if (transactionToEdit && onEditTransaction) {
-      onEditTransaction({
-        ...transactionToEdit,
-        amount: parseFloat(amount),
-        type,
-        category,
-        description
-      });
-      toast.success('Transaction updated successfully');
-    } else {
-      onAddTransaction({
-        amount: parseFloat(amount),
-        type,
-        category,
-        description,
-        date: 'Today'
-      });
-      toast.success(`${type === 'income' ? 'Income' : 'Expense'} added successfully`);
+    try {
+      if (transactionToEdit && onEditTransaction) {
+        await onEditTransaction({
+          ...transactionToEdit,
+          amount: parseFloat(amount),
+          type,
+          category,
+          description
+        });
+        toast.success('Transaction updated successfully');
+      } else {
+        await onAddTransaction({
+          amount: parseFloat(amount),
+          type,
+          category,
+          description,
+          date: 'Today'
+        });
+        toast.success(`${type === 'income' ? 'Income' : 'Expense'} added successfully`);
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Transaction could not be saved';
+      toast.error(message);
+      return;
     }
     
     resetForm();

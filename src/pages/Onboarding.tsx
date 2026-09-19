@@ -1133,21 +1133,23 @@ export default function Onboarding() {
       setOrgId(newOrgId);
 
       // 2. Add owner as member
-      await supabase.from('organization_users').insert({
+      const { error: membershipErr } = await supabase.from('organization_users').insert({
         organization_id: newOrgId,
         user_id:         user.id,
         role:            'owner',
         invite_accepted: true,
         joined_at:       new Date().toISOString(),
       });
+      if (membershipErr) throw membershipErr;
 
       // 3. Create free subscription
-      await supabase.from('subscriptions').insert({
+      const { error: subscriptionErr } = await supabase.from('subscriptions').insert({
         organization_id: newOrgId,
         plan_id:         'free',
         status:          'active',
         billing_cycle:   'monthly',
       });
+      if (subscriptionErr) throw subscriptionErr;
 
       // 4. Also store in localStorage for fallback/demo mode
       localStorage.setItem('2k_onboarding_org', JSON.stringify({

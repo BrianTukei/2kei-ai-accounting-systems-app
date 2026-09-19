@@ -132,7 +132,12 @@ export const useTransactions = () => {
         };
 
         const { data, error } = await supabase.from('transactions').insert(insertObj).select();
-        if (error) throw new Error(`Transaction could not be saved: ${error.message}`);
+        if (error) {
+          const detail = error.message.includes('row-level security')
+            ? 'Your organization membership is not active. Sign out and back in, or complete onboarding again.'
+            : error.message;
+          throw new Error(`Transaction could not be saved: ${detail}`);
+        }
         if (data && data.length > 0) {
           const created = data[0] as any;
           const tx: Transaction = {

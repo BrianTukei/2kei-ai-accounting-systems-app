@@ -126,7 +126,9 @@ export default function BookDemo() {
         // Try to get the actual error from response
         try {
           const result = await response.json();
-          errorText = result.error || result.message || errorMessages[response.status] || errorText;
+          errorText = result.details
+            ? `${result.error || result.message || errorText} ${result.details}`
+            : result.error || result.message || errorMessages[response.status] || errorText;
         } catch (parseError) {
           // If can't parse JSON, use mapped message
           errorText = errorMessages[response.status] || errorText;

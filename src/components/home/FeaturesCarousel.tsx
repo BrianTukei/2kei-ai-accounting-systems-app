@@ -60,7 +60,7 @@ const FeaturesCarousel = forwardRef<HTMLDivElement>((props, ref) => {
             PLATFORM FEATURES
           </div>
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-5 tracking-tight animate-fade-up" style={{ animationDelay: '0.05s' }}>
-            Why <span className="gradient-text">50,000+ Businesses</span> Trust Us
+                Why <span className="gradient-text">Growing Businesses</span> Choose Us
           </h2>
           <p className="text-base md:text-lg text-muted-foreground animate-fade-up max-w-2xl mx-auto leading-relaxed" style={{ animationDelay: '0.1s' }}>
             Every feature is designed to put money back in your pocket. No bloat, no complexity — just results.

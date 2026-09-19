@@ -42,7 +42,7 @@ const SLIDES: SlideData[] = [
     alt: 'Team collaborating on financial reports and strategy',
     caption: 'Team Collaboration',
     description: 'Your whole team, one financial platform',
-    stat: '50,000+',
+    stat: 'Built for growth',
     statLabel: 'Businesses trust us',
   },
   {

@@ -20,7 +20,7 @@ const Footer = () => {
               </span>
             </Link>
             <p className="text-sm text-muted-foreground mt-3 max-w-xs leading-relaxed">
-              The AI accounting platform that saves you 40+ hours every month. Join 50,000+ businesses making smarter financial decisions.
+              The AI accounting platform that helps growing businesses make smarter financial decisions and save time every month.
             </p>
           </div>
 

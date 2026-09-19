@@ -338,7 +338,7 @@ export default function SignUp() {
                 <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
               </svg>
             </div>
-            <h2 className="text-2xl font-bold mb-3">Join 50,000+ businesses growing faster</h2>
+            <h2 className="text-2xl font-bold mb-3">Build a clearer financial future</h2>
             <p className="text-white/80 text-sm leading-relaxed">
               Subscribe to 2K AI Accounting Systems and watch your business transform. Automated bookkeeping, AI-powered forecasting, and real-time insights — all in 60 seconds.
             </p>

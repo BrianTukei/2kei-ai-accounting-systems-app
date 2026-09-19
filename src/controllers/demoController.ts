@@ -1,6 +1,5 @@
 ﻿import { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
-import { v4 as uuidv4 } from 'uuid';
 import { sendDemoConfirmation, sendDemoNotification, sendBookingStatusUpdate, sendRescheduleNotification } from '../services/demoService';
 import { logger } from '../utils/logger';
 import { createClient } from '@supabase/supabase-js';
@@ -89,6 +88,7 @@ export const createBooking = async (req: Request, res: Response) => {
       .eq('preferred_date', preferredDate.split('T')[0])
       .eq('preferred_time', preferredTime)
       .in('status', ['pending', 'confirmed'])
+      .limit(1)
       .maybeSingle();
 
     if (existingBookingError) {
@@ -107,77 +107,23 @@ export const createBooking = async (req: Request, res: Response) => {
       });
     }
 
-    // 1. Get or create user
-    let { data: user } = await supabase
-      .from('users')
-      .select('id')
-      .eq('email', email)
-      .maybeSingle();
-
-    // Removed unused userLookupError assignment
-    
-    if (!user) {
-      const { data: newUser, error: userError } = await supabase.from('users').insert({
-        id: uuidv4(),
-        email,
-        full_name: name,
-        role: 'user',
-        status: 'active'
-      }).select('id').single();
-      
-      if (userError) {
-        const formatted = formatSupabaseError(userError);
-        return res.status(500).json({
-          success: false,
-          error: formatted.error,
-          details: formatted.details
-        });
-      }
-      user = newUser;
-    }
-
-    // 2. Get or create company
-    let { data: companyRecord } = await supabase
-      .from('companies')
-      .select('id')
-      .eq('name', company)
-      .maybeSingle();
-
-    // Removed unused companyLookupError assignment
-    
-    if (!companyRecord) {
-      const { data: newCompany, error: companyError } = await supabase.from('companies').insert({
-        id: uuidv4(),
-        name: company,
-        website: website || null,
-        status: 'active'
-      }).select('id').single();
-
-      if (companyError) {
-        const formatted = formatSupabaseError(companyError);
-        return res.status(500).json({
-          success: false,
-          error: formatted.error,
-          details: formatted.details
-        });
-      }
-      companyRecord = newCompany;
-    }
-
-    // 3. Create demo booking
+    // Demo bookings are public leads, not authenticated accounting records.
+    // Store the submitted lead directly so this flow does not depend on the
+    // legacy users/companies schemas or require an auth.users row.
     const { data: booking, error: bookingError } = await supabase.from('demo_bookings').insert({
-      id: uuidv4(),
-      user_id: user.id,
-      company_id: companyRecord.id,
       preferred_date: preferredDate.split('T')[0],
       preferred_time: preferredTime,
+      name,
+      email,
+      company_name: company,
+      phone: phone || null,
+      website: website || null,
       timezone,
+      message: message || null,
+      source,
       status: 'pending',
       meeting_platform: 'zoom',
-      duration: 30,
-      metadata: {
-        message, source, phone
-      }
+      duration: 30
     }).select().single();
 
     if (bookingError) {
@@ -209,7 +155,15 @@ export const createBooking = async (req: Request, res: Response) => {
 
     res.status(201).json({
       success: true,
-      data: { booking },
+      data: {
+        booking: {
+          ...booking,
+          preferredDate: booking.preferred_date,
+          preferredTime: booking.preferred_time,
+          company: booking.company_name,
+          meetingPlatform: booking.meeting_platform
+        }
+      },
       message: 'Demo booking created successfully!'
     });
   } catch (error) {

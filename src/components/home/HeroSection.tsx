@@ -54,7 +54,7 @@ const HeroSection = ({ featuresRef }: HeroSectionProps) => {
 
   const trustBadges = [
     { icon: Shield, label: 'Bank-Level 256-bit Security' },
-    { icon: TrendingUp, label: '50,000+ Businesses & Growing' },
+    { icon: TrendingUp, label: 'Built for growing businesses' },
     { icon: Sparkles, label: 'AI That Never Sleeps' },
   ];
 
@@ -84,7 +84,7 @@ const HeroSection = ({ featuresRef }: HeroSectionProps) => {
             className="inline-flex items-center gap-2 rounded-full bg-primary/5 dark:bg-primary/10 backdrop-blur-sm border border-primary/15 px-5 py-2.5 text-sm font-medium text-primary mb-8 animate-fade-up hover:bg-primary/15 hover:scale-105 transition-all duration-300 cursor-pointer shadow-sm hover:shadow-md"
           >
             <Sparkles className="w-4 h-4" />
-            <span>🔥 Trusted by 50,000+ Businesses — Join Them Today</span>
+            <span>Built for ambitious businesses — see it in action</span>
             <ArrowRight className="w-4 h-4" />
           </Link>
           

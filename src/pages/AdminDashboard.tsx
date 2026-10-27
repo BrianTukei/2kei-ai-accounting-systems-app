@@ -22,7 +22,6 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import AdminAccessCheck from '@/components/admin/AdminAccessCheck';
 import { PLANS, type PlanId } from '@/lib/plans';

@@ -21,6 +21,7 @@
  * Regular users never see this page or its navigation link.
  */
 
+import { supabase } from '@/integrations/supabase/client';
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminAccessCheck from '@/components/admin/AdminAccessCheck';

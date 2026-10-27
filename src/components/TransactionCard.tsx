@@ -1,9 +1,7 @@
-
 import { cn } from '@/lib/utils';
-import { ArrowUpRight, ArrowDownLeft, Pencil, Trash2, TrendingUp } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, Pencil, Trash2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useMemo } from 'react';
 
@@ -14,14 +12,14 @@ export interface Transaction {
   category: string;
   description: string;
   date: string;
-  currency?: string;                // Currency of this transaction (e.g. 'EUR')
-  original_amount?: number;         // Amount in original currency
-  original_currency?: string;       // Original currency code
-  originalAmount?: number;           // Camel-case API equivalent
-  originalCurrency?: string;         // Camel-case API equivalent
-  base_currency_amount?: number;    // Amount converted to base currency (USD)
-  exchange_rate_used?: number;      // Exchange rate at time of creation
-  exchange_rate_date?: string;      // When the rate was captured
+  currency?: string;
+  original_amount?: number;
+  original_currency?: string;
+  originalAmount?: number;
+  originalCurrency?: string;
+  base_currency_amount?: number;
+  exchange_rate_used?: number;
+  exchange_rate_date?: string;
   convertedAmount?: number;
   conversionRate?: number;
   lastUpdated?: string;
@@ -47,31 +45,22 @@ export default function TransactionCard({
   onEdit,
   onDelete
 }: TransactionCardProps) {
-  const { displayAmount, formatCurrency, selectedCurrency } = useCurrency();
+  const { formatCurrency, selectedCurrency } = useCurrency();
   const { id, type, amount, category, description, date, currency: txCurrency } = transaction;
   const isIncome = type === 'income';
-  const originalAmount = transaction.original_amount ?? transaction.originalAmount ?? amount;
-  const originalCurrency = (
+
+  // Prefer original_amount when available, otherwise fall back to amount
+  const sourceAmount = transaction.original_amount ?? transaction.originalAmount ?? amount;
+  const sourceCurrency = (
     transaction.original_currency ?? transaction.originalCurrency ?? txCurrency ?? 'USD'
   ).toUpperCase();
-  
-  // Check if we have forex conversion data
-  const hasForexData = transaction.convertedAmount !== undefined && transaction.conversionRate !== undefined;
-  const isStaleData = hasForexData && transaction.lastUpdated 
-    ? Date.now() - new Date(transaction.lastUpdated).getTime() > 30 * 60 * 1000
-    : false;
 
-  // Display converted amounts using context function (simple pattern like pricing plans)
+  // Always convert + format into the user's currently selected currency.
+  // When UGX is selected → only UGX is shown. No badges, no "orig:" text.
   const displayConverted = useMemo(
-    () => formatCurrency(Math.abs(originalAmount), originalCurrency),
-    [formatCurrency, originalAmount, originalCurrency]
+    () => formatCurrency(Math.abs(sourceAmount), sourceCurrency),
+    [formatCurrency, sourceAmount, sourceCurrency, selectedCurrency.code]
   );
-
-  // Show original amount as reference if different currency
-  const displayOriginal = useMemo(() => {
-    if (originalCurrency === selectedCurrency.code) return null;
-    return displayAmount(Math.abs(originalAmount), originalCurrency, originalCurrency);
-  }, [displayAmount, originalAmount, originalCurrency, selectedCurrency.code]);
   
   return (
     <Card 
@@ -97,30 +86,8 @@ export default function TransactionCard({
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <h3 className="font-medium text-sm">{category}</h3>
-                {originalCurrency !== selectedCurrency.code && (
-                  <Badge variant="secondary" className="text-xs flex items-center gap-1">
-                    <TrendingUp className="w-3 h-3" />
-                    {originalCurrency}
-                  </Badge>
-                )}
-                {hasForexData && (
-                  <Badge variant="secondary" className="text-xs flex items-center gap-1">
-                    <TrendingUp className="w-3 h-3" />
-                    {originalCurrency}
-                  </Badge>
-                )}
-                {isStaleData && (
-                  <Badge variant="outline" className="text-xs text-yellow-600 dark:text-yellow-400">
-                    Stale
-                  </Badge>
-                )}
               </div>
               <p className="text-xs text-muted-foreground truncate">{description}</p>
-              {hasForexData && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  @ {transaction.conversionRate?.toFixed(6)} rate
-                </p>
-              )}
             </div>
           </div>
           
@@ -132,11 +99,6 @@ export default function TransactionCard({
               )}>
                 {isIncome ? '+' : '-'}{displayConverted}
               </p>
-              {displayOriginal && (
-                <p className="text-xs font-medium text-gray-600 dark:text-gray-400">
-                  (orig: {displayOriginal})
-                </p>
-              )}
               <p className="text-xs text-muted-foreground">{date}</p>
             </div>
             

@@ -1179,7 +1179,14 @@ export default function AdminDashboard() {
     </Table>
   </div>
 )}
-
+</CardContent>
+                  </Card>
+                </TabsContent>
+              </Tabs>
+            </>
+          )}
+        </div>
+     
         {/* ═══════════════════════════════════════════════ */}
         {/* ── Deactivate User Confirmation Dialog ─────── */}
         {/* ═══════════════════════════════════════════════ */}

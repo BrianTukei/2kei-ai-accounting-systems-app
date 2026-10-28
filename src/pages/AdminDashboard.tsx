@@ -224,25 +224,22 @@ export default function AdminDashboard() {
 
   // ── Load demo bookings ──
   const loadDemoBookings = useCallback(async () => {
-  setDemoBookingsLoading(true);
-  try {
-  const { data, error } = await supabase
-    .from('demo_bookings')
-    .select('*')
-    .order('created_at', { ascending: false });
+    setDemoBookingsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('demo_bookings')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-  if (error) {
-    throw error;
-  }
-
-  setDemoBookings(data || []);
-} catch (err) {
-  console.error('Failed to load demo bookings:', err);
-  toast.error('Failed to load demo bookings');
-} finally {
-  setDemoBookingsLoading(false);
-}
-}, []);
+      if (error) throw error;
+      setDemoBookings(data || []);
+    } catch (err) {
+      console.error('Failed to load demo bookings:', err);
+      toast.error('Failed to load demo bookings');
+    } finally {
+      setDemoBookingsLoading(false);
+    }
+  }, []);
       
       if (!response.ok) {
         throw new Error('Failed to fetch demo bookings');

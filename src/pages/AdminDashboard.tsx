@@ -240,21 +240,6 @@ export default function AdminDashboard() {
       setDemoBookingsLoading(false);
     }
   }, []);
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch demo bookings');
-      }
-      
-      const result = await response.json();
-      if (result.success && Array.isArray(result.data)) {
-        setDemoBookings(result.data);
-      }
-    } catch (err) {
-      console.error('Failed to load demo bookings:', err);
-    } finally {
-      setDemoBookingsLoading(false);
-    }
-  }, []);
 
   useEffect(() => {
     if (!loading) {

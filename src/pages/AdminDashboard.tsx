@@ -1087,94 +1087,98 @@ export default function AdminDashboard() {
                     </CardHeader>
                     <CardContent>
                       {demoBookingsLoading ? (
-                        <div className="text-center py-8 text-slate-500">
-                          <Clock className="w-10 h-10 mx-auto mb-3 animate-spin text-slate-600" />
-                          <p className="font-medium text-slate-300">Loading demo bookings...</p>
-                        </div>
-                      ) : demoBookings.length === 0 ? (
-                        <div className="text-center py-8 text-slate-500">
-                          <Calendar className="w-10 h-10 mx-auto mb-3 text-slate-600" />
-                          <p className="font-medium text-slate-300">No demo bookings yet</p>
-                          <p className="text-xs mt-1 text-slate-500">
-                            Demo booking requests will appear here
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="overflow-x-auto">
-                          <Table>
-                            <TableHeader>
-                              <TableRow className="border-slate-700 hover:bg-slate-800/30">
-                                <TableHead className="text-slate-300">Name</TableHead>
-                                <TableHead className="text-slate-300">Email</TableHead>
-                                <TableHead className="text-slate-300">Company</TableHead>
-                                <TableHead className="text-slate-300">Phone</TableHead>
-                                <TableHead className="text-slate-300">Preferred Date</TableHead>
-                                <TableHead className="text-slate-300">Preferred Time</TableHead>
-                                <TableHead className="text-slate-300">Status</TableHead>
-                                <TableHead className="text-slate-300">Source</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {demoBookings
-                                .filter((booking: any) => {
-                                  const searchTerm = demoBookingsSearch.toLowerCase();
-                                  return (
-                                    booking.name?.toLowerCase().includes(searchTerm) ||
-                                    booking.email?.toLowerCase().includes(searchTerm) ||
-                                    booking.company?.toLowerCase().includes(searchTerm)
-                                  );
-                                })
-                                .map((booking: any, idx: number) => {
-                                  const bookingDate = new Date(booking.preferredDate);
-                                  const statusColor = {
-                                    pending: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
-                                    confirmed: 'bg-green-500/20 text-green-300 border-green-500/30',
-                                    completed: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
-                                    cancelled: 'bg-red-500/20 text-red-300 border-red-500/30',
-                                    no_show: 'bg-red-900/20 text-red-400 border-red-900/30',
-                                  }[booking.status] || 'bg-slate-500/20 text-slate-300 border-slate-500/30';
+  <div className="text-center py-8 text-slate-500">
+    <Clock className="w-10 h-10 mx-auto mb-3 animate-spin text-slate-600" />
+    <p className="font-medium text-slate-300">Loading demo bookings...</p>
+  </div>
+) : demoBookings.length === 0 ? (
+  <div className="text-center py-8 text-slate-500">
+    <Calendar className="w-10 h-10 mx-auto mb-3 text-slate-600" />
+    <p className="font-medium text-slate-300">No demo bookings yet</p>
+    <p className="text-xs mt-1 text-slate-500">
+      Demo booking requests will appear here
+    </p>
+  </div>
+) : (
+  <div className="overflow-x-auto">
+    <Table>
+      <TableHeader>
+        <TableRow className="border-slate-700 hover:bg-slate-800/30">
+          <TableHead className="text-slate-300">Name</TableHead>
+          <TableHead className="text-slate-300">Email</TableHead>
+          <TableHead className="text-slate-300">Company</TableHead>
+          <TableHead className="text-slate-300">Phone</TableHead>
+          <TableHead className="text-slate-300">Preferred Date</TableHead>
+          <TableHead className="text-slate-300">Preferred Time</TableHead>
+          <TableHead className="text-slate-300">Status</TableHead>
+          <TableHead className="text-slate-300">Source</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {demoBookings
+          .filter((booking: any) => {
+            const searchTerm = demoBookingsSearch.toLowerCase();
+            return (
+              booking.name?.toLowerCase().includes(searchTerm) ||
+              booking.email?.toLowerCase().includes(searchTerm) ||
+              booking.company_name?.toLowerCase().includes(searchTerm)
+            );
+          })
+          .map((booking: any) => {
+            const bookingDate = booking.preferred_date
+              ? new Date(booking.preferred_date)
+              : null;
 
-                                  return (
-                                    <TableRow key={booking._id || idx} className="border-slate-700 hover:bg-slate-800/50">
-                                      <TableCell className="text-slate-200 font-medium">{booking.name}</TableCell>
-                                      <TableCell className="text-slate-400 text-sm">{booking.email}</TableCell>
-                                      <TableCell className="text-slate-400 text-sm">{booking.company}</TableCell>
-                                      <TableCell className="text-slate-400 text-sm">{booking.phone}</TableCell>
-                                      <TableCell className="text-slate-400 text-sm">
-                                        {bookingDate.toLocaleDateString('en-US', {
-                                          month: 'short',
-                                          day: 'numeric',
-                                          year: 'numeric',
-                                        })}
-                                      </TableCell>
-                                      <TableCell className="text-slate-400 text-sm">{booking.preferredTime}</TableCell>
-                                      <TableCell>
-                                        <Badge
-                                          className={cn(
-                                            'text-xs border',
-                                            statusColor
-                                          )}
-                                        >
-                                          {booking.status || 'pending'}
-                                        </Badge>
-                                      </TableCell>
-                                      <TableCell className="text-slate-400 text-sm capitalize">
-                                        {booking.source || 'website'}
-                                      </TableCell>
-                                    </TableRow>
-                                  );
-                                })}
-                            </TableBody>
-                          </Table>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-              </Tabs>
-            </>
-          )}
-        </div>
+            const statusColor =
+              {
+                pending: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
+                confirmed: 'bg-green-500/20 text-green-300 border-green-500/30',
+                completed: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+                cancelled: 'bg-red-500/20 text-red-300 border-red-500/30',
+                no_show: 'bg-red-900/20 text-red-400 border-red-900/30',
+              }[booking.status] || 'bg-slate-500/20 text-slate-300 border-slate-500/30';
+
+            return (
+              <TableRow key={booking.id} className="border-slate-700 hover:bg-slate-800/50">
+                <TableCell className="text-slate-200 font-medium">
+                  {booking.name || '—'}
+                </TableCell>
+                <TableCell className="text-slate-400 text-sm">
+                  {booking.email || '—'}
+                </TableCell>
+                <TableCell className="text-slate-400 text-sm">
+                  {booking.company_name || '—'}
+                </TableCell>
+                <TableCell className="text-slate-400 text-sm">
+                  {booking.phone || '—'}
+                </TableCell>
+                <TableCell className="text-slate-400 text-sm">
+                  {bookingDate && !isNaN(bookingDate.getTime())
+                    ? bookingDate.toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })
+                    : '—'}
+                </TableCell>
+                <TableCell className="text-slate-400 text-sm">
+                  {booking.preferred_time || '—'}
+                </TableCell>
+                <TableCell>
+                  <Badge className={cn('text-xs border', statusColor)}>
+                    {booking.status || 'pending'}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-slate-400 text-sm capitalize">
+                  {booking.source || 'website'}
+                </TableCell>
+              </TableRow>
+            );
+          })}
+      </TableBody>
+    </Table>
+  </div>
+)}
 
         {/* ═══════════════════════════════════════════════ */}
         {/* ── Deactivate User Confirmation Dialog ─────── */}

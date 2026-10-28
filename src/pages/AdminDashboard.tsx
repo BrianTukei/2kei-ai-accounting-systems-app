@@ -1126,8 +1126,9 @@ export default function AdminDashboard() {
           })
           .map((booking: any) => {
             const bookingDate = booking.preferred_date
-              ? new Date(booking.preferred_date)
-              : null;
+            const bookingDate = booking.preferred_date
+  ? new Date(booking.preferred_date + 'T00:00:00')
+  : null;
 
             const statusColor =
               {

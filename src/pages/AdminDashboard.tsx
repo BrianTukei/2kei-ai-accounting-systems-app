@@ -1126,7 +1126,6 @@ export default function AdminDashboard() {
           })
           .map((booking: any) => {
             const bookingDate = booking.preferred_date
-            const bookingDate = booking.preferred_date
   ? new Date(booking.preferred_date + 'T00:00:00')
   : null;
 

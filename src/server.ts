@@ -1,8 +1,6 @@
 import './env';
-// Configure dotenv before any other imports
 import { fileURLToPath } from 'url';
 import path from 'path';
-
 
 import express from 'express';
 import cors from 'cors';
@@ -20,7 +18,6 @@ import subscriptionRoutes from './routes/subscription';
 import forexRoutes from './routes/forex';
 import countryRoutes from './routes/countries';
 import billingRoutes from './routes/billing-simple';
-// import adminBillingRoutes from './routes/adminBilling-working';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -28,11 +25,18 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Middleware
+// Middleware — FIXED CORS for Render
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? 'https://your-production-domain.com' 
-    : ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:8080', 'file://', 'null'],
+  origin: process.env.NODE_ENV === 'production'
+    ? [
+        process.env.APP_URL,
+        'https://briantukei-2kei-ai-accounting-systems-app.onrender.com',
+      ].filter(Boolean) as string[]
+    : [
+        'http://localhost:3000',
+        'http://localhost:5173',
+        'http://localhost:8080',
+      ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
@@ -60,7 +64,6 @@ app.use('/api/subscription', subscriptionRoutes);
 app.use('/api/forex', forexRoutes);
 app.use('/api/countries', countryRoutes);
 app.use('/api/billing', billingRoutes);
-// app.use('/api/admin/billing', adminBillingRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -82,7 +85,7 @@ if (process.env.NODE_ENV === 'production') {
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error('Server error:', err);
-  
+
   if (err.code === 'LIMIT_FILE_SIZE') {
     return res.status(413).json({
       error: 'File too large',
@@ -108,12 +111,11 @@ app.listen(PORT, () => {
   console.log(`🚀 2K AI Accounting Systems Backend running on port ${PORT}`);
   console.log(`📊 API available at: http://localhost:${PORT}/api`);
   console.log(`💚 Health check: http://localhost:${PORT}/health`);
-  
+
   if (process.env.NODE_ENV === 'development') {
     console.log('🔧 Development mode - CORS enabled for localhost');
   }
 
-  // Initialize background AI job worker
   runJobWorker().catch(err => {
     console.error('Failed to start Job Worker:', err);
   });

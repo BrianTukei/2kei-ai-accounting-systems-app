@@ -38,7 +38,6 @@ export default function AddTransactionModal({
     }
   }, [transactionToEdit]);
   
-  // Predefined categories based on transaction type
   const incomeCategories = [
     'Salary', 'Sales Revenue', 'Consulting Fee', 'Client Payment', 
     'Project Payment', 'Investment', 'Dividend', 'Interest', 'Other'
@@ -54,7 +53,6 @@ export default function AddTransactionModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validation
     if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
       toast.error('Please enter a valid amount');
       return;
@@ -87,7 +85,8 @@ export default function AddTransactionModal({
           category,
           description,
           currency: selectedCurrency.code,
-          date: 'Today'
+          // FIXED: real date instead of the string "Today"
+          date: new Date().toISOString().split('T')[0]
         });
         toast.success(`${type === 'income' ? 'Income' : 'Expense'} added successfully`);
       }
@@ -110,7 +109,7 @@ export default function AddTransactionModal({
   
   const handleTypeChange = (value: string) => {
     setType(value as 'income' | 'expense');
-    setCategory(''); // Reset category when type changes
+    setCategory('');
   };
   
   return (
@@ -131,10 +130,7 @@ export default function AddTransactionModal({
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="type">Transaction Type</Label>
-            <Select
-              value={type}
-              onValueChange={handleTypeChange}
-            >
+            <Select value={type} onValueChange={handleTypeChange}>
               <SelectTrigger id="type">
                 <SelectValue placeholder="Select type" />
               </SelectTrigger>
@@ -160,10 +156,7 @@ export default function AddTransactionModal({
           
           <div className="space-y-2">
             <Label htmlFor="category">Category</Label>
-            <Select
-              value={category}
-              onValueChange={setCategory}
-            >
+            <Select value={category} onValueChange={setCategory}>
               <SelectTrigger id="category">
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>
@@ -189,7 +182,9 @@ export default function AddTransactionModal({
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit">{transactionToEdit ? 'Update Transaction' : 'Add Transaction'}</Button>
+            <Button type="submit">
+              {transactionToEdit ? 'Update Transaction' : 'Add Transaction'}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

@@ -17,7 +17,7 @@ export default function StatsGrid() {
   } = useFinancialStats();
 
   const { transactions } = useTransactions();
-  const { formatCurrency } = useCurrency();
+  const { formatCurrency, selectedCurrency } = useCurrency();
 
   const formatTrend = (trend: number) => Math.round(trend);
 
@@ -39,49 +39,60 @@ export default function StatsGrid() {
         ? 'This month'
         : 'No expenses yet';
 
-  // ---------- Recent Activity logic ----------
-  // 1. Prefer last 7 days (pendingAmount)
-  // 2. If empty, fall back to net of the most recent 10 transactions
-  let recentActivityValue = pendingAmount;
-  let recentActivityDescription = 'Last 7 days';
+  // ---------- Robust Recent Activity ----------
+  let recentActivityValue = 0;
+  let recentActivityDescription = 'No recent activity';
 
-  if (pendingAmount === 0 && transactions.length > 0) {
-    const recentTxs = [...transactions]
-      .sort((a, b) => {
-        // Try to sort by date first, fall back to id
-        const dateA = new Date(a.date).getTime();
-        const dateB = new Date(b.date).getTime();
-        if (!isNaN(dateA) && !isNaN(dateB)) return dateB - dateA;
-        return b.id.localeCompare(a.id);
-      })
-      .slice(0, 10);
+  if (transactions && transactions.length > 0) {
+    const getTime = (t: any) => {
+      const d = new Date(t.date);
+      if (!isNaN(d.getTime())) return d.getTime();
+      return Number(t.id) || 0;
+    };
 
-    const net = recentTxs.reduce((sum, t) => {
-      return sum + (t.type === 'income' ? t.amount : -t.amount);
+    const sorted = [...transactions].sort((a, b) => getTime(b) - getTime(a));
+
+    const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const last7Days = sorted.filter(t => getTime(t) >= sevenDaysAgo);
+
+    let selected = last7Days;
+    let label = 'Last 7 days';
+
+    if (selected.length === 0) {
+      selected = sorted.slice(0, 10);
+      label = `Last ${selected.length} transactions`;
+    }
+
+    const net = selected.reduce((sum, t) => {
+      const amount = Number(t.amount) || 0;
+      return sum + (t.type === 'income' ? amount : -amount);
     }, 0);
 
-    recentActivityValue = Math.abs(net);
-    recentActivityDescription = `Last ${recentTxs.length} transactions`;
+    const volume = selected.reduce((sum, t) => sum + Math.abs(Number(t.amount) || 0), 0);
+
+    recentActivityValue = net !== 0 ? Math.abs(net) : volume;
+    recentActivityDescription = label;
   }
+
+  // IMPORTANT: pass selectedCurrency.code so amounts are NOT treated as USD
+  const fmt = (value: number) => formatCurrency(value, selectedCurrency.code);
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 compact-spacing">
-      {/* Total Balance */}
       <div className="animate-scale-in" style={{ animationDelay: '0.1s' }}>
         <StatCard
           title="Total Balance"
-          value={formatCurrency(totalBalance)}
+          value={fmt(totalBalance)}
           description="Updated just now"
           icon={DollarSign}
           iconClassName="bg-primary/10 text-primary border border-primary/20"
         />
       </div>
 
-      {/* Income */}
       <div className="animate-scale-in" style={{ animationDelay: '0.2s' }}>
         <StatCard
           title="Income"
-          value={formatCurrency(displayIncome)}
+          value={fmt(displayIncome)}
           description={incomeDescription}
           trend={monthlyIncome > 0 ? formatTrend(incomeGrowth) : undefined}
           icon={ArrowUpRight}
@@ -89,11 +100,10 @@ export default function StatsGrid() {
         />
       </div>
 
-      {/* Expenses */}
       <div className="animate-scale-in" style={{ animationDelay: '0.3s' }}>
         <StatCard
           title="Expenses"
-          value={formatCurrency(displayExpenses)}
+          value={fmt(displayExpenses)}
           description={expenseDescription}
           trend={monthlyExpenses > 0 ? formatTrend(expenseGrowth) : undefined}
           icon={ArrowDownLeft}
@@ -101,11 +111,10 @@ export default function StatsGrid() {
         />
       </div>
 
-      {/* Recent Activity */}
       <div className="animate-scale-in" style={{ animationDelay: '0.4s' }}>
         <StatCard
           title="Recent Activity"
-          value={formatCurrency(recentActivityValue)}
+          value={fmt(recentActivityValue)}
           description={recentActivityDescription}
           icon={CreditCard}
           iconClassName="bg-warning/10 text-warning border border-warning/20"

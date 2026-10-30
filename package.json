@@ -7,18 +7,19 @@
   "overrides": {
     "minimatch": "^10.2.2"
   },
-  "scripts": {
-    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
-    "dev:frontend": "node ./node_modules/vite/bin/vite.js",
-    "dev:backend": "tsx watch src/server.ts",
-    "build": "node ./node_modules/vite/bin/vite.js build",
-    "build:dev": "node ./node_modules/vite/bin/vite.js build --mode development",
-    "lint": "eslint .",
-    "preview": "node ./node_modules/vite/bin/vite.js preview",
-    "start": "node ./node_modules/vite/bin/vite.js preview --host 0.0.0.0 --port $PORT",
-    "start:backend": "tsx src/server.ts",
-    "test": "vitest"
-  },
+"scripts": {
+  "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+  "dev:frontend": "node ./node_modules/vite/bin/vite.js",
+  "dev:backend": "tsx watch src/server.ts",
+  "build": "node ./node_modules/vite/bin/vite.js build",
+  "build:dev": "node ./node_modules/vite/bin/vite.js build --mode development",
+  "lint": "eslint .",
+  "preview": "node ./node_modules/vite/bin/vite.js preview",
+  "start": "tsx src/server.ts",
+  "start:frontend-only": "node ./node_modules/vite/bin/vite.js preview --host 0.0.0.0 --port $PORT",
+  "start:backend": "tsx src/server.ts",
+  "test": "vitest"
+},
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "@hookform/resolvers": "^3.9.0",

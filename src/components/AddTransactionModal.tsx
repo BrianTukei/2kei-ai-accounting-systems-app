@@ -16,19 +16,19 @@ interface AddTransactionModalProps {
   transactionToEdit?: Transaction;
 }
 
-export default function AddTransactionModal({ 
-  isOpen, 
-  onClose, 
+export default function AddTransactionModal({
+  isOpen,
+  onClose,
   onAddTransaction,
   onEditTransaction,
-  transactionToEdit 
+  transactionToEdit
 }: AddTransactionModalProps) {
   const { getCurrencySymbol, selectedCurrency } = useCurrency();
   const [amount, setAmount] = useState<string>('');
   const [type, setType] = useState<'income' | 'expense'>('income');
   const [category, setCategory] = useState<string>('');
   const [description, setDescription] = useState<string>('');
-  
+
   useEffect(() => {
     if (transactionToEdit) {
       setAmount(transactionToEdit.amount.toString());
@@ -37,37 +37,37 @@ export default function AddTransactionModal({
       setDescription(transactionToEdit.description);
     }
   }, [transactionToEdit]);
-  
+
   const incomeCategories = [
-    'Salary', 'Sales Revenue', 'Consulting Fee', 'Client Payment', 
+    'Salary', 'Sales Revenue', 'Consulting Fee', 'Client Payment',
     'Project Payment', 'Investment', 'Dividend', 'Interest', 'Other'
   ];
-  
+
   const expenseCategories = [
-    'Office Rent', 'Utilities', 'Office Supplies', 'Marketing', 
+    'Office Rent', 'Utilities', 'Office Supplies', 'Marketing',
     'Subscription', 'Equipment', 'Salary', 'Travel', 'Food', 'Other'
   ];
-  
+
   const categories = type === 'income' ? incomeCategories : expenseCategories;
-  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
       toast.error('Please enter a valid amount');
       return;
     }
-    
+
     if (!category) {
       toast.error('Please select a category');
       return;
     }
-    
+
     if (!description.trim()) {
       toast.error('Please enter a description');
       return;
     }
-    
+
     try {
       if (transactionToEdit && onEditTransaction) {
         await onEditTransaction({
@@ -85,7 +85,6 @@ export default function AddTransactionModal({
           category,
           description,
           currency: selectedCurrency.code,
-          // FIXED: real date instead of the string "Today"
           date: new Date().toISOString().split('T')[0]
         });
         toast.success(`${type === 'income' ? 'Income' : 'Expense'} added successfully`);
@@ -95,23 +94,23 @@ export default function AddTransactionModal({
       toast.error(message);
       return;
     }
-    
+
     resetForm();
     onClose();
   };
-  
+
   const resetForm = () => {
     setAmount('');
     setType('income');
     setCategory('');
     setDescription('');
   };
-  
+
   const handleTypeChange = (value: string) => {
     setType(value as 'income' | 'expense');
     setCategory('');
   };
-  
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-[425px] glass-card">
@@ -120,13 +119,13 @@ export default function AddTransactionModal({
             {transactionToEdit ? 'Edit Transaction' : 'Add New Transaction'}
           </DialogTitle>
           <DialogDescription>
-            {transactionToEdit 
+            {transactionToEdit
               ? 'Edit the details of your transaction.'
               : 'Enter the details of your transaction to add it to your records.'
             }
           </DialogDescription>
         </DialogHeader>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="type">Transaction Type</Label>
@@ -140,7 +139,7 @@ export default function AddTransactionModal({
               </SelectContent>
             </Select>
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="amount">Amount ({getCurrencySymbol()})</Label>
             <Input
@@ -153,7 +152,7 @@ export default function AddTransactionModal({
               onChange={(e) => setAmount(e.target.value)}
             />
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="category">Category</Label>
             <Select value={category} onValueChange={setCategory}>
@@ -167,7 +166,7 @@ export default function AddTransactionModal({
               </SelectContent>
             </Select>
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
             <Input
@@ -177,7 +176,7 @@ export default function AddTransactionModal({
               onChange={(e) => setDescription(e.target.value)}
             />
           </div>
-          
+
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel

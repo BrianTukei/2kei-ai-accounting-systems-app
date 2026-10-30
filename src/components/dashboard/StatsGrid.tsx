@@ -11,7 +11,6 @@ export default function StatsGrid() {
     totalExpenses,
     monthlyIncome,
     monthlyExpenses,
-    pendingAmount,
     incomeGrowth,
     expenseGrowth
   } = useFinancialStats();
@@ -21,7 +20,6 @@ export default function StatsGrid() {
 
   const formatTrend = (trend: number) => Math.round(trend);
 
-  // Prefer actual recorded totals so cards are never stuck at zero
   const displayIncome = totalIncome > 0 ? totalIncome : monthlyIncome;
   const displayExpenses = totalExpenses > 0 ? totalExpenses : monthlyExpenses;
 
@@ -39,7 +37,6 @@ export default function StatsGrid() {
         ? 'This month'
         : 'No expenses yet';
 
-  // ---------- Robust Recent Activity ----------
   let recentActivityValue = 0;
   let recentActivityDescription = 'No recent activity';
 
@@ -74,7 +71,6 @@ export default function StatsGrid() {
     recentActivityDescription = label;
   }
 
-  // IMPORTANT: pass selectedCurrency.code so amounts are NOT treated as USD
   const fmt = (value: number) => formatCurrency(value, selectedCurrency.code);
 
   return (

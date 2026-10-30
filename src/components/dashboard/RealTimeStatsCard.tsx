@@ -15,7 +15,6 @@ export default function RealTimeStatsCard() {
 
   const { formatCurrency, selectedCurrency } = useCurrency();
 
-  // Prefer real recorded totals
   const displayIncome = totalIncome > 0 ? totalIncome : monthlyIncome;
   const displayExpenses = totalExpenses > 0 ? totalExpenses : monthlyExpenses;
   const usingMonthly = monthlyIncome > 0 || monthlyExpenses > 0;
@@ -30,7 +29,6 @@ export default function RealTimeStatsCard() {
     ? 'Current month performance'
     : 'Based on all recorded transactions';
 
-  // IMPORTANT: pass selectedCurrency.code so amounts are NOT treated as USD
   const fmt = (value: number) => formatCurrency(value, selectedCurrency.code);
 
   return (

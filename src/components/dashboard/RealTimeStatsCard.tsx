@@ -13,9 +13,9 @@ export default function RealTimeStatsCard() {
     categoryBreakdown
   } = useFinancialStats();
 
-  const { formatCurrency } = useCurrency();
+  const { formatCurrency, selectedCurrency } = useCurrency();
 
-  // Use real recorded totals when current month is empty
+  // Prefer real recorded totals
   const displayIncome = totalIncome > 0 ? totalIncome : monthlyIncome;
   const displayExpenses = totalExpenses > 0 ? totalExpenses : monthlyExpenses;
   const usingMonthly = monthlyIncome > 0 || monthlyExpenses > 0;
@@ -29,6 +29,9 @@ export default function RealTimeStatsCard() {
   const summaryDescription = usingMonthly
     ? 'Current month performance'
     : 'Based on all recorded transactions';
+
+  // IMPORTANT: pass selectedCurrency.code so amounts are NOT treated as USD
+  const fmt = (value: number) => formatCurrency(value, selectedCurrency.code);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
@@ -84,19 +87,19 @@ export default function RealTimeStatsCard() {
             <div className="flex items-center justify-between gap-2">
               <span className="text-sm text-muted-foreground">Total Income</span>
               <span className="font-semibold text-success text-sm sm:text-base">
-                {formatCurrency(displayIncome)}
+                {fmt(displayIncome)}
               </span>
             </div>
             <div className="flex items-center justify-between gap-2">
               <span className="text-sm text-muted-foreground">Total Expenses</span>
               <span className="font-semibold text-destructive text-sm sm:text-base">
-                {formatCurrency(displayExpenses)}
+                {fmt(displayExpenses)}
               </span>
             </div>
             <div className="flex items-center justify-between gap-2 border-t pt-2">
               <span className="font-medium text-sm sm:text-base">Net Cash Flow</span>
               <span className={`font-bold text-sm sm:text-base ${displayIncome - displayExpenses >= 0 ? 'text-success' : 'text-destructive'}`}>
-                {formatCurrency(displayIncome - displayExpenses)}
+                {fmt(displayIncome - displayExpenses)}
               </span>
             </div>
           </div>

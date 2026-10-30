@@ -14,22 +14,18 @@ export default function TransactionSummary({ transactions }: TransactionSummaryP
     transaction.original_amount ?? transaction.originalAmount ?? transaction.amount
   );
 
-  // Default to selected currency (UGX), NOT USD
   const getOriginalCurrency = (transaction: Transaction) => (
     transaction.original_currency ?? transaction.originalCurrency ?? transaction.currency ?? selectedCurrency.code
   );
-  
-  // Convert each transaction into the currently selected display currency, then sum
+
   const totalIncome = transactions
     .filter(t => t.type === 'income')
     .reduce((sum, t) => sum + convertAmount(getOriginalAmount(t), getOriginalCurrency(t)), 0);
-    
+
   const totalExpenses = transactions
     .filter(t => t.type === 'expense')
     .reduce((sum, t) => sum + convertAmount(getOriginalAmount(t), getOriginalCurrency(t)), 0);
 
-  // CRITICAL FIX: tell formatCurrency the amount is already in selectedCurrency
-  // so it does NOT multiply by the USD→UGX rate again
   const fmt = (value: number) => formatCurrency(value, selectedCurrency.code);
 
   return (
@@ -46,7 +42,7 @@ export default function TransactionSummary({ transactions }: TransactionSummaryP
             </div>
           </CardHeader>
         </Card>
-        
+
         <Card className="glass-card glass-card-hover">
           <CardHeader className="flex flex-row items-center justify-between p-4">
             <CardTitle className="text-lg flex items-center">

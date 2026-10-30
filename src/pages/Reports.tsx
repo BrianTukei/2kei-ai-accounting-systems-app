@@ -92,9 +92,9 @@ export default function Reports() {
   const [activeTab, setActiveTab] = useState('financial');
   const { monthlyData, totalIncome, totalExpenses, totalBalance, categoryBreakdown, incomeGrowth, expenseGrowth, monthlyIncome, monthlyExpenses } = useFinancialStats();
   const { transactions } = useTransactions();
-  const { formatCurrency } = useCurrency();
+  const { formatCurrency, selectedCurrency } = useCurrency();
 
-  const fmt = (v: number) => formatCurrency(v);
+const fmt = (v: number) => formatCurrency(v, selectedCurrency.code);
 
   // ─── Derived data ─────────────────────────
   const enriched = useMemo(() => {

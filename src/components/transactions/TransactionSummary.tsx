@@ -1,6 +1,5 @@
-
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowDownLeft, ArrowUpRight, TrendingUp } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight } from 'lucide-react';
 import { Transaction } from '@/components/TransactionCard';
 import { useCurrency } from '@/contexts/CurrencyContext';
 
@@ -15,11 +14,12 @@ export default function TransactionSummary({ transactions }: TransactionSummaryP
     transaction.original_amount ?? transaction.originalAmount ?? transaction.amount
   );
 
+  // Default to selected currency (UGX), NOT USD
   const getOriginalCurrency = (transaction: Transaction) => (
-    transaction.original_currency ?? transaction.originalCurrency ?? transaction.currency ?? 'USD'
+    transaction.original_currency ?? transaction.originalCurrency ?? transaction.currency ?? selectedCurrency.code
   );
   
-  // Convert each transaction before summing so mixed-currency totals are meaningful.
+  // Convert each transaction into the currently selected display currency, then sum
   const totalIncome = transactions
     .filter(t => t.type === 'income')
     .reduce((sum, t) => sum + convertAmount(getOriginalAmount(t), getOriginalCurrency(t)), 0);
@@ -27,6 +27,10 @@ export default function TransactionSummary({ transactions }: TransactionSummaryP
   const totalExpenses = transactions
     .filter(t => t.type === 'expense')
     .reduce((sum, t) => sum + convertAmount(getOriginalAmount(t), getOriginalCurrency(t)), 0);
+
+  // CRITICAL FIX: tell formatCurrency the amount is already in selectedCurrency
+  // so it does NOT multiply by the USD→UGX rate again
+  const fmt = (value: number) => formatCurrency(value, selectedCurrency.code);
 
   return (
     <div className="space-y-4 mb-6">
@@ -38,7 +42,7 @@ export default function TransactionSummary({ transactions }: TransactionSummaryP
               Income
             </CardTitle>
             <div className="text-2xl font-bold text-green-600">
-              +{formatCurrency(totalIncome)}
+              +{fmt(totalIncome)}
             </div>
           </CardHeader>
         </Card>
@@ -50,12 +54,11 @@ export default function TransactionSummary({ transactions }: TransactionSummaryP
               Expenses
             </CardTitle>
             <div className="text-2xl font-bold text-red-600">
-              -{formatCurrency(totalExpenses)}
+              -{fmt(totalExpenses)}
             </div>
           </CardHeader>
         </Card>
       </div>
-
     </div>
   );
 }

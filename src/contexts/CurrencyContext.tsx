@@ -216,11 +216,11 @@ export function CurrencyProvider({ children }: CurrencyProviderProps) {
 
   /**
    * Format a currency amount.
-   * If source currency is not provided, assume BASE_CURRENCY (USD)
-   * so figures convert app-wide instead of only swapping symbols.
+   * If source currency is omitted, treat amount as already in the selected
+   * display currency (no conversion). Pass fromCurrency when converting.
    */
   const formatCurrency = useCallback((amount: number, fromCurrency?: string): string => {
-    const sourceCurrency = (fromCurrency || BASE_CURRENCY).toUpperCase();
+    const sourceCurrency = (fromCurrency || selectedCurrency.code).toUpperCase();
     let displayAmount = amount;
 
     if (sourceCurrency !== selectedCurrency.code.toUpperCase()) {

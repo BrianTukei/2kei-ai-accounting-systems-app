@@ -16,7 +16,7 @@ export default function StatsGrid() {
   } = useFinancialStats();
 
   const { transactions } = useTransactions();
-  const { formatCurrency, selectedCurrency } = useCurrency();
+  const { formatCurrency, selectedCurrency, convertAmount } = useCurrency();
 
   const formatTrend = (trend: number) => Math.round(trend);
 
@@ -36,6 +36,17 @@ export default function StatsGrid() {
       : monthlyExpenses > 0
         ? 'This month'
         : 'No expenses yet';
+
+  // Convert each transaction into the selected display currency
+  const toDisplay = (t: any): number => {
+    const amount = Number(t.original_amount ?? t.originalAmount ?? t.amount) || 0;
+    const from =
+      t.original_currency ??
+      t.originalCurrency ??
+      t.currency ??
+      selectedCurrency.code;
+    return convertAmount(amount, from, selectedCurrency.code);
+  };
 
   let recentActivityValue = 0;
   let recentActivityDescription = 'No recent activity';
@@ -60,17 +71,19 @@ export default function StatsGrid() {
       label = `Last ${selected.length} transactions`;
     }
 
+    // Use converted amounts (same as Income / Expenses)
     const net = selected.reduce((sum, t) => {
-      const amount = Number(t.amount) || 0;
+      const amount = toDisplay(t);
       return sum + (t.type === 'income' ? amount : -amount);
     }, 0);
 
-    const volume = selected.reduce((sum, t) => sum + Math.abs(Number(t.amount) || 0), 0);
+    const volume = selected.reduce((sum, t) => sum + Math.abs(toDisplay(t)), 0);
 
     recentActivityValue = net !== 0 ? Math.abs(net) : volume;
     recentActivityDescription = label;
   }
 
+  // Totals are already in selected currency
   const fmt = (value: number) => formatCurrency(value, selectedCurrency.code);
 
   return (

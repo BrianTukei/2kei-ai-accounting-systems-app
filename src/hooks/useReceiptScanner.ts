@@ -31,6 +31,7 @@ export const useReceiptScanner = ({ onScanComplete }: UseReceiptScannerProps) =>
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [scanResults, setScanResults] = useState<any>(null);
   const [confidence, setConfidence] = useState<number>(0);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -39,16 +40,17 @@ export const useReceiptScanner = ({ onScanComplete }: UseReceiptScannerProps) =>
         toast.error('Please select a valid image file');
         return;
       }
-      
-      if (selectedFile.size > 10 * 1024 * 1024) { // 10MB limit
+
+      if (selectedFile.size > 10 * 1024 * 1024) {
         toast.error('File size must be less than 10MB');
         return;
       }
-      
+
       setFile(selectedFile);
       const url = URL.createObjectURL(selectedFile);
       setPreviewUrl(url);
       setScanResults(null);
+      setImageUrl(null);
     }
   };
 
@@ -60,6 +62,7 @@ export const useReceiptScanner = ({ onScanComplete }: UseReceiptScannerProps) =>
     setPreviewUrl(null);
     setScanResults(null);
     setConfidence(0);
+    setImageUrl(null);
   };
 
   /** Accept a raw File (e.g. from CameraCapture) without a change-event */
@@ -68,36 +71,38 @@ export const useReceiptScanner = ({ onScanComplete }: UseReceiptScannerProps) =>
     setFile(newFile);
     setPreviewUrl(URL.createObjectURL(newFile));
     setScanResults(null);
+    setImageUrl(null);
   };
 
   const uploadImageToSupabase = async (file: File): Promise<string> => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-      
-      const { data, error } = await supabase.storage
-        .from('receipts')
-        .upload(fileName, file);
+
+      const { data, error } = await supabase.storage.from('receipts').upload(fileName, file);
 
       if (error) throw error;
 
-      const { data: publicData } = supabase.storage
-        .from('receipts')
-        .getPublicUrl(data.path);
+      const { data: publicData } = supabase.storage.from('receipts').getPublicUrl(data.path);
 
       return publicData.publicUrl;
     } catch (error) {
       console.error('Error uploading image:', error);
-      throw new Error('Failed to upload image');
+      // Non-fatal: scanning can still show results without storage
+      return '';
     }
   };
 
-  const saveReceiptToDatabase = async (receiptData: any, imageUrl: string): Promise<string> => {
+  const saveReceiptToDatabase = async (receiptData: any, imgUrl: string): Promise<string | null> => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
       const { data, error } = await supabase
@@ -116,8 +121,8 @@ export const useReceiptScanner = ({ onScanComplete }: UseReceiptScannerProps) =>
           receipt_number: receiptData.receiptNumber,
           payment_method: receiptData.paymentMethod,
           confidence_score: receiptData.confidence,
-          image_url: imageUrl,
-          thumbnail_url: imageUrl
+          image_url: imgUrl || null,
+          thumbnail_url: imgUrl || null,
         })
         .select()
         .single();
@@ -126,7 +131,8 @@ export const useReceiptScanner = ({ onScanComplete }: UseReceiptScannerProps) =>
       return data.id;
     } catch (error) {
       console.error('Error saving receipt:', error);
-      throw new Error('Failed to save receipt to database');
+      // Non-fatal for Accept flow — transaction can still be created by parent
+      return null;
     }
   };
 
@@ -151,6 +157,10 @@ export const useReceiptScanner = ({ onScanComplete }: UseReceiptScannerProps) =>
     });
   };
 
+  /**
+   * Run OCR only — show results in UI.
+   * Does NOT create a transaction. User must click Accept.
+   */
   const simulateScanning = async () => {
     if (!file) {
       toast.error('Please select an image first');
@@ -159,8 +169,9 @@ export const useReceiptScanner = ({ onScanComplete }: UseReceiptScannerProps) =>
 
     setIsScanning(true);
     try {
-      // Check if user is authenticated
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
         toast.error('Please sign in to scan receipts');
         setIsScanning(false);
@@ -169,16 +180,17 @@ export const useReceiptScanner = ({ onScanComplete }: UseReceiptScannerProps) =>
 
       toast.info('Processing receipt with AI...');
 
-      // Perform OCR scanning
       const ocrResult = await performOCRScanning(file);
-      
-      // Upload image to Supabase storage
-      const imageUrl = await uploadImageToSupabase(file);
-      
-      // Save to database
-      await saveReceiptToDatabase(ocrResult, imageUrl);
 
-      // Set results for display
+      // Optional upload (does not create books entry)
+      let uploadedUrl = '';
+      try {
+        uploadedUrl = await uploadImageToSupabase(file);
+        setImageUrl(uploadedUrl);
+      } catch {
+        /* ignore */
+      }
+
       setScanResults({
         vendor: ocrResult.vendor,
         date: ocrResult.date,
@@ -193,33 +205,59 @@ export const useReceiptScanner = ({ onScanComplete }: UseReceiptScannerProps) =>
         currency: ocrResult.currency,
         transactionType: ocrResult.transactionType,
         suggestedAccount: ocrResult.suggestedAccount,
+        confidence: ocrResult.confidence,
       });
-      
+
       setConfidence(ocrResult.confidence);
 
-      // Call the completion callback with the extracted data
-      onScanComplete({
-        amount: ocrResult.amount,
-        date: ocrResult.date,
-        description: ocrResult.description,
-        category: ocrResult.category,
-        vendor: ocrResult.vendor,
-        currency: ocrResult.currency,
-        items: ocrResult.items,
-        taxAmount: ocrResult.taxAmount,
-        subtotal: ocrResult.subtotal,
-        receiptNumber: ocrResult.receiptNumber,
-        paymentMethod: ocrResult.paymentMethod,
-        transactionType: ocrResult.transactionType,
-        suggestedAccount: ocrResult.suggestedAccount,
-      });
-
-      toast.success('Receipt scanned successfully!');
+      // IMPORTANT: do NOT call onScanComplete here — wait for Accept
+      toast.success('Receipt scanned — review and Accept to add to books');
     } catch (error) {
       console.error('Scanning failed:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to scan receipt');
     } finally {
       setIsScanning(false);
+    }
+  };
+
+  /**
+   * User confirmed results — now save receipt row + notify parent to create transaction.
+   */
+  const acceptScanResults = async () => {
+    if (!scanResults) {
+      toast.error('No scan results to accept');
+      return false;
+    }
+
+    try {
+      if (imageUrl || previewUrl) {
+        await saveReceiptToDatabase(
+          { ...scanResults, confidence },
+          imageUrl || ''
+        );
+      }
+
+      onScanComplete({
+        amount: scanResults.amount,
+        date: scanResults.date,
+        description: scanResults.description,
+        category: scanResults.category,
+        vendor: scanResults.vendor,
+        currency: scanResults.currency,
+        items: scanResults.items,
+        taxAmount: scanResults.taxAmount,
+        subtotal: scanResults.subtotal,
+        receiptNumber: scanResults.receiptNumber,
+        paymentMethod: scanResults.paymentMethod,
+        transactionType: scanResults.transactionType,
+        suggestedAccount: scanResults.suggestedAccount,
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Accept failed:', error);
+      toast.error('Failed to add receipt to books');
+      return false;
     }
   };
 
@@ -233,6 +271,7 @@ export const useReceiptScanner = ({ onScanComplete }: UseReceiptScannerProps) =>
     clearFile,
     setFileDirectly,
     simulateScanning,
-    setScanResults
+    setScanResults,
+    acceptScanResults,
   };
 };

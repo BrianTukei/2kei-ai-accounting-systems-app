@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,45 +12,49 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 export default function ReportsTabContent() {
   const [isGenerating, setIsGenerating] = useState(false);
   const { transactions } = useTransactions();
-  const { selectedCurrency, formatCurrency: fmtCurrency } = useCurrency();
-  const curCode = selectedCurrency.code;
-  const curLocale = selectedCurrency.locale;
+  const { selectedCurrency, formatCurrency, convertAmount } = useCurrency();
+
+  // Convert each transaction into the currently selected display currency
+  const toDisplay = (t: Transaction | any): number => {
+    const amount = Number(t.original_amount ?? t.originalAmount ?? t.amount) || 0;
+    const from =
+      t.original_currency ??
+      t.originalCurrency ??
+      t.currency ??
+      selectedCurrency.code;
+    return convertAmount(amount, from, selectedCurrency.code);
+  };
+
+  // Format a value that is already in the selected currency
+  const fmt = (value: number) => formatCurrency(value, selectedCurrency.code);
 
   // Generate income-only PDF report
   const generateIncomePDF = () => {
     setIsGenerating(true);
-    
-    // Create a new PDF document
+
     const doc = new jsPDF();
-    
-    // Add a title
+
     doc.setFontSize(20);
     doc.text('Monthly Income Report', 14, 22);
-    
-    // Add a subtitle with current date
+
     doc.setFontSize(12);
     doc.text(`Generated on ${new Date().toLocaleDateString()}`, 14, 30);
-    
-    // Add a company logo or name
+
     doc.setFontSize(16);
     doc.text('2K AI Accounting Systems', 14, 45);
-    
-    // Filter only income transactions
+
     const incomeTransactions = transactions.filter(t => t.type === 'income');
-    
-    // Add report data as a table
-    const tableColumn = ["Category", "Description", "Date", `Amount (${selectedCurrency.symbol})`];
+
+    const tableColumn = ['Category', 'Description', 'Date', `Amount (${selectedCurrency.symbol})`];
     const tableRows = incomeTransactions.map(item => [
       item.category,
       item.description,
       item.date,
-      fmtCurrency(item.amount)
+      fmt(toDisplay(item))
     ]);
-    
-    // Calculate total income
-    const totalIncome = incomeTransactions.reduce((sum, item) => sum + item.amount, 0);
-    
-    // Add the table
+
+    const totalIncome = incomeTransactions.reduce((sum, item) => sum + toDisplay(item), 0);
+
     autoTable(doc, {
       head: [tableColumn],
       body: tableRows,
@@ -61,20 +64,17 @@ export default function ReportsTabContent() {
       headStyles: { fillColor: [46, 204, 113], textColor: 255 },
       alternateRowStyles: { fillColor: [240, 244, 249] }
     });
-    
-    // Add summary section
+
     const finalY = (doc as any).lastAutoTable.finalY || 150;
     doc.setFontSize(12);
     doc.text(`Income Summary`, 14, finalY + 15);
-    
-    // Add summary data
+
     doc.setFontSize(10);
     doc.setTextColor(46, 204, 113);
-    doc.text(`Total Income: ${fmtCurrency(totalIncome)}`, 14, finalY + 25);
-    
-    doc.setTextColor(0, 0, 0); // Reset text color
-    
-    // Add footer
+    doc.text(`Total Income: ${fmt(totalIncome)}`, 14, finalY + 25);
+
+    doc.setTextColor(0, 0, 0);
+
     const pageCount = doc.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
@@ -90,49 +90,40 @@ export default function ReportsTabContent() {
         doc.internal.pageSize.height - 10
       );
     }
-    
-    // Save the PDF
+
     doc.save('income_report.pdf');
-    
+
     setIsGenerating(false);
-    toast.success("Income Report Generated");
+    toast.success('Income Report Generated');
   };
 
   // Generate expense-only PDF report
   const generateExpensePDF = () => {
     setIsGenerating(true);
-    
-    // Create a new PDF document
+
     const doc = new jsPDF();
-    
-    // Add a title
+
     doc.setFontSize(20);
     doc.text('Expense Analysis Report', 14, 22);
-    
-    // Add a subtitle with current date
+
     doc.setFontSize(12);
     doc.text(`Generated on ${new Date().toLocaleDateString()}`, 14, 30);
-    
-    // Add a company logo or name
+
     doc.setFontSize(16);
     doc.text('2K AI Accounting Systems', 14, 45);
-    
-    // Filter only expense transactions
+
     const expenseTransactions = transactions.filter(t => t.type === 'expense');
-    
-    // Add report data as a table
-    const tableColumn = ["Category", "Description", "Date", `Amount (${selectedCurrency.symbol})`];
+
+    const tableColumn = ['Category', 'Description', 'Date', `Amount (${selectedCurrency.symbol})`];
     const tableRows = expenseTransactions.map(item => [
       item.category,
       item.description,
       item.date,
-      fmtCurrency(item.amount)
+      fmt(toDisplay(item))
     ]);
-    
-    // Calculate total expenses
-    const totalExpenses = expenseTransactions.reduce((sum, item) => sum + item.amount, 0);
-    
-    // Add the table
+
+    const totalExpenses = expenseTransactions.reduce((sum, item) => sum + toDisplay(item), 0);
+
     autoTable(doc, {
       head: [tableColumn],
       body: tableRows,
@@ -142,20 +133,17 @@ export default function ReportsTabContent() {
       headStyles: { fillColor: [231, 76, 60], textColor: 255 },
       alternateRowStyles: { fillColor: [240, 244, 249] }
     });
-    
-    // Add summary section
+
     const finalY = (doc as any).lastAutoTable.finalY || 150;
     doc.setFontSize(12);
     doc.text(`Expense Summary`, 14, finalY + 15);
-    
-    // Add summary data
+
     doc.setFontSize(10);
     doc.setTextColor(231, 76, 60);
-    doc.text(`Total Expenses: ${fmtCurrency(totalExpenses)}`, 14, finalY + 25);
-    
-    doc.setTextColor(0, 0, 0); // Reset text color
-    
-    // Add footer
+    doc.text(`Total Expenses: ${fmt(totalExpenses)}`, 14, finalY + 25);
+
+    doc.setTextColor(0, 0, 0);
+
     const pageCount = doc.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
@@ -171,54 +159,46 @@ export default function ReportsTabContent() {
         doc.internal.pageSize.height - 10
       );
     }
-    
-    // Save the PDF
+
     doc.save('expense_report.pdf');
-    
+
     setIsGenerating(false);
-    toast.success("Expense Report Generated");
+    toast.success('Expense Report Generated');
   };
 
-  // Original generate full PDF report (modified to include both income and expenses)
+  // Full PDF report
   const generatePDF = () => {
     setIsGenerating(true);
-    
-    // Create a new PDF document
+
     const doc = new jsPDF();
-    
-    // Add a title
+
     doc.setFontSize(20);
     doc.text('Complete Financial Report', 14, 22);
-    
-    // Add a subtitle with current date
+
     doc.setFontSize(12);
     doc.text(`Generated on ${new Date().toLocaleDateString()}`, 14, 30);
-    
-    // Add a company logo or name
+
     doc.setFontSize(16);
     doc.text('2K AI Accounting Systems', 14, 45);
-    
-    // Add report data as a table
-    const tableColumn = ["Category", "Description", "Type", `Amount (${selectedCurrency.symbol})`];
+
+    const tableColumn = ['Category', 'Description', 'Type', `Amount (${selectedCurrency.symbol})`];
     const tableRows = transactions.map(item => [
       item.category,
       item.description,
       item.type === 'income' ? 'Income' : 'Expense',
-      fmtCurrency(item.amount)
+      fmt(toDisplay(item))
     ]);
-    
-    // Calculate total income and expenses
+
     const totalIncome = transactions
       .filter(item => item.type === 'income')
-      .reduce((sum, item) => sum + item.amount, 0);
-      
+      .reduce((sum, item) => sum + toDisplay(item), 0);
+
     const totalExpenses = transactions
       .filter(item => item.type === 'expense')
-      .reduce((sum, item) => sum + item.amount, 0);
-      
+      .reduce((sum, item) => sum + toDisplay(item), 0);
+
     const netProfit = totalIncome - totalExpenses;
-    
-    // Add the table
+
     autoTable(doc, {
       head: [tableColumn],
       body: tableRows,
@@ -228,31 +208,26 @@ export default function ReportsTabContent() {
       headStyles: { fillColor: [59, 130, 246], textColor: 255 },
       alternateRowStyles: { fillColor: [240, 244, 249] }
     });
-    
-    // Add summary section
+
     const finalY = (doc as any).lastAutoTable.finalY || 150;
     doc.setFontSize(12);
     doc.text(`Summary`, 14, finalY + 15);
-    
-    // Add summary data
+
     doc.setFontSize(10);
-    doc.text(`Total Income: ${fmtCurrency(totalIncome)}`, 14, finalY + 25);
-    
-    doc.text(`Total Expenses: ${fmtCurrency(totalExpenses)}`, 14, finalY + 35);
-    
-    // Add net profit with color based on value
-    const netProfitText = `Net Profit: ${fmtCurrency(netProfit)}`;
-    
+    doc.text(`Total Income: ${fmt(totalIncome)}`, 14, finalY + 25);
+    doc.text(`Total Expenses: ${fmt(totalExpenses)}`, 14, finalY + 35);
+
+    const netProfitText = `Net Profit: ${fmt(netProfit)}`;
+
     if (netProfit >= 0) {
-      doc.setTextColor(34, 197, 94); // Green text for profit
+      doc.setTextColor(34, 197, 94);
     } else {
-      doc.setTextColor(239, 68, 68); // Red text for loss
+      doc.setTextColor(239, 68, 68);
     }
-    
+
     doc.text(netProfitText, 14, finalY + 45);
-    doc.setTextColor(0, 0, 0); // Reset text color
-    
-    // Add footer
+    doc.setTextColor(0, 0, 0);
+
     const pageCount = doc.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
@@ -268,28 +243,25 @@ export default function ReportsTabContent() {
         doc.internal.pageSize.height - 10
       );
     }
-    
-    // Save the PDF
+
     doc.save('financial_report.pdf');
-    
+
     setIsGenerating(false);
-    toast.success("Complete Financial Report Generated");
+    toast.success('Complete Financial Report Generated');
   };
 
-  // Group transactions by month for the annual summary
+  // Recent rows for on-screen summary (converted amounts)
   const getTransactionsByMonth = () => {
     const monthlyData: Record<string, Transaction[]> = {};
-    
+
     transactions.forEach(transaction => {
-      // For simplicity, we're using the date field which may contain "Today", "Yesterday", etc.
-      // In a real app, you'd have actual dates and group by month
       const month = transaction.date;
       if (!monthlyData[month]) {
         monthlyData[month] = [];
       }
       monthlyData[month].push(transaction);
     });
-    
+
     return monthlyData;
   };
 
@@ -297,11 +269,14 @@ export default function ReportsTabContent() {
   const displayData = Object.entries(monthlyData)
     .slice(0, 5)
     .flatMap(([month, txns]) => {
-      return txns.slice(0, 2).map(t => ({
-        category: t.category,
-        month: month,
-        amount: t.type === 'income' ? t.amount : -t.amount
-      }));
+      return txns.slice(0, 2).map(t => {
+        const converted = toDisplay(t);
+        return {
+          category: t.category,
+          month: month,
+          amount: t.type === 'income' ? converted : -converted
+        };
+      });
     });
 
   return (
@@ -318,13 +293,13 @@ export default function ReportsTabContent() {
               <p className="text-sm text-slate-500 mb-4">
                 View and export detailed income statements by month
               </p>
-              <Button 
-                onClick={generateIncomePDF} 
+              <Button
+                onClick={generateIncomePDF}
                 disabled={isGenerating}
                 className="w-full bg-green-500 hover:bg-green-600"
               >
                 {isGenerating ? (
-                  "Generating..."
+                  'Generating...'
                 ) : (
                   <>
                     <FileText className="h-4 w-4 mr-2" />
@@ -333,15 +308,15 @@ export default function ReportsTabContent() {
                 )}
               </Button>
             </div>
-            
+
             <div className="p-6 border rounded-lg bg-white">
               <h3 className="text-lg font-medium mb-2">Expense Analysis</h3>
               <p className="text-sm text-slate-500 mb-4">
                 Detailed breakdown of your expense categories
               </p>
-              <Button 
-                onClick={generateExpensePDF} 
-                disabled={isGenerating} 
+              <Button
+                onClick={generateExpensePDF}
+                disabled={isGenerating}
                 className="w-full bg-red-500 hover:bg-red-600 text-white"
               >
                 <Download className="h-4 w-4 mr-2" />
@@ -349,7 +324,7 @@ export default function ReportsTabContent() {
               </Button>
             </div>
           </div>
-          
+
           <div className="p-6 border rounded-lg bg-white">
             <h3 className="text-lg font-medium mb-2">Transaction Summary</h3>
             <p className="text-sm text-slate-500 mb-4">
@@ -369,7 +344,7 @@ export default function ReportsTabContent() {
                     <td className="p-2">{item.category}</td>
                     <td className="p-2">{item.month}</td>
                     <td className={`p-2 text-right ${item.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {fmtCurrency(Math.abs(item.amount))}
+                      {fmt(Math.abs(item.amount))}
                     </td>
                   </tr>
                 ))}

@@ -92,9 +92,21 @@ export default function Reports() {
   const [activeTab, setActiveTab] = useState('financial');
   const { monthlyData, totalIncome, totalExpenses, totalBalance, categoryBreakdown, incomeGrowth, expenseGrowth, monthlyIncome, monthlyExpenses } = useFinancialStats();
   const { transactions } = useTransactions();
-  const { formatCurrency, selectedCurrency } = useCurrency();
+  const { formatCurrency, selectedCurrency, convertAmount } = useCurrency();
 
-const fmt = (v: number) => formatCurrency(v, selectedCurrency.code);
+  // Values passed to fmt must already be in the selected currency
+  const fmt = (v: number) => formatCurrency(v, selectedCurrency.code);
+
+  // Convert one transaction amount into the selected display currency
+  const toDisplay = (t: any): number => {
+    const amount = Number(t.original_amount ?? t.originalAmount ?? t.amount) || 0;
+    const from =
+      t.original_currency ??
+      t.originalCurrency ??
+      t.currency ??
+      selectedCurrency.code;
+    return convertAmount(amount, from, selectedCurrency.code);
+  };
 
   // ─── Derived data ─────────────────────────
   const enriched = useMemo(() => {
@@ -106,8 +118,9 @@ const fmt = (v: number) => formatCurrency(v, selectedCurrency.code);
     txns.forEach(t => {
       const k = monthKey(t._date);
       const cur = byMonth.get(k) || { income: 0, expenses: 0, count: 0 };
-      if (t.type === 'income') cur.income += t.amount;
-      else cur.expenses += t.amount;
+      const amt = toDisplay(t);
+      if (t.type === 'income') cur.income += amt;
+      else cur.expenses += amt;
       cur.count++;
       byMonth.set(k, cur);
     });
@@ -120,8 +133,9 @@ const fmt = (v: number) => formatCurrency(v, selectedCurrency.code);
     txns.forEach(t => {
       const k = weekKey(t._date);
       const cur = byWeek.get(k) || { income: 0, expenses: 0 };
-      if (t.type === 'income') cur.income += t.amount;
-      else cur.expenses += t.amount;
+      const amt = toDisplay(t);
+      if (t.type === 'income') cur.income += amt;
+      else cur.expenses += amt;
       byWeek.set(k, cur);
     });
     const weeklyAgg = Array.from(byWeek.entries())
@@ -133,8 +147,9 @@ const fmt = (v: number) => formatCurrency(v, selectedCurrency.code);
     const catMap = new Map<string, { income: number; expense: number; count: number }>();
     txns.forEach(t => {
       const cur = catMap.get(t.category) || { income: 0, expense: 0, count: 0 };
-      if (t.type === 'income') cur.income += t.amount;
-      else cur.expense += t.amount;
+      const amt = toDisplay(t);
+      if (t.type === 'income') cur.income += amt;
+      else cur.expense += amt;
       cur.count++;
       catMap.set(t.category, cur);
     });
@@ -151,7 +166,7 @@ const fmt = (v: number) => formatCurrency(v, selectedCurrency.code);
     txns.forEach(t => {
       const vendor = t.metadata?.vendor || 'Unknown';
       const cur = vendorMap.get(vendor) || { total: 0, count: 0, type: t.type };
-      cur.total += t.amount;
+      cur.total += toDisplay(t);
       cur.count++;
       vendorMap.set(vendor, cur);
     });
@@ -171,7 +186,7 @@ const fmt = (v: number) => formatCurrency(v, selectedCurrency.code);
     const incomeByCat = txns
       .filter(t => t.type === 'income')
       .reduce((acc, t) => {
-        acc[t.category] = (acc[t.category] || 0) + t.amount;
+        acc[t.category] = (acc[t.category] || 0) + toDisplay(t);
         return acc;
       }, {} as Record<string, number>);
     const incomePie = Object.entries(incomeByCat)
@@ -182,7 +197,7 @@ const fmt = (v: number) => formatCurrency(v, selectedCurrency.code);
     const sorted = [...txns].sort((a, b) => a._date.getTime() - b._date.getTime());
     let runBal = 0;
     const balanceOverTime = sorted.map(t => {
-      runBal += t.type === 'income' ? t.amount : -t.amount;
+      runBal += t.type === 'income' ? toDisplay(t) : -toDisplay(t);
       return { name: t.date, balance: runBal };
     });
 
@@ -203,22 +218,22 @@ const fmt = (v: number) => formatCurrency(v, selectedCurrency.code);
 
     // Average transaction size
     const avgIncome = txns.filter(t => t.type === 'income').length > 0
-      ? txns.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0) / txns.filter(t => t.type === 'income').length
+      ? txns.filter(t => t.type === 'income').reduce((s, t) => s + toDisplay(t), 0) / txns.filter(t => t.type === 'income').length
       : 0;
     const avgExpense = txns.filter(t => t.type === 'expense').length > 0
-      ? txns.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0) / txns.filter(t => t.type === 'expense').length
+      ? txns.filter(t => t.type === 'expense').reduce((s, t) => s + toDisplay(t), 0) / txns.filter(t => t.type === 'expense').length
       : 0;
 
-    // Largest transactions
-    const largestIncome = [...txns].filter(t => t.type === 'income').sort((a, b) => b.amount - a.amount).slice(0, 5);
-    const largestExpenses = [...txns].filter(t => t.type === 'expense').sort((a, b) => b.amount - a.amount).slice(0, 5);
+    // Largest transactions (sort by converted amount)
+    const largestIncome = [...txns].filter(t => t.type === 'income').sort((a, b) => toDisplay(b) - toDisplay(a)).slice(0, 5);
+    const largestExpenses = [...txns].filter(t => t.type === 'expense').sort((a, b) => toDisplay(b) - toDisplay(a)).slice(0, 5);
 
     return {
       txns, monthlyAgg, weeklyAgg, categories, topVendors,
       expensePie, incomePie, balanceOverTime, cumulativeMonthly,
       avgIncome, avgExpense, largestIncome, largestExpenses,
     };
-  }, [transactions, categoryBreakdown]);
+  }, [transactions, categoryBreakdown, convertAmount, selectedCurrency.code]);
 
   // ─── PDF Generators ────────────────────────
   const generateFinancialPDF = () => {
@@ -285,7 +300,7 @@ const fmt = (v: number) => formatCurrency(v, selectedCurrency.code);
         t.category,
         t.description.slice(0, 30),
         t.type === 'income' ? 'Income' : 'Expense',
-        fmt(t.amount),
+        fmt(toDisplay(t)),
       ]),
       theme: 'grid',
       headStyles: { fillColor: [59, 130, 246] },
@@ -321,8 +336,8 @@ const fmt = (v: number) => formatCurrency(v, selectedCurrency.code);
     doc.text(`Filters: ${filterDesc}`, 14, 30);
     doc.text(`${filtered.length} transactions found  |  Generated: ${new Date().toLocaleDateString()}`, 14, 38);
 
-    const fInc = filtered.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
-    const fExp = filtered.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+    const fInc = filtered.filter(t => t.type === 'income').reduce((s, t) => s + toDisplay(t), 0);
+    const fExp = filtered.filter(t => t.type === 'expense').reduce((s, t) => s + toDisplay(t), 0);
 
     doc.setFontSize(10);
     doc.text(`Income: ${fmt(fInc)}   Expenses: ${fmt(fExp)}   Net: ${fmt(fInc - fExp)}`, 14, 48);
@@ -330,7 +345,7 @@ const fmt = (v: number) => formatCurrency(v, selectedCurrency.code);
     autoTable(doc, {
       startY: 56,
       head: [['Date', 'Category', 'Description', 'Type', 'Amount']],
-      body: filtered.map(t => [t.date, t.category, t.description.slice(0, 30), t.type, fmt(t.amount)]),
+      body: filtered.map(t => [t.date, t.category, t.description.slice(0, 30), t.type, fmt(toDisplay(t))]),
       theme: 'grid',
       headStyles: { fillColor: [139, 92, 246] },
     });
@@ -533,6 +548,7 @@ const fmt = (v: number) => formatCurrency(v, selectedCurrency.code);
           <TransactionReports
             enriched={enriched}
             fmt={fmt}
+            toDisplay={toDisplay}
             totalIncome={totalIncome}
             totalExpenses={totalExpenses}
             generatePDF={generateTransactionsPDF}
@@ -543,7 +559,7 @@ const fmt = (v: number) => formatCurrency(v, selectedCurrency.code);
         {/* CUSTOM REPORTS TAB                       */}
         {/* ════════════════════════════════════════ */}
         <TabsContent value="custom" className="space-y-6">
-          <CustomReports enriched={enriched} fmt={fmt} generatePDF={generateCustomPDF} />
+          <CustomReports enriched={enriched} fmt={fmt} toDisplay={toDisplay} generatePDF={generateCustomPDF} />
         </TabsContent>
       </Tabs>
       </SubscriptionGuard>
@@ -625,8 +641,8 @@ function QuickLink({ to, icon, title, color }: { to: string; icon: React.ReactNo
 // ─── TRANSACTION REPORTS ─────────────────────
 // ═══════════════════════════════════════════════
 
-function TransactionReports({ enriched, fmt, totalIncome, totalExpenses, generatePDF }: {
-  enriched: any; fmt: (v: number) => string;
+function TransactionReports({ enriched, fmt, toDisplay, totalIncome, totalExpenses, generatePDF }: {
+  enriched: any; fmt: (v: number) => string; toDisplay: (t: any) => number;
   totalIncome: number; totalExpenses: number;
   generatePDF: () => void;
 }) {
@@ -642,7 +658,7 @@ function TransactionReports({ enriched, fmt, totalIncome, totalExpenses, generat
     list.sort((a: any, b: any) => {
       let cmp = 0;
       if (sortField === 'date') cmp = a._date.getTime() - b._date.getTime();
-      else if (sortField === 'amount') cmp = a.amount - b.amount;
+      else if (sortField === 'amount') cmp = toDisplay(a) - toDisplay(b);
       else cmp = a.category.localeCompare(b.category);
       return sortDir === 'asc' ? cmp : -cmp;
     });
@@ -729,7 +745,7 @@ function TransactionReports({ enriched, fmt, totalIncome, totalExpenses, generat
                       <p className="text-xs text-slate-500">{t.category} · {t.date}</p>
                     </div>
                   </div>
-                  <span className="font-semibold text-green-600">{fmt(t.amount)}</span>
+                  <span className="font-semibold text-green-600">{fmt(toDisplay(t))}</span>
                 </div>
               ))}
               {enriched.largestIncome.length === 0 && <p className="text-sm text-slate-400">No income transactions</p>}
@@ -753,7 +769,7 @@ function TransactionReports({ enriched, fmt, totalIncome, totalExpenses, generat
                       <p className="text-xs text-slate-500">{t.category} · {t.date}</p>
                     </div>
                   </div>
-                  <span className="font-semibold text-red-600">{fmt(t.amount)}</span>
+                  <span className="font-semibold text-red-600">{fmt(toDisplay(t))}</span>
                 </div>
               ))}
               {enriched.largestExpenses.length === 0 && <p className="text-sm text-slate-400">No expense transactions</p>}
@@ -843,7 +859,7 @@ function TransactionReports({ enriched, fmt, totalIncome, totalExpenses, generat
                       </Badge>
                     </TableCell>
                     <TableCell className={cn('text-right font-semibold text-sm', t.type === 'income' ? 'text-green-600' : 'text-red-600')}>
-                      {t.type === 'income' ? '+' : '-'}{fmt(t.amount)}
+                      {t.type === 'income' ? '+' : '-'}{fmt(toDisplay(t))}
                     </TableCell>
                     <TableCell className="text-xs text-slate-500">{t.metadata?.vendor || '—'}</TableCell>
                   </TableRow>
@@ -876,8 +892,8 @@ function TransactionReports({ enriched, fmt, totalIncome, totalExpenses, generat
 // ─── CUSTOM REPORTS ──────────────────────────
 // ═══════════════════════════════════════════════
 
-function CustomReports({ enriched, fmt, generatePDF }: {
-  enriched: any; fmt: (v: number) => string;
+function CustomReports({ enriched, fmt, toDisplay, generatePDF }: {
+  enriched: any; fmt: (v: number) => string; toDisplay: (t: any) => number;
   generatePDF: (filters: any) => void;
 }) {
   const [filterType, setFilterType] = useState('all');
@@ -902,15 +918,16 @@ function CustomReports({ enriched, fmt, generatePDF }: {
   }, [enriched.txns, filterType, filterCategory, dateFrom, dateTo]);
 
   const filteredStats = useMemo(() => {
-    const income = filtered.filter((t: any) => t.type === 'income').reduce((s: number, t: any) => s + t.amount, 0);
-    const expense = filtered.filter((t: any) => t.type === 'expense').reduce((s: number, t: any) => s + t.amount, 0);
+    const income = filtered.filter((t: any) => t.type === 'income').reduce((s: number, t: any) => s + toDisplay(t), 0);
+    const expense = filtered.filter((t: any) => t.type === 'expense').reduce((s: number, t: any) => s + toDisplay(t), 0);
 
     // By category
     const catMap = new Map<string, { income: number; expense: number }>();
     filtered.forEach((t: any) => {
       const cur = catMap.get(t.category) || { income: 0, expense: 0 };
-      if (t.type === 'income') cur.income += t.amount;
-      else cur.expense += t.amount;
+      const amt = toDisplay(t);
+      if (t.type === 'income') cur.income += amt;
+      else cur.expense += amt;
       catMap.set(t.category, cur);
     });
     const byCategory = Array.from(catMap.entries()).map(([cat, v]) => ({
@@ -922,8 +939,9 @@ function CustomReports({ enriched, fmt, generatePDF }: {
     filtered.forEach((t: any) => {
       const k = monthKey(t._date);
       const cur = monthMap.get(k) || { income: 0, expenses: 0 };
-      if (t.type === 'income') cur.income += t.amount;
-      else cur.expenses += t.amount;
+      const amt = toDisplay(t);
+      if (t.type === 'income') cur.income += amt;
+      else cur.expenses += amt;
       monthMap.set(k, cur);
     });
     const byMonth = Array.from(monthMap.entries())
@@ -936,7 +954,7 @@ function CustomReports({ enriched, fmt, generatePDF }: {
     }));
 
     return { income, expense, net: income - expense, count: filtered.length, byCategory, byMonth, pieData };
-  }, [filtered]);
+  }, [filtered, toDisplay]);
 
   const handleExport = () => {
     generatePDF({ type: filterType, category: filterCategory, dateFrom, dateTo });
@@ -1152,7 +1170,7 @@ function CustomReports({ enriched, fmt, generatePDF }: {
                   </div>
                 </div>
                 <span className={cn('font-semibold text-sm shrink-0 ml-3', t.type === 'income' ? 'text-green-600' : 'text-red-600')}>
-                  {t.type === 'income' ? '+' : '-'}{fmt(t.amount)}
+                  {t.type === 'income' ? '+' : '-'}{fmt(toDisplay(t))}
                 </span>
               </div>
             ))}

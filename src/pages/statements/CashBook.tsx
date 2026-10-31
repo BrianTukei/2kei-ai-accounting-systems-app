@@ -9,29 +9,42 @@ import { DateRangePicker } from '@/components/DateRangePicker';
 import { Download, Book, ArrowLeft, LayoutDashboard, BarChart, Plus, Filter } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTransactions } from '@/hooks/useTransactions';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { formatCurrency } from '@/components/statements/StatementLayout';
 import { getLogo128 } from '@/utils/pdfLogo';
 import { toast } from 'sonner';
 
 export default function CashBook() {
   const { transactions } = useTransactions();
+  const { formatCurrency, convertAmount, selectedCurrency } = useCurrency();
   const [filteredTransactions, setFilteredTransactions] = useState(transactions);
+
+  const toDisplay = (t: any): number => {
+    const amount = Number(t.original_amount ?? t.originalAmount ?? t.amount) || 0;
+    const from =
+      t.original_currency ??
+      t.originalCurrency ??
+      t.currency ??
+      selectedCurrency.code;
+    return convertAmount(amount, from, selectedCurrency.code);
+  };
+
+  const fmt = (v: number) => formatCurrency(v, selectedCurrency.code);
   
   // Re-filter transactions whenever the original transactions change
   useEffect(() => {
     setFilteredTransactions(transactions);
   }, [transactions]);
 
-  // Calculate totals
+  // Calculate totals in selected currency
   const totalIncome = filteredTransactions
     .filter(t => t.type === 'income')
-    .reduce((sum, t) => sum + t.amount, 0);
+    .reduce((sum, t) => sum + toDisplay(t), 0);
 
   const totalExpenses = filteredTransactions
     .filter(t => t.type === 'expense')
-    .reduce((sum, t) => sum + t.amount, 0);
+    .reduce((sum, t) => sum + toDisplay(t), 0);
   
   const netCashFlow = totalIncome - totalExpenses;
 
@@ -63,8 +76,8 @@ export default function CashBook() {
       t.date,
       t.description,
       t.category,
-      t.type === 'income' ? formatCurrency(t.amount) : '',
-      t.type === 'expense' ? formatCurrency(t.amount) : ''
+      t.type === 'income' ? fmt(toDisplay(t)) : '',
+      t.type === 'expense' ? fmt(toDisplay(t)) : ''
     ]);
     
     autoTable(doc, {
@@ -78,9 +91,9 @@ export default function CashBook() {
     });
     
     const summary = [
-      ['Total Income', formatCurrency(totalIncome)],
-      ['Total Expenses', formatCurrency(totalExpenses)],
-      ['Net Cash Flow', formatCurrency(netCashFlow)]
+      ['Total Income', fmt(totalIncome)],
+      ['Total Expenses', fmt(totalExpenses)],
+      ['Net Cash Flow', fmt(netCashFlow)]
     ];
     
     const finalY = (doc as any).lastAutoTable.finalY || 150;
@@ -197,10 +210,10 @@ export default function CashBook() {
                         </TableCell>
                         <TableCell className="text-xs sm:text-sm px-1 sm:px-4 hidden sm:table-cell">{transaction.category}</TableCell>
                         <TableCell className="text-right text-green-600 text-xs sm:text-sm px-1 sm:px-4">
-                          {transaction.type === 'income' ? formatCurrency(transaction.amount) : ''}
+                          {transaction.type === 'income' ? fmt(toDisplay(transaction)) : ''}
                         </TableCell>
                         <TableCell className="text-right text-red-600 text-xs sm:text-sm px-1 sm:px-4">
-                          {transaction.type === 'expense' ? formatCurrency(transaction.amount) : ''}
+                          {transaction.type === 'expense' ? fmt(toDisplay(transaction)) : ''}
                         </TableCell>
                       </TableRow>
                     ))
@@ -220,7 +233,7 @@ export default function CashBook() {
                   <div className="flex items-center justify-between relative z-10">
                     <div>
                       <p className="text-xs font-semibold text-white/90 uppercase tracking-wide">Total Income</p>
-                      <p className="compact-text-2xl font-bold text-white">{formatCurrency(totalIncome)}</p>
+                      <p className="compact-text-2xl font-bold text-white">{fmt(totalIncome)}</p>
                     </div>
                     <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                       <BarChart className="h-4 w-4 text-white" />
@@ -232,7 +245,7 @@ export default function CashBook() {
                   <div className="flex items-center justify-between relative z-10">
                     <div>
                       <p className="text-xs font-semibold text-white/90 uppercase tracking-wide">Total Expenses</p>
-                      <p className="compact-text-2xl font-bold text-white">{formatCurrency(totalExpenses)}</p>
+                      <p className="compact-text-2xl font-bold text-white">{fmt(totalExpenses)}</p>
                     </div>
                     <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                       <BarChart className="h-4 w-4 text-white" />
@@ -245,7 +258,7 @@ export default function CashBook() {
                     <div>
                       <p className="text-xs font-semibold text-white/90 uppercase tracking-wide">Net Cash Flow</p>
                       <p className="compact-text-2xl font-bold text-white">
-                        {formatCurrency(netCashFlow)}
+                        {fmt(netCashFlow)}
                       </p>
                     </div>
                     <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">

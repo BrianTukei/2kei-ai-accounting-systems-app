@@ -1,7 +1,11 @@
 import { Router } from 'express';
 import { adminEmailController } from '../controllers/adminEmail';
+import { requireAuth, requireAdmin } from '../middleware/auth';
 
 const router = Router();
+
+// All broadcast management requires authenticated admin
+router.use(requireAuth, requireAdmin);
 
 // GET /api/admin/broadcasts/recipients
 router.get('/recipients', adminEmailController.getRecipients);

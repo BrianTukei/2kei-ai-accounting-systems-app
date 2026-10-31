@@ -46,11 +46,12 @@ function detectCurrency(text: string): string {
   if (/\bU\s*Sh\b|Ush|Ugandan?\s*Shilling/i.test(text)) return 'UGX';
   if (/\bK\s*Sh\b|Ksh|Kenyan?\s*Shilling/i.test(text)) return 'KES';
 
+  if (text.includes('$')) return 'USD';
   for (const [symbol, code] of Object.entries(CURRENCY_SYMBOLS)) {
+    if (symbol === '$') continue;
     if (text.includes(symbol)) return code;
   }
 
-  // Default: prefer UGX for East Africa apps (change if needed)
   return 'UGX';
 }
 
@@ -168,12 +169,25 @@ function extractVendor(lines: string[]): string {
  * Never pick a number smaller than a clear line-item sum when possible.
  */
 function extractTotal(text: string, itemSum: number): number {
+  // Strong line-based match first (handles "TOTAL:        $3" and OCR noise T0TAL)
+  const lineTotal = text.match(/(?:^|\n)\s*(?:grand\s*)?t[o0]tal\s*[:.\-]?\s*[$€£₹₦₵]?\s*([0-9]+(?:[.,][0-9]{1,2})?)\s*(?:$|\n)/i);
+  if (lineTotal) {
+    const v = parseMoney(lineTotal[1]);
+    if (v > 0) return v;
+  }
+  // Same-line TOTAL anywhere
+  const anyTotal = text.match(/\bt[o0]tal\b\s*[:.\-]?\s*[$€£₹₦₵]\s*([0-9]+(?:[.,][0-9]{1,2})?)/i);
+  if (anyTotal) {
+    const v = parseMoney(anyTotal[1]);
+    if (v > 0 && v < 100000) return v;
+  }
+
   const patterns = [
     /(?:grand\s*)?total\s*(?:due|amt|amount|payable)?\s*[:.\-]?\s*[$€£₹₦₵]?\s*([0-9][0-9\s.,]*)/i,
     /(?:amount\s*(?:due|paid|tendered|payable))\s*[:.\-]?\s*[$€£₹₦₵]?\s*([0-9][0-9\s.,]*)/i,
     /(?:balance\s*due)\s*[:.\-]?\s*[$€£₹₦₵]?\s*([0-9][0-9\s.,]*)/i,
     /(?:net\s*(?:total|amount))\s*[:.\-]?\s*[$€£₹₦₵]?\s*([0-9][0-9\s.,]*)/i,
-    /\btotal\b\s*[:.\-]?\s*[$€£₹₦₵]?\s*([0-9][0-9\s.,]*)/i,
+    /\btotal\b\s*[:.\-]?\s*[$€£₹₦₵]\s*([0-9][0-9\s.,]*)/i,
   ];
 
   const candidates: number[] = [];
@@ -186,18 +200,20 @@ function extractTotal(text: string, itemSum: number): number {
   }
 
   if (candidates.length > 0) {
-    // Prefer the largest labeled total (often the real grand total)
-    const labeled = Math.max(...candidates);
-    // If items sum is close, trust items when labeled total is tiny/wrong
-    if (itemSum > 0 && labeled < itemSum * 0.5 && itemSum < labeled * 20) {
+    // Prefer the *smallest* labeled total under 1e6 when values diverge wildly
+    // (OCR often also matches huge IDs on other lines)
+    const reasonable = candidates.filter((c) => c < 100000);
+    const pool = reasonable.length ? reasonable : candidates;
+    const labeled = Math.min(...pool);
+    if (itemSum > 0 && labeled < itemSum * 0.5 && itemSum < labeled * 20 && itemSum < 100000) {
       return Math.round(itemSum * 100) / 100;
     }
     return labeled;
   }
 
-  if (itemSum > 0) return Math.round(itemSum * 100) / 100;
+  if (itemSum > 0 && itemSum < 100000) return Math.round(itemSum * 100) / 100;
 
-  const all = findAllAmounts(text);
+  const all = findAllAmounts(text).filter((n) => n < 100000);
   return all.length > 0 ? Math.max(...all) : 0;
 }
 
@@ -272,39 +288,48 @@ function extractPaymentMethod(text: string): string {
 function extractItems(text: string, labeledTotal: number): Array<{ name: string; price: number; quantity?: number }> {
   const lines = text.split('\n');
   const items: Array<{ name: string; price: number; quantity?: number }> = [];
-  const skipWords =
-    /^(total|sub\s*total|tax|vat|gst|hst|change|balance|cash|visa|master|amex|debit|credit|tender|payment|discount|tip|gratuity|receipt|order|date|time|tel|phone|cashier|thank|store|branch|service|charge|qty|qty\.|item|description|amount|price|lane|register|card|type|entry|contactless)$/i;
 
-  // Header / footer noise — never treat as products
   const skipLine =
-    /^(EVERYDAY|SPRINGFIELD|MAIN\s+STREET|HELLO@|CASHIER|STORE|ID:|REGISTER|RECEIPT|CARD:|TYPE:|ENTRY:|TIME:|TEL|PHONE|\(\d{3}\)|SUBTOTAL|TAX|TOTAL)\b/i;
+    /^(EVERYDAY|SPRINGFIELD|MAIN\s+STREET|HELLO@|CASHIER|STORE|ID:|REGISTER|RECEIPT|CARD:|TYPE:|ENTRY:|TIME:|TEL|PHONE|\(\d{3}\)|SUBTOTAL|TAX|TOTAL|LANE|VISA|MASTERCARD|CONTACTLESS)\b/i;
 
   for (const raw of lines) {
     const line = raw.trim();
-    if (!line || line.length < 4) continue;
+    if (!line || line.length < 3) continue;
     if (skipLine.test(line)) continue;
-    if (/@/.test(line)) continue; // email
-    if (/\b\d{5}(-\d{4})?\b/.test(line) && /[A-Z]{2}\b/.test(line)) continue; // City, ST ZIP
+    if (/@/.test(line)) continue;
+    // City, ST ZIP
+    if (/\b[A-Z]{2}\s+\d{5}\b/.test(line)) continue;
+    if (/\b\d{5}\b/.test(line) && /[A-Za-z]/.test(line) && line.length < 40 && /street|ave|rd|il|ny|ca|tx|road|blvd/i.test(line) === false) {
+      // still allow product lines; only skip pure location-like
+    }
+    if (/^\d{5}(-\d{4})?$/.test(line)) continue;
 
-    // Prefer "NAME .... $1.00" or "NAME $1"
+    // Must look like: product text + price at end (prefer $X or X.XX)
     const priceMatch = line.match(
-      /^(.+?)\s{1,}([$€£₹₦₵]|USh|UGX|KSh)?\s*(\d+[.,]\d{2}|\d{1,3}(?:[.,]\d{3})+(?:[.,]\d{2})?|\d+)\s*$/i
+      /^(.+?)\s+([$€£₹₦₵])\s*(\d+(?:[.,]\d{1,2})?)\s*$/i
+    ) || line.match(
+      /^(.+?)\s+(\d+[.,]\d{2})\s*$/
     );
     if (!priceMatch) continue;
 
-    let name = priceMatch[1].replace(/[\.\-_]{3,}/g, '').trim();
-    const price = parseMoney(priceMatch[3]);
+    let name = (priceMatch[1] || '').replace(/[\.\-_]{3,}/g, '').trim();
+    const priceRaw = priceMatch[3] || priceMatch[2];
+    const price = parseMoney(priceRaw);
 
     if (!name || name.length < 2 || price <= 0) continue;
-    if (skipWords.test(name)) continue;
+    if (/^(sub\s*total|tax|total|visa|cash|change|balance|card|type|entry)\b/i.test(name)) continue;
     if (/^[\d\s:.\-/@#]+$/.test(name)) continue;
     if (/^\d{1,2}:\d{2}/.test(name)) continue;
-    if (/^(sub\s*total|tax|total)\b/i.test(name)) continue;
+    if (/^(#|no\.?|number)\b/i.test(name)) continue;
 
-    // If we know the receipt total, drop absurd line prices (zip/ids OCR'd as money)
-    if (labeledTotal > 0 && price > labeledTotal * 3 && price > 50) continue;
-    // Cap obvious ID-sized numbers when total is small
-    if (labeledTotal > 0 && labeledTotal <= 100 && price >= 1000) continue;
+    // Hard filters vs labeled total
+    if (labeledTotal > 0) {
+      if (price > labeledTotal * 2.5 && price > 20) continue;
+      if (labeledTotal <= 50 && price >= 100) continue;
+    } else {
+      // No total yet — reject ID-sized numbers
+      if (price >= 1000) continue;
+    }
 
     const qtyBefore = name.match(/^(\d+)\s*[x×]\s+(.+)/i);
     const qtyAfter = name.match(/(.+?)\s*[x×]\s*(\d+)$/i);
@@ -325,6 +350,8 @@ function extractItems(text: string, labeledTotal: number): Array<{ name: string;
     return true;
   });
 }
+
+
 
 function aiCategorise(vendor: string, fullText: string): { category: string; type: 'income' | 'expense' } {
   // Avoid classifying supermarket receipts as "Tax Payment" just because VAT appears
@@ -413,8 +440,21 @@ export const performReceiptOCR = async (imageElement: HTMLImageElement): Promise
   }
   // Prefer labeled total over inflated item sum
   if (amount > 0 && itemSum > amount * 3) {
-    items = items.filter((it) => it.price <= amount * 2);
+    items = items.filter((it) => it.price <= Math.max(amount * 2, amount + 1));
     itemSum = items.reduce((s, it) => s + it.price * (it.quantity || 1), 0);
+  }
+  // Absolute safety: if amount is huge but text has "TOTAL" with small $, re-parse
+  if (amount >= 1000) {
+    const rescue = text.match(/\bt[o0]tal\b[^\n$]*[$]\s*([0-9]+(?:[.,][0-9]{1,2})?)/i);
+    if (rescue) {
+      const v = parseMoney(rescue[1]);
+      if (v > 0 && v < 1000) {
+        amount = v;
+        taxAmount = extractTax(rawText, amount, amount);
+        subtotal = Math.max(0, amount - taxAmount);
+        items = extractItems(rawText, amount);
+      }
+    }
   }
 
   const date = extractDate(rawText);

@@ -19,17 +19,21 @@ interface ReceiptScannerProps {
     description: string;
     category: string;
     vendor?: string;
+    currency?: string;
     items?: Array<{ name: string; price: number; quantity?: number }>;
     taxAmount?: number;
     subtotal?: number;
+    transactionType?: 'income' | 'expense';
+    suggestedAccount?: string;
   }) => void;
 }
 
 export default function ReceiptScanner({ onScanComplete }: ReceiptScannerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>('scan');
+  const [isAccepting, setIsAccepting] = useState(false);
   const { org } = useOrganization();
-  
+
   const {
     isScanning,
     file,
@@ -40,34 +44,45 @@ export default function ReceiptScanner({ onScanComplete }: ReceiptScannerProps) 
     clearFile,
     setFileDirectly,
     simulateScanning,
-    setScanResults
+    setScanResults,
+    acceptScanResults,
   } = useReceiptScanner({ onScanComplete });
 
-  const acceptResults = () => {
-    // Store the receipt in the gallery
-    if (scanResults && previewUrl) {
-      try {
-        if (!org) return;
-        const receipts = orgStorage.getJSON<any[]>(org.id, 'scannedReceipts', []);
-        
-        receipts.push({
-          id: `receipt-${Date.now()}`,
-          imageUrl: previewUrl,
-          thumbnailUrl: previewUrl,
-          vendor: scanResults.vendor || 'Unknown Vendor',
-          amount: scanResults.amount,
-          date: scanResults.date,
-          category: scanResults.category
-        });
-        
-        orgStorage.setJSON(org.id, 'scannedReceipts', receipts);
-      } catch (error) {
-        console.error('Error saving receipt to gallery:', error);
+  const acceptResults = async () => {
+    if (!scanResults) return;
+
+    setIsAccepting(true);
+    try {
+      // Only now create the transaction via parent callback
+      const ok = await acceptScanResults();
+      if (!ok) return;
+
+      // Store in local gallery after accept
+      if (previewUrl && org) {
+        try {
+          const receipts = orgStorage.getJSON<any[]>(org.id, 'scannedReceipts', []);
+          receipts.push({
+            id: `receipt-${Date.now()}`,
+            imageUrl: previewUrl,
+            thumbnailUrl: previewUrl,
+            vendor: scanResults.vendor || 'Unknown Vendor',
+            amount: scanResults.amount,
+            date: scanResults.date,
+            category: scanResults.category,
+            currency: scanResults.currency,
+          });
+          orgStorage.setJSON(org.id, 'scannedReceipts', receipts);
+        } catch (error) {
+          console.error('Error saving receipt to gallery:', error);
+        }
       }
+
+      setIsOpen(false);
+      setScanResults(null);
+      toast.success('Receipt added to books');
+    } finally {
+      setIsAccepting(false);
     }
-    
-    setIsOpen(false);
-    toast.success('Receipt data saved successfully!');
   };
 
   return (
@@ -93,7 +108,7 @@ export default function ReceiptScanner({ onScanComplete }: ReceiptScannerProps) 
               Receipt Gallery
             </TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="scan" className="space-y-4 py-2">
             {!scanResults ? (
               <ReceiptImageUpload
@@ -113,13 +128,14 @@ export default function ReceiptScanner({ onScanComplete }: ReceiptScannerProps) 
                 onAccept={acceptResults}
               />
             )}
-            
+
             <p className="text-xs text-slate-500 text-center">
-              Our AI will extract transaction details automatically from your receipt.
-              {isScanning && " Processing image, please wait..."}
+              Review the AI results, then press Accept &amp; Add to Books.
+              {isScanning && ' Processing image, please wait...'}
+              {isAccepting && ' Saving...'}
             </p>
           </TabsContent>
-          
+
           <TabsContent value="gallery" className="py-2">
             <ReceiptGallery />
           </TabsContent>

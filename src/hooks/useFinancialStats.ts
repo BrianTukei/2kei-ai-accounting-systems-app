@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useTransactions } from './useTransactions';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { Transaction } from '@/components/TransactionCard';
 
 export interface FinancialStats {
@@ -25,66 +26,83 @@ export interface FinancialStats {
 
 export const useFinancialStats = (): FinancialStats => {
   const { transactions } = useTransactions();
+  const { convertAmount, selectedCurrency } = useCurrency();
 
   return useMemo(() => {
+    const displayCode = selectedCurrency.code;
+
+    // Convert each transaction into the currently selected display currency
+    const toDisplay = (t: Transaction): number => {
+      const amount = Number(
+        (t as any).original_amount ?? (t as any).originalAmount ?? t.amount
+      ) || 0;
+      const from =
+        (t as any).original_currency ??
+        (t as any).originalCurrency ??
+        t.currency ??
+        displayCode;
+      return convertAmount(amount, from, displayCode);
+    };
+
     const now = new Date();
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
 
-    // Calculate totals
     const totalIncome = transactions
       .filter(t => t.type === 'income')
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => sum + toDisplay(t), 0);
 
     const totalExpenses = transactions
       .filter(t => t.type === 'expense')
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => sum + toDisplay(t), 0);
 
     const totalBalance = totalIncome - totalExpenses;
 
-    // Current month transactions
     const currentMonthTransactions = transactions.filter(transaction => {
       const transactionDate = new Date(transaction.date);
-      return transactionDate.getMonth() === currentMonth && 
-             transactionDate.getFullYear() === currentYear;
+      return (
+        transactionDate.getMonth() === currentMonth &&
+        transactionDate.getFullYear() === currentYear
+      );
     });
 
     const monthlyIncome = currentMonthTransactions
       .filter(t => t.type === 'income')
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => sum + toDisplay(t), 0);
 
     const monthlyExpenses = currentMonthTransactions
       .filter(t => t.type === 'expense')
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => sum + toDisplay(t), 0);
 
-    // Previous month for growth calculation
     const previousMonth = currentMonth === 0 ? 11 : currentMonth - 1;
     const previousYear = currentMonth === 0 ? currentYear - 1 : currentYear;
 
     const previousMonthTransactions = transactions.filter(transaction => {
       const transactionDate = new Date(transaction.date);
-      return transactionDate.getMonth() === previousMonth && 
-             transactionDate.getFullYear() === previousYear;
+      return (
+        transactionDate.getMonth() === previousMonth &&
+        transactionDate.getFullYear() === previousYear
+      );
     });
 
     const previousMonthIncome = previousMonthTransactions
       .filter(t => t.type === 'income')
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => sum + toDisplay(t), 0);
 
     const previousMonthExpenses = previousMonthTransactions
       .filter(t => t.type === 'expense')
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => sum + toDisplay(t), 0);
 
-    // Growth calculations
-    const incomeGrowth = previousMonthIncome > 0 
-      ? ((monthlyIncome - previousMonthIncome) / previousMonthIncome) * 100 
-      : 0;
+    const incomeGrowth =
+      previousMonthIncome > 0
+        ? ((monthlyIncome - previousMonthIncome) / previousMonthIncome) * 100
+        : 0;
 
-    const expenseGrowth = previousMonthExpenses > 0 
-      ? ((monthlyExpenses - previousMonthExpenses) / previousMonthExpenses) * 100 
-      : 0;
+    const expenseGrowth =
+      previousMonthExpenses > 0
+        ? ((monthlyExpenses - previousMonthExpenses) / previousMonthExpenses) * 100
+        : 0;
 
-    // Generate monthly data for charts (last 6 months)
     const monthlyData = [];
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -94,17 +112,19 @@ export const useFinancialStats = (): FinancialStats => {
 
       const monthTransactions = transactions.filter(transaction => {
         const transactionDate = new Date(transaction.date);
-        return transactionDate.getMonth() === targetMonth && 
-               transactionDate.getFullYear() === targetYear;
+        return (
+          transactionDate.getMonth() === targetMonth &&
+          transactionDate.getFullYear() === targetYear
+        );
       });
 
       const monthIncome = monthTransactions
         .filter(t => t.type === 'income')
-        .reduce((sum, t) => sum + t.amount, 0);
+        .reduce((sum, t) => sum + toDisplay(t), 0);
 
       const monthExpenses = monthTransactions
         .filter(t => t.type === 'expense')
-        .reduce((sum, t) => sum + t.amount, 0);
+        .reduce((sum, t) => sum + toDisplay(t), 0);
 
       monthlyData.push({
         name: monthNames[targetMonth],
@@ -113,12 +133,11 @@ export const useFinancialStats = (): FinancialStats => {
       });
     }
 
-    // Category breakdown for expenses
     const expensesByCategory = transactions
       .filter(t => t.type === 'expense')
       .reduce((acc, transaction) => {
         const category = transaction.category;
-        acc[category] = (acc[category] || 0) + transaction.amount;
+        acc[category] = (acc[category] || 0) + toDisplay(transaction);
         return acc;
       }, {} as Record<string, number>);
 
@@ -130,14 +149,13 @@ export const useFinancialStats = (): FinancialStats => {
       }))
       .sort((a, b) => b.amount - a.amount);
 
-    // Calculate pending amount (transactions from last 7 days)
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const pendingAmount = transactions
       .filter(transaction => {
         const transactionDate = new Date(transaction.date);
         return transactionDate >= sevenDaysAgo;
       })
-      .reduce((sum, t) => sum + (t.type === 'income' ? t.amount : -t.amount), 0);
+      .reduce((sum, t) => sum + (t.type === 'income' ? toDisplay(t) : -toDisplay(t)), 0);
 
     return {
       totalBalance,
@@ -151,5 +169,5 @@ export const useFinancialStats = (): FinancialStats => {
       monthlyData,
       categoryBreakdown
     };
-  }, [transactions]);
+  }, [transactions, convertAmount, selectedCurrency.code]);
 };

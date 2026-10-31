@@ -269,29 +269,42 @@ function extractPaymentMethod(text: string): string {
   return 'Unknown';
 }
 
-function extractItems(text: string): Array<{ name: string; price: number; quantity?: number }> {
+function extractItems(text: string, labeledTotal: number): Array<{ name: string; price: number; quantity?: number }> {
   const lines = text.split('\n');
   const items: Array<{ name: string; price: number; quantity?: number }> = [];
   const skipWords =
-    /^(total|sub\s*total|tax|vat|gst|hst|change|balance|cash|visa|master|amex|debit|credit|tender|payment|discount|tip|gratuity|receipt|order|date|time|tel|phone|cashier|thank|store|branch|service|charge|qty|qty\.|item|description|amount|price)$/i;
+    /^(total|sub\s*total|tax|vat|gst|hst|change|balance|cash|visa|master|amex|debit|credit|tender|payment|discount|tip|gratuity|receipt|order|date|time|tel|phone|cashier|thank|store|branch|service|charge|qty|qty\.|item|description|amount|price|lane|register|card|type|entry|contactless)$/i;
+
+  // Header / footer noise — never treat as products
+  const skipLine =
+    /^(EVERYDAY|SPRINGFIELD|MAIN\s+STREET|HELLO@|CASHIER|STORE|ID:|REGISTER|RECEIPT|CARD:|TYPE:|ENTRY:|TIME:|TEL|PHONE|\(\d{3}\)|SUBTOTAL|TAX|TOTAL)\b/i;
 
   for (const raw of lines) {
     const line = raw.trim();
     if (!line || line.length < 4) continue;
+    if (skipLine.test(line)) continue;
+    if (/@/.test(line)) continue; // email
+    if (/\b\d{5}(-\d{4})?\b/.test(line) && /[A-Z]{2}\b/.test(line)) continue; // City, ST ZIP
 
-    // "2 x Item name   12.00" or "Item name  12.00"
-    const priceMatch = line.match(/^(.+?)\s{1,}([$€£₹₦₵]|USh|UGX|KSh)?\s*(\d+[.,]\d{2}|\d{1,3}(?:[.,]\d{3})+(?:[.,]\d{2})?|\d+)\s*$/i);
+    // Prefer "NAME .... $1.00" or "NAME $1"
+    const priceMatch = line.match(
+      /^(.+?)\s{1,}([$€£₹₦₵]|USh|UGX|KSh)?\s*(\d+[.,]\d{2}|\d{1,3}(?:[.,]\d{3})+(?:[.,]\d{2})?|\d+)\s*$/i
+    );
     if (!priceMatch) continue;
 
     let name = priceMatch[1].replace(/[\.\-_]{3,}/g, '').trim();
     const price = parseMoney(priceMatch[3]);
 
-    if (!name || name.length < 2 || price <= 0 || price > 500000) continue;
+    if (!name || name.length < 2 || price <= 0) continue;
     if (skipWords.test(name)) continue;
-    // Skip pure numbers / codes as names
-    if (/^[\d\s:.\-/@]+$/.test(name)) continue;
-    // Skip if name looks like a time or barcode fragment
+    if (/^[\d\s:.\-/@#]+$/.test(name)) continue;
     if (/^\d{1,2}:\d{2}/.test(name)) continue;
+    if (/^(sub\s*total|tax|total)\b/i.test(name)) continue;
+
+    // If we know the receipt total, drop absurd line prices (zip/ids OCR'd as money)
+    if (labeledTotal > 0 && price > labeledTotal * 3 && price > 50) continue;
+    // Cap obvious ID-sized numbers when total is small
+    if (labeledTotal > 0 && labeledTotal <= 100 && price >= 1000) continue;
 
     const qtyBefore = name.match(/^(\d+)\s*[x×]\s+(.+)/i);
     const qtyAfter = name.match(/(.+?)\s*[x×]\s*(\d+)$/i);
@@ -304,7 +317,6 @@ function extractItems(text: string): Array<{ name: string; price: number; quanti
     }
   }
 
-  // Deduplicate near-identical lines
   const seen = new Set<string>();
   return items.filter((it) => {
     const key = `${it.name.toLowerCase()}|${it.price}`;
@@ -375,30 +387,34 @@ export const performReceiptOCR = async (imageElement: HTMLImageElement): Promise
   const lines = rawText.split('\n').map((l) => l.trim()).filter(Boolean);
 
   const vendor = extractVendor(lines);
-  const items = extractItems(rawText);
-  const itemSum = items.reduce((s, it) => s + it.price * (it.quantity || 1), 0);
 
-  let amount = extractTotal(rawText, itemSum);
+  // 1) Labeled TOTAL first (e.g. TOTAL: $3) — do not trust item-sum until filtered
+  let amount = extractTotal(rawText, 0);
   let subtotal = extractSubtotal(rawText, amount);
   let taxAmount = extractTax(rawText, amount, subtotal);
 
-  // Sanity: if tax is absurd, zero it and align subtotal
-  if (amount > 0 && taxAmount >= amount) {
-    taxAmount = 0;
-    subtotal = amount;
-  }
-  if (subtotal > amount && amount > 0) {
-    subtotal = amount - taxAmount;
-  }
-  // If total still looks wrong vs items, prefer item sum
-  if (itemSum > 0 && amount > 0 && amount < itemSum * 0.4) {
-    amount = Math.round(itemSum * 100) / 100;
-    subtotal = amount - taxAmount;
-  }
+  // 2) Items filtered against labeled total so zip codes / receipt IDs are dropped
+  let items = extractItems(rawText, amount);
+  let itemSum = items.reduce((s, it) => s + it.price * (it.quantity || 1), 0);
+
+  // If no labeled total, fall back to item sum
   if (amount <= 0 && itemSum > 0) {
     amount = Math.round(itemSum * 100) / 100;
-    subtotal = amount;
+    items = extractItems(rawText, amount);
+    itemSum = items.reduce((s, it) => s + it.price * (it.quantity || 1), 0);
+  }
+
+  // Sanity: tax cannot exceed total
+  if (amount > 0 && taxAmount >= amount) {
     taxAmount = 0;
+  }
+  if (subtotal <= 0 || subtotal > amount) {
+    subtotal = Math.max(0, amount - taxAmount);
+  }
+  // Prefer labeled total over inflated item sum
+  if (amount > 0 && itemSum > amount * 3) {
+    items = items.filter((it) => it.price <= amount * 2);
+    itemSum = items.reduce((s, it) => s + it.price * (it.quantity || 1), 0);
   }
 
   const date = extractDate(rawText);

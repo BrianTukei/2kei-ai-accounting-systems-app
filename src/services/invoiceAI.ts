@@ -139,33 +139,36 @@ interface CategoryRule {
 }
 
 const CATEGORY_RULES: CategoryRule[] = [
-  // Income patterns
-  { pattern: /salary|payroll|wages?|stipend/i,              category: 'Salary Income',        type: 'income' },
-  { pattern: /transfer\s+from|deposit|credit\s+from/i,      category: 'Bank Transfer',        type: 'income' },
-  { pattern: /invoice|payment\s+received|client\s+pay/i,    category: 'Client Payment',       type: 'income' },
-  { pattern: /interest\s+earned|interest\s+credit/i,        category: 'Interest Income',      type: 'income' },
-  { pattern: /refund|reversal/i,                            category: 'Refund',               type: 'income' },
-  { pattern: /dividend/i,                                   category: 'Dividend Income',      type: 'income' },
+  // Income — specific phrases only (do NOT match bare "invoice")
+  { pattern: /salary|payroll|wages?|stipend/i, category: 'Salary Income', type: 'income' },
+  { pattern: /payment\s+received|client\s+pay|received\s+from\s+client|sales\s+receipt/i, category: 'Client Payment', type: 'income' },
+  { pattern: /interest\s+earned|interest\s+credit/i, category: 'Interest Income', type: 'income' },
+  { pattern: /\brefund\b|cashback|rebate/i, category: 'Refund', type: 'income' },
+  { pattern: /dividend/i, category: 'Dividend Income', type: 'income' },
+  { pattern: /transfer\s+from|deposit\s+from|credit\s+from/i, category: 'Bank Transfer', type: 'income' },
 
-  // Expense patterns
-  { pattern: /fuel|petrol|diesel|shell|total\s+energ|chevron|caltex/i, category: 'Transport Expense',  type: 'expense' },
-  { pattern: /uber|taxi|grab|lyft|bolt/i,                   category: 'Transport Expense',    type: 'expense' },
-  { pattern: /mtn|vodacom|airtel|telkom|safaricom|airtime|data\s+bundle|wifi|internet/i, category: 'Utilities', type: 'expense' },
-  { pattern: /electricity|eskom|water\s+bill|municipal|rates\s+and\s+taxes/i, category: 'Utilities',   type: 'expense' },
-  { pattern: /rent|lease|landlord/i,                        category: 'Rent & Lease',         type: 'expense' },
-  { pattern: /groceries?|checkers|woolworths|pick\s+n\s+pay|shoprite|spar|food|market/i, category: 'Groceries', type: 'expense' },
-  { pattern: /restaurant|kfc|mcdonalds|burger|pizza|takeaway|coffee|cafe|starbucks/i, category: 'Meals & Entertainment', type: 'expense' },
-  { pattern: /insurance|assurance|premium/i,                category: 'Insurance',            type: 'expense' },
-  { pattern: /bank\s+fee|monthly\s+fee|service\s+fee|admin\s+fee|charge|commission/i, category: 'Bank Charges', type: 'expense' },
-  { pattern: /loan|instalment|repayment|bond|mortgage/i,    category: 'Loan Repayment',       type: 'expense' },
-  { pattern: /supplier|vendor|purchase|payment\s+to/i,      category: 'Supplier Payment',      type: 'expense' },
-  { pattern: /salary|wages?\s+paid|payroll\s+run/i,         category: 'Salaries & Wages',     type: 'expense' },
-  { pattern: /tax|sars|revenue\s+service|vat\s+payment/i,   category: 'Tax Payment',           type: 'expense' },
-  { pattern: /stationery|office|amazon|takealot/i,          category: 'Office Supplies',      type: 'expense' },
-  { pattern: /medical|hospital|pharmacy|doctor|clinic|health/i, category: 'Medical Expenses', type: 'expense' },
-  { pattern: /airfare|flight|airline|hotel|accommodation|booking/i, category: 'Travel',        type: 'expense' },
-  { pattern: /software|subscription|saas|adobe|microsoft|google|netflix|spotify/i, category: 'Subscriptions', type: 'expense' },
-  { pattern: /atm|cash\s+withdrawal|withdrawal/i,            category: 'Cash Withdrawal',      type: 'expense' },
+  // Education before generic "invoice" / fee noise
+  { pattern: /\b(tuition|school|university|college|semester|academy|preparatory|student\s+fee|grade\s+\d)\b/i, category: 'Education', type: 'expense' },
+
+  // Expenses
+  { pattern: /fuel|petrol|diesel|shell|total\s+energ|chevron|caltex|engen/i, category: 'Transport Expense', type: 'expense' },
+  { pattern: /uber|taxi|grab|lyft|bolt|parking/i, category: 'Transport Expense', type: 'expense' },
+  { pattern: /mtn|vodacom|airtel|telkom|safaricom|airtime|data\s+bundle|wifi|internet|umeme|nwsc/i, category: 'Utilities', type: 'expense' },
+  { pattern: /electricity|eskom|water\s+bill|municipal|power\s+bill/i, category: 'Utilities', type: 'expense' },
+  { pattern: /\brent\b|lease|landlord/i, category: 'Rent & Lease', type: 'expense' },
+  { pattern: /groceries?|supermarket|checkers|woolworths|pick\s+n\s+pay|shoprite|spar|minimart|\bmart\b|everyday/i, category: 'Groceries', type: 'expense' },
+  { pattern: /restaurant|kfc|mcdonalds|burger|pizza|takeaway|coffee|cafe|starbucks|diner/i, category: 'Meals & Entertainment', type: 'expense' },
+  { pattern: /insurance|assurance|premium/i, category: 'Insurance', type: 'expense' },
+  { pattern: /bank\s+fee|monthly\s+fee|service\s+fee|admin\s+fee|atm\s+fee/i, category: 'Bank Charges', type: 'expense' },
+  { pattern: /loan|instalment|repayment|bond|mortgage/i, category: 'Loan Repayment', type: 'expense' },
+  { pattern: /supplier|vendor\s+payment|payment\s+to\s+supplier/i, category: 'Supplier Payment', type: 'expense' },
+  { pattern: /wages?\s+paid|payroll\s+run/i, category: 'Salaries & Wages', type: 'expense' },
+  { pattern: /\bvat\s+payment\b|sars|ura\s+payment|tax\s+return/i, category: 'Tax Payment', type: 'expense' },
+  { pattern: /stationery|office\s+supplies|takealot/i, category: 'Office Supplies', type: 'expense' },
+  { pattern: /medical|hospital|pharmacy|doctor|clinic|chemist/i, category: 'Medical Expenses', type: 'expense' },
+  { pattern: /airfare|flight|airline|hotel|accommodation|airbnb/i, category: 'Travel', type: 'expense' },
+  { pattern: /software|subscription|saas|adobe|microsoft|netflix|spotify/i, category: 'Subscriptions', type: 'expense' },
+  { pattern: /atm|cash\s+withdrawal/i, category: 'Cash Withdrawal', type: 'expense' },
 ];
 
 /**

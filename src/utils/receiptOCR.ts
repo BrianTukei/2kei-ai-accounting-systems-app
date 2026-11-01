@@ -642,11 +642,18 @@ async function performAIScan(imageElement: HTMLImageElement): Promise<OCRResult>
   const vendor: string = r.vendor || 'Unknown Vendor';
   const items = (r.items || []).map((i: any) => ({ name: i.name, price: Number(i.price) || 0, quantity: i.quantity || 1 }));
 
-  // Categorise from clean vendor + item names (not raw OCR text, which is full of noise).
-  const cleanText = `${vendor} ${items.map((i: any) => i.name).join(' ')}`;
-  const local = aiCategorise(vendor, cleanText);
-  const serverCategory: string = r.category || 'Miscellaneous Expense';
-  const category = local.category !== 'Miscellaneous Expense' ? local.category : serverCategory;
+  // The AI picks the category (and expense/income) from what was actually bought.
+  // Only if it answers "Miscellaneous", try the local keyword rules on clean vendor + item names.
+  let category: string = r.category || 'Miscellaneous Expense';
+  let transactionType: 'income' | 'expense' = r.transaction_type === 'income' ? 'income' : 'expense';
+  if (category === 'Miscellaneous Expense') {
+    const cleanText = `${vendor} ${items.map((i: any) => i.name).join(' ')}`;
+    const local = aiCategorise(vendor, cleanText);
+    if (local.category !== 'Miscellaneous Expense') {
+      category = local.category;
+      transactionType = local.type;
+    }
+  }
 
   return {
     vendor,
@@ -661,7 +668,7 @@ async function performAIScan(imageElement: HTMLImageElement): Promise<OCRResult>
     receiptNumber: r.receipt_number || '',
     paymentMethod: r.payment_method ? String(r.payment_method).replace(/^./, (c: string) => c.toUpperCase()) : 'Unknown',
     confidence: Math.round(Number(r.confidence_score) || 0),
-    transactionType: local.type,
+    transactionType,
     suggestedAccount: category,
     rawText: '',
     warnings: data.warnings || [],

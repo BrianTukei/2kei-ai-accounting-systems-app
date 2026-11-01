@@ -355,34 +355,65 @@ function extractItems(text: string, labeledTotal: number): Array<{ name: string;
 
 
 function aiCategorise(vendor: string, fullText: string): { category: string; type: 'income' | 'expense' } {
-  // Avoid classifying supermarket receipts as "Tax Payment" just because VAT appears
-  const textNoTaxNoise = fullText.replace(/\b(vat|tax|gst|hst)\b/gi, ' ');
+  const v = `${vendor} ${fullText}`.toLowerCase();
 
-  const fromText = categoriseTransaction(textNoTaxNoise, 1, 0);
-  if (fromText.category !== 'Miscellaneous Expense' && fromText.category !== 'Uncategorised' && fromText.category !== 'Tax Payment') {
+  // Ordered rules: first match wins. Specific before generic.
+  const rules: Array<{ test: RegExp; category: string; type: 'income' | 'expense' }> = [
+    // Education
+    { test: /school|tuition|university|college|semester|academy|preparatory|campus|student\s+fee|grade\s+\d|education/, category: 'Education', type: 'expense' },
+    // Medical
+    { test: /pharmacy|hospital|clinic|doctor|dental|medical|lab\s+test|prescription|chemist/, category: 'Medical Expenses', type: 'expense' },
+    // Groceries / retail
+    { test: /grocery|supermarket|mart\b|walmart|shoprite|checkers|spar|nakumatt|carrefour|everyday|minimart|hypermarket/, category: 'Groceries', type: 'expense' },
+    // Food service
+    { test: /restaurant|cafe|coffee|pizza|burger|kfc|mcdonald|subway|starbucks|takeaway|takeout|diner|food\s+court/, category: 'Meals & Entertainment', type: 'expense' },
+    // Fuel / transport
+    { test: /petrol|fuel|diesel|gas\s+station|shell|total\s+energies|engen|caltex|uber|bolt|taxi|parking/, category: 'Transport Expense', type: 'expense' },
+    // Utilities
+    { test: /electric|electricity|water\s+bill|umeme|nwsc|internet|wifi|mtn|airtel|vodafone|utility|power\s+bill/, category: 'Utilities', type: 'expense' },
+    // Rent
+    { test: /\brent\b|lease|landlord|property\s+manage/, category: 'Rent & Lease', type: 'expense' },
+    // Insurance
+    { test: /insurance|premium|assurance|policy\s+no/, category: 'Insurance', type: 'expense' },
+    // Subscriptions / software
+    { test: /subscription|netflix|spotify|adobe|microsoft\s+365|saas|software\s+license|github|aws/, category: 'Subscriptions', type: 'expense' },
+    // Office
+    { test: /office\s+supplies|stationery|staples|printer|ink\s+cartridge/, category: 'Office Supplies', type: 'expense' },
+    // Travel
+    { test: /hotel|airbnb|airline|flight|airport|booking\.com|travel\s+agency/, category: 'Travel', type: 'expense' },
+    // Banking fees
+    { test: /bank\s+charge|service\s+fee|withdrawal\s+fee|monthly\s+fee|atm\s+fee/, category: 'Bank Charges', type: 'expense' },
+    // Income — only when clearly received
+    { test: /payment\s+received|client\s+pay|received\s+from|deposit\s+from\s+client|sales\s+receipt/, category: 'Client Payment', type: 'income' },
+    { test: /salary|payroll|wage\s+payment|stipend/, category: 'Salary Income', type: 'income' },
+    { test: /refund|cashback|rebate/, category: 'Miscellaneous Income', type: 'income' },
+  ];
+
+  for (const rule of rules) {
+    if (rule.test.test(v)) {
+      return { category: rule.category, type: rule.type };
+    }
+  }
+
+  // Fallback: shared bank-import categoriser (strip noise that causes false Client Payment)
+  const cleaned = fullText
+    .replace(/\b(vat|tax|gst|hst)\b/gi, ' ')
+    .replace(/\binvoice\s*(no|number|#)?\b/gi, ' ');
+  const fromText = categoriseTransaction(cleaned, 1, 0);
+  if (
+    fromText.category &&
+    !['Miscellaneous Expense', 'Uncategorised', 'Tax Payment', 'Client Payment'].includes(fromText.category)
+  ) {
     return fromText;
   }
 
   const fromVendor = categoriseTransaction(vendor, 1, 0);
-  if (fromVendor.category !== 'Miscellaneous Expense' && fromVendor.category !== 'Uncategorised' && fromVendor.category !== 'Tax Payment') {
+  if (
+    fromVendor.category &&
+    !['Miscellaneous Expense', 'Uncategorised', 'Tax Payment', 'Client Payment'].includes(fromVendor.category)
+  ) {
     return fromVendor;
   }
-
-  const v = (vendor + ' ' + fullText).toLowerCase();
-  if (/grocery|supermarket|mart|walmart|shoprite|checkers|spar|nakumatt|carrefour|everyday/i.test(v))
-    return { category: 'Groceries', type: 'expense' };
-  if (/restaurant|cafe|coffee|pizza|burger|kfc|mcdonald|food/i.test(v))
-    return { category: 'Meals & Entertainment', type: 'expense' };
-  if (/gas|fuel|petrol|shell|bp/i.test(v))
-    return { category: 'Transport Expense', type: 'expense' };
-  if (/pharmacy|drug|clinic|hospital|medical/i.test(v))
-    return { category: 'Medical Expenses', type: 'expense' };
-  if (/hotel|flight|travel|uber|taxi/i.test(v))
-    return { category: 'Travel', type: 'expense' };
-  if (/electric|water|internet|mtn|airtel|utility/i.test(v))
-    return { category: 'Utilities', type: 'expense' };
-  if (/refund|return|cashback/i.test(v))
-    return { category: 'Miscellaneous Income', type: 'income' };
 
   return { category: 'Miscellaneous Expense', type: 'expense' };
 }

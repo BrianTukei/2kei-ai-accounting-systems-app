@@ -107,7 +107,7 @@ const FALLBACK_RATES: Record<string, number> = {
   CZK: 23.15, HUF: 362, RUB: 91.50, TRY: 30.50, MXN: 17.15,
   ARS: 830, CLP: 920, COP: 3950, PEN: 3.72, UYU: 39.20,
   EGP: 50.10, MAD: 10.05, NGN: 1580, GHS: 14.80, KES: 153,
-  UGX: 3780, TZS: 2650, ZMW: 26.50, BWP: 13.60,
+  UGX: 4288.97, TZS: 2650, ZMW: 26.50, BWP: 13.60,
   AED: 3.67, SAR: 3.75, QAR: 3.64, KWD: 0.31, BHD: 0.377,
   OMR: 0.385, JOD: 0.71, LBP: 89500, THB: 35.20, VND: 24850,
   IDR: 15650, MYR: 4.72, PHP: 56.30, PKR: 278, BDT: 110,
@@ -133,7 +133,7 @@ export function CurrencyProvider({ children }: CurrencyProviderProps) {
 
   // Initialize with fallback rates so conversion works immediately
   const [exchangeRates, setExchangeRates] = useState<Record<string, number>>(FALLBACK_RATES);
-  const [ratesSource, setRatesSource] = useState<string>('none');
+  const [ratesSource, setRatesSource] = useState<string>('fallback');
   const [ratesLastUpdated, setRatesLastUpdated] = useState<string | null>(null);
   const [isRatesLoading, setIsRatesLoading] = useState(false);
   const refreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -148,7 +148,7 @@ export function CurrencyProvider({ children }: CurrencyProviderProps) {
       setIsRatesLoading(true);
       try {
         const result = await exchangeService.getRates();
-        setExchangeRates(result.rates);
+        setExchangeRates({ ...FALLBACK_RATES, ...result.rates });
         setRatesSource(result.source);
         setRatesLastUpdated(result.lastUpdated);
       } catch (err) {
@@ -160,10 +160,13 @@ export function CurrencyProvider({ children }: CurrencyProviderProps) {
 
     loadRates();
 
-    // Auto-refresh every 10 minutes
+    // Auto-refresh every 10 minutes, and whenever the tab becomes visible again
     refreshTimerRef.current = setInterval(loadRates, 10 * 60 * 1000);
+    const onVisible = () => { if (document.visibilityState === 'visible') loadRates(); };
+    document.addEventListener('visibilitychange', onVisible);
     return () => {
       if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
+      document.removeEventListener('visibilitychange', onVisible);
     };
   }, []);
 
@@ -264,7 +267,7 @@ export function CurrencyProvider({ children }: CurrencyProviderProps) {
     setIsRatesLoading(true);
     try {
       const result = await exchangeService.refreshRates();
-      setExchangeRates(result.rates);
+      setExchangeRates({ ...FALLBACK_RATES, ...result.rates });
       setRatesSource(result.source);
       setRatesLastUpdated(result.lastUpdated);
     } catch (err) {
@@ -285,15 +288,9 @@ export function CurrencyProvider({ children }: CurrencyProviderProps) {
 
     if (from === to) return amount;
 
-    // Get rate using exchangeService (same as billing.ts does it)
-    const liveRate = exchangeService.getRateSync(from, to);
-    if (liveRate !== 1 || from === 'USD') {
-      return Math.round(amount * liveRate * 100) / 100;
-    }
-
-    // Fallback is already handled by getRateSync
-    return Math.round(amount * liveRate * 100) / 100;
-  }, [selectedCurrency.code]);
+    // Same reactive rate table as convertAmount, so every screen agrees
+    return convertAmount(amount, from, to);
+  }, [selectedCurrency.code, convertAmount]);
 
   /**
    * Convert + format amount in one step.

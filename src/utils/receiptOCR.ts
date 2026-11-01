@@ -459,9 +459,9 @@ export const performReceiptOCR = async (imageElement: HTMLImageElement): Promise
   const subAsItem = findByName(/^sub\s*-?\s*total\b/i);
 
   let amount = extractTotal(rawText, 0);
-  if (totalAsItem && totalAsItem.price > 0 && totalAsItem.price < 100000) {
-    // Prefer explicit TOTAL line-item when present (matches Everyday Mart OCR)
-    if (amount <= 0 || amount > totalAsItem.price * 10) {
+  if (totalAsItem && totalAsItem.price > 0) {
+    // Prefer explicit TOTAL / GRAND TOTAL line when present
+    if (amount <= 0 || amount > totalAsItem.price * 5 || amount < totalAsItem.price * 0.2) {
       amount = totalAsItem.price;
     }
   }
@@ -501,12 +501,26 @@ export const performReceiptOCR = async (imageElement: HTMLImageElement): Promise
     taxAmount = 0;
   }
 
-  // Final clamp: never show inflated total when a small TOTAL line existed
-  if (totalAsItem && totalAsItem.price > 0 && totalAsItem.price < 1000) {
+  // Final clamp: trust labeled TOTAL row; drop item prices far above it
+  if (totalAsItem && totalAsItem.price > 0) {
     amount = totalAsItem.price;
     if (taxAmount >= amount) taxAmount = 0;
-    subtotal = Math.max(0, amount - taxAmount);
-    items = items.filter((it) => it.price <= Math.max(amount * 3, 10));
+    subtotal = Math.max(0, Math.min(subtotal || amount, amount - taxAmount));
+    items = items.filter((it) => it.price <= amount * 1.05 + 0.01);
+  }
+
+  // Also match "GRAND TOTAL PAID: $8,945.00" style from billing receipts
+  if (amount <= 0 || amount > 1e9) {
+    const grand = rawText.match(/grand\s*total(?:\s*paid)?\s*[:.\-]?\s*[$€£₹₦₵]?\s*([0-9][0-9\s.,]*)/i);
+    if (grand) {
+      const v = parseMoney(grand[1]);
+      if (v > 0) {
+        amount = v;
+        subtotal = amount;
+        taxAmount = 0;
+        items = items.filter((it) => it.price <= amount * 1.05 + 0.01);
+      }
+    }
   }
 
   const date = extractDate(rawText);

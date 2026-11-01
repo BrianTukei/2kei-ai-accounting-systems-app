@@ -1,6 +1,7 @@
 // Real OCR via Tesseract.js — runs entirely in the browser.
 import Tesseract from 'tesseract.js';
 import { categoriseTransaction } from '@/services/invoiceAI';
+import { supabase } from '@/integrations/supabase/client';
 
 // ─────────────────────────────────────────
 // Types
@@ -22,6 +23,14 @@ interface OCRResult {
   transactionType: 'income' | 'expense';
   suggestedAccount: string;
   rawText: string;
+  /** Set by the AI scanner: things the user must double-check before saving. */
+  warnings?: string[];
+  /** True when the scan has warnings or low confidence. Block auto-posting when true. */
+  needsReview?: boolean;
+  /** Existing receipt with the same vendor/date/total, if any. */
+  duplicate?: { id: string; vendor: string; amount: number; date: string } | null;
+  /** 'ai' = vision scanner, 'local' = basic offline reader (less accurate). */
+  engine?: 'ai' | 'local';
 }
 
 // ─────────────────────────────────────────
@@ -437,8 +446,8 @@ function calculateConfidence(result: Partial<OCRResult>): number {
 // Main
 // ─────────────────────────────────────────
 
-export const performReceiptOCR = async (imageElement: HTMLImageElement): Promise<OCRResult> => {
-  console.log('[receiptOCR] Starting AI receipt processing…');
+const performLocalOCR = async (imageElement: HTMLImageElement): Promise<OCRResult> => {
+  console.log('[receiptOCR] Starting local OCR processing…');
 
   const rawText = await extractTextFromImage(imageElement);
   console.log('[receiptOCR] Raw text:\n', rawText);
@@ -566,4 +575,126 @@ export const performReceiptOCR = async (imageElement: HTMLImageElement): Promise
 
   console.log('[receiptOCR] AI result:', result);
   return result;
+};
+
+
+// ─────────────────────────────────────────
+// AI scanner (server-side vision model via the scan-receipt edge function)
+// ─────────────────────────────────────────
+
+/** Colour JPEG for the vision model. (The black/white OCR preprocessing would hurt it.) */
+const imageToJpegBase64 = (img: HTMLImageElement): string => {
+  const MAX = 1800;
+  let w = img.naturalWidth || img.width;
+  let h = img.naturalHeight || img.height;
+  if (Math.max(w, h) > MAX) {
+    const k = MAX / Math.max(w, h);
+    w = Math.round(w * k);
+    h = Math.round(h * k);
+  }
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Could not prepare the image.');
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, w, h);
+  ctx.drawImage(img, 0, 0, w, h);
+  return canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+};
+
+async function readFunctionError(error: any): Promise<{ message?: string; status?: number }> {
+  try {
+    const res = error?.context;
+    if (res && typeof res.json === 'function') {
+      const body = await res.json();
+      return { message: body?.error, status: res.status };
+    }
+  } catch {
+    /* fall through */
+  }
+  return { message: error?.message };
+}
+
+const sanitizeAmount = (n: unknown): number => {
+  const v = Number(n);
+  return Number.isFinite(v) && v > 0 ? Math.round(v * 100) / 100 : 0;
+};
+
+async function performAIScan(imageElement: HTMLImageElement): Promise<OCRResult> {
+  const image_base64 = imageToJpegBase64(imageElement);
+
+  const { data, error } = await supabase.functions.invoke('scan-receipt', {
+    body: { image_base64, media_type: 'image/jpeg' },
+  });
+
+  if (error) {
+    const { message, status } = await readFunctionError(error);
+    const err: any = new Error(message || 'Receipt scanning failed. Please try again.');
+    err.status = status;
+    throw err;
+  }
+  if (!data?.success || !data.receipt) {
+    throw new Error(data?.error || 'Could not read this receipt. Try a clearer photo.');
+  }
+
+  const r = data.receipt;
+  const vendor: string = r.vendor || 'Unknown Vendor';
+  const items = (r.items || []).map((i: any) => ({ name: i.name, price: Number(i.price) || 0, quantity: i.quantity || 1 }));
+
+  // Categorise from clean vendor + item names (not raw OCR text, which is full of noise).
+  const cleanText = `${vendor} ${items.map((i: any) => i.name).join(' ')}`;
+  const local = aiCategorise(vendor, cleanText);
+  const serverCategory: string = r.category || 'Miscellaneous Expense';
+  const category = local.category !== 'Miscellaneous Expense' ? local.category : serverCategory;
+
+  return {
+    vendor,
+    amount: sanitizeAmount(r.amount),
+    currency: r.currency || 'UGX',
+    date: r.date || new Date().toISOString().split('T')[0],
+    category,
+    description: items.length > 0 ? `${vendor} — ${items.length} item${items.length > 1 ? 's' : ''}` : `${vendor} purchase`,
+    items,
+    subtotal: sanitizeAmount(r.subtotal),
+    taxAmount: sanitizeAmount(r.tax_amount),
+    receiptNumber: r.receipt_number || '',
+    paymentMethod: r.payment_method ? String(r.payment_method).replace(/^./, (c: string) => c.toUpperCase()) : 'Unknown',
+    confidence: Math.round(Number(r.confidence_score) || 0),
+    transactionType: local.type,
+    suggestedAccount: category,
+    rawText: '',
+    warnings: data.warnings || [],
+    needsReview: !!data.needs_review,
+    duplicate: data.duplicate
+      ? { id: data.duplicate.id, vendor: data.duplicate.vendor, amount: Number(data.duplicate.amount), date: data.duplicate.date }
+      : null,
+    engine: 'ai',
+  };
+}
+
+/**
+ * Public entry point (same signature as before).
+ * Uses the AI scanner. Only falls back to the basic offline reader when the scanner is
+ * unreachable or not configured; other errors (busy, not a receipt, unreadable) are shown to the user.
+ */
+export const performReceiptOCR = async (imageElement: HTMLImageElement): Promise<OCRResult> => {
+  try {
+    return await performAIScan(imageElement);
+  } catch (e: any) {
+    const status: number | undefined = e?.status;
+    const unreachable = status === undefined || status === 503 || status === 502 || status >= 500;
+    if (!unreachable) throw e;
+    console.warn('[receiptOCR] AI scanner unavailable, using basic offline reader:', e?.message);
+
+    const local = await performLocalOCR(imageElement);
+    return {
+      ...local,
+      confidence: Math.min(local.confidence, 40),
+      warnings: ['AI scanner unavailable. This used the basic offline reader, which is often wrong. Check every field.'],
+      needsReview: true,
+      duplicate: null,
+      engine: 'local',
+    };
+  }
 };

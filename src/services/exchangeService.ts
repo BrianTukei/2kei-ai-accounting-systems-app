@@ -71,7 +71,7 @@ const FALLBACK_RATES: Record<string, number> = {
   CZK: 23.15, HUF: 362, RUB: 91.50, TRY: 30.50, MXN: 17.15,
   ARS: 830, CLP: 920, COP: 3950, PEN: 3.72, UYU: 39.20,
   EGP: 50.10, MAD: 10.05, NGN: 1580, GHS: 14.80, KES: 153,
-  UGX: 3780, TZS: 2650, ZMW: 26.50, BWP: 13.60,
+  UGX: 4288.97, TZS: 2650, ZMW: 26.50, BWP: 13.60,
   AED: 3.67, SAR: 3.75, QAR: 3.64, KWD: 0.31, BHD: 0.377,
   OMR: 0.385, JOD: 0.71, LBP: 89500, THB: 35.20, VND: 24850,
   IDR: 15650, MYR: 4.72, PHP: 56.30, PKR: 278, BDT: 110,
@@ -108,10 +108,14 @@ export const exchangeService = {
 
     try {
       const result = await callEdgeFunction({ action: 'get_rates' });
+      if (!result || result.success === false || !result.rates || !Object.keys(result.rates).length) {
+        throw new Error(result?.error || 'No rates returned');
+      }
       const rates: ExchangeRates = {
         base: result.base || 'USD',
-        rates: result.rates || {},
-        source: result.source || 'fallback',
+        // live rates win; any currency the server omits keeps its fallback rate
+        rates: { ...FALLBACK_RATES, ...result.rates, USD: 1 },
+        source: result.source || 'live',
         lastUpdated: result.lastUpdated || null,
         overrides: result.overrides || [],
         cacheTTL: result.cacheTTL || 10,

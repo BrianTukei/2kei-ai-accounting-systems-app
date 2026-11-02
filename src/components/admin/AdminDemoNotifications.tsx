@@ -1,110 +1,57 @@
 /**
- * Admin panel: demo requests + notification list
- * Loads via API first; falls back to direct Supabase if API returns 401/403.
+ * Admin Demo alerts — reads the same `demo_bookings` table that
+ * /book-demo (edge function book-demo) writes to.
  */
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Bell, Check, Loader2, RefreshCw } from 'lucide-react';
+import { Bell, Loader2, RefreshCw } from 'lucide-react';
 
-const API_BASE =
-  import.meta.env.VITE_API_URL ||
-  (typeof window !== 'undefined' ? window.location.origin : '');
-
-async function authHeaders() {
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
-  if (!token) return null;
-  return {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${token}`,
-  };
-}
-
-type DemoRequest = {
+type DemoBooking = {
   id: string;
-  full_name: string;
+  name?: string;
+  full_name?: string;
   email: string;
   company?: string;
+  company_name?: string;
   phone?: string;
   preferred_date?: string;
   preferred_time?: string;
   message?: string;
   status: string;
+  source?: string;
   created_at: string;
 };
 
-type AdminNotification = {
-  id: string;
-  type: string;
-  title: string;
-  body?: string;
-  link?: string;
-  read_at?: string | null;
-  created_at: string;
-};
+function displayName(d: DemoBooking) {
+  return d.name || d.full_name || 'Unknown';
+}
+
+function displayCompany(d: DemoBooking) {
+  return d.company || d.company_name || '';
+}
 
 export default function AdminDemoNotifications() {
-  const [tab, setTab] = useState<'alerts' | 'demos'>('alerts');
   const [loading, setLoading] = useState(true);
-  const [notifications, setNotifications] = useState<AdminNotification[]>([]);
-  const [demos, setDemos] = useState<DemoRequest[]>([]);
-
-  const loadFromSupabase = async () => {
-    const [nRes, dRes] = await Promise.all([
-      supabase
-        .from('admin_notifications')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(50),
-      supabase
-        .from('demo_requests')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(100),
-    ]);
-    if (nRes.error) throw nRes.error;
-    if (dRes.error) throw dRes.error;
-    setNotifications((nRes.data as AdminNotification[]) || []);
-    setDemos((dRes.data as DemoRequest[]) || []);
-  };
+  const [demos, setDemos] = useState<DemoBooking[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const headers = await authHeaders();
-      if (!headers) {
-        // No session token — try Supabase client session
-        await loadFromSupabase();
-        return;
-      }
+      const { data, error } = await supabase
+        .from('demo_bookings')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100);
 
-      const [nRes, dRes] = await Promise.all([
-        fetch(`${API_BASE}/api/admin/notifications`, { headers }),
-        fetch(`${API_BASE}/api/demo-requests`, { headers }),
-      ]);
-
-      if (nRes.status === 401 || nRes.status === 403 || dRes.status === 401 || dRes.status === 403) {
-        // API auth failed — fall back to direct Supabase (RLS)
-        await loadFromSupabase();
-        return;
-      }
-
-      const nJson = await nRes.json();
-      const dJson = await dRes.json();
-      if (!nRes.ok) throw new Error(nJson.error || nJson.message || 'Failed to load notifications');
-      if (!dRes.ok) throw new Error(dJson.error || dJson.message || 'Failed to load demos');
-      setNotifications(nJson.data || []);
-      setDemos(dJson.data || []);
+      if (error) throw error;
+      setDemos((data as DemoBooking[]) || []);
     } catch (err: any) {
       console.error(err);
-      try {
-        await loadFromSupabase();
-      } catch (e2: any) {
-        toast.error(e2.message || err.message || 'Load failed');
-      }
+      toast.error(err.message || 'Failed to load demo bookings');
+      setDemos([]);
     } finally {
       setLoading(false);
     }
@@ -112,69 +59,35 @@ export default function AdminDemoNotifications() {
 
   useEffect(() => {
     load();
+    const channel = supabase
+      .channel('demo_bookings_admin')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'demo_bookings' },
+        () => load()
+      )
+      .subscribe();
+
     const t = setInterval(load, 60_000);
-    return () => clearInterval(t);
+    return () => {
+      clearInterval(t);
+      supabase.removeChannel(channel);
+    };
   }, [load]);
 
-  const unread = notifications.filter((n) => !n.read_at).length;
-
-  const markRead = async (id: string) => {
-    const headers = await authHeaders();
-    if (headers) {
-      await fetch(`${API_BASE}/api/admin/notifications/${id}/read`, {
-        method: 'POST',
-        headers,
-      });
-    }
-    await supabase
-      .from('admin_notifications')
-      .update({ read_at: new Date().toISOString() })
-      .eq('id', id);
-    setNotifications((prev) =>
-      prev.map((n) =>
-        n.id === id ? { ...n, read_at: new Date().toISOString() } : n
-      )
-    );
-  };
-
-  const markAll = async () => {
-    const headers = await authHeaders();
-    if (headers) {
-      await fetch(`${API_BASE}/api/admin/notifications/read-all`, {
-        method: 'POST',
-        headers,
-      });
-    }
-    await supabase
-      .from('admin_notifications')
-      .update({ read_at: new Date().toISOString() })
-      .is('read_at', null);
-    setNotifications((prev) =>
-      prev.map((n) => ({ ...n, read_at: n.read_at || new Date().toISOString() }))
-    );
-    toast.success('All marked read');
-  };
+  const pending = demos.filter(
+    (d) => !d.status || d.status === 'pending' || d.status === 'new'
+  ).length;
 
   const setStatus = async (id: string, status: string) => {
-    const headers = await authHeaders();
-    let ok = false;
-    if (headers) {
-      const res = await fetch(`${API_BASE}/api/demo-requests/${id}`, {
-        method: 'PATCH',
-        headers,
-        body: JSON.stringify({ status }),
-      });
-      ok = res.ok;
-    }
-    if (!ok) {
-      const { error } = await supabase
-        .from('demo_requests')
-        .update({ status, updated_at: new Date().toISOString() })
-        .eq('id', id);
-      if (error) {
-        toast.error(error.message);
-        return;
-      }
+    const { error } = await supabase
+      .from('demo_bookings')
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq('id', id);
+
+    if (error) {
+      toast.error(error.message);
+      return;
     }
     setDemos((prev) => prev.map((d) => (d.id === id ? { ...d, status } : d)));
     toast.success(`Marked ${status}`);
@@ -185,8 +98,10 @@ export default function AdminDemoNotifications() {
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Bell className="h-5 w-5" />
-          <h2 className="text-xl font-semibold">Demo alerts</h2>
-          {unread > 0 && <Badge variant="destructive">{unread} new</Badge>}
+          <h2 className="text-xl font-semibold">Demo requests</h2>
+          {pending > 0 && (
+            <Badge variant="destructive">{pending} pending</Badge>
+          )}
         </div>
         <Button variant="outline" size="sm" onClick={load} disabled={loading}>
           {loading ? (
@@ -197,112 +112,67 @@ export default function AdminDemoNotifications() {
         </Button>
       </div>
 
-      <div className="flex gap-2">
-        <Button
-          size="sm"
-          variant={tab === 'alerts' ? 'default' : 'outline'}
-          onClick={() => setTab('alerts')}
-        >
-          Notifications
-        </Button>
-        <Button
-          size="sm"
-          variant={tab === 'demos' ? 'default' : 'outline'}
-          onClick={() => setTab('demos')}
-        >
-          Demo requests ({demos.length})
-        </Button>
-      </div>
+      <p className="text-sm text-muted-foreground">
+        Same bookings as submitted on <code className="text-xs">/book-demo</code>.
+      </p>
 
-      {tab === 'alerts' && (
-        <div className="space-y-2">
-          {unread > 0 && (
-            <Button size="sm" variant="ghost" onClick={markAll}>
-              <Check className="h-4 w-4 mr-1" /> Mark all read
-            </Button>
-          )}
-          {notifications.length === 0 && (
-            <p className="text-sm text-muted-foreground">
-              No notifications yet. Submit a test from /book-demo.
-            </p>
-          )}
-          {notifications.map((n) => (
-            <div
-              key={n.id}
-              className={`rounded-lg border p-3 ${
-                n.read_at ? 'opacity-60' : 'border-primary/40 bg-primary/5'
-              }`}
-            >
-              <div className="flex justify-between gap-2">
-                <div>
-                  <p className="font-medium text-sm">{n.title}</p>
-                  {n.body && (
-                    <pre className="text-xs text-muted-foreground whitespace-pre-wrap mt-1 font-sans">
-                      {n.body}
-                    </pre>
-                  )}
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {new Date(n.created_at).toLocaleString()}
-                  </p>
-                </div>
-                {!n.read_at && (
-                  <Button size="sm" variant="ghost" onClick={() => markRead(n.id)}>
-                    Mark read
-                  </Button>
-                )}
-              </div>
-            </div>
-          ))}
+      {loading && demos.length === 0 && (
+        <div className="flex justify-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       )}
 
-      {tab === 'demos' && (
-        <div className="space-y-3">
-          {demos.length === 0 && (
-            <p className="text-sm text-muted-foreground">
-              No demo requests yet. Public form: /book-demo
-            </p>
-          )}
-          {demos.map((d) => (
-            <div key={d.id} className="rounded-lg border p-3 space-y-2">
-              <div className="flex flex-wrap items-center gap-2 justify-between">
-                <div>
-                  <p className="font-medium">{d.full_name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {d.email}
-                    {d.company ? ` · ${d.company}` : ''}
-                  </p>
-                </div>
-                <Badge>{d.status}</Badge>
-              </div>
-              {(d.preferred_date || d.message) && (
+      {!loading && demos.length === 0 && (
+        <p className="text-sm text-muted-foreground">
+          No demo bookings found in <code className="text-xs">demo_bookings</code>.
+          If you just booked, tap refresh — or check Admin → Demo Bookings tab.
+        </p>
+      )}
+
+      <div className="space-y-3">
+        {demos.map((d) => (
+          <div key={d.id} className="rounded-lg border p-3 space-y-2">
+            <div className="flex flex-wrap items-center gap-2 justify-between">
+              <div>
+                <p className="font-medium">{displayName(d)}</p>
                 <p className="text-sm text-muted-foreground">
-                  {d.preferred_date && (
-                    <>
-                      Preferred: {d.preferred_date} {d.preferred_time || ''}
-                      <br />
-                    </>
-                  )}
-                  {d.message}
+                  {d.email}
+                  {displayCompany(d) ? ` · ${displayCompany(d)}` : ''}
+                  {d.phone ? ` · ${d.phone}` : ''}
                 </p>
-              )}
-              <div className="flex flex-wrap gap-2">
-                {['contacted', 'scheduled', 'completed', 'cancelled'].map((s) => (
-                  <Button
-                    key={s}
-                    size="sm"
-                    variant="outline"
-                    disabled={d.status === s}
-                    onClick={() => setStatus(d.id, s)}
-                  >
-                    {s}
-                  </Button>
-                ))}
               </div>
+              <Badge>{d.status || 'pending'}</Badge>
             </div>
-          ))}
-        </div>
-      )}
+            <p className="text-sm text-muted-foreground">
+              {d.preferred_date && (
+                <>
+                  Preferred: {d.preferred_date}
+                  {d.preferred_time ? ` ${String(d.preferred_time).slice(0, 5)}` : ''}
+                  <br />
+                </>
+              )}
+              {d.message}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Booked {new Date(d.created_at).toLocaleString()}
+              {d.source ? ` · ${d.source}` : ''}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {['pending', 'confirmed', 'completed', 'cancelled'].map((s) => (
+                <Button
+                  key={s}
+                  size="sm"
+                  variant="outline"
+                  disabled={(d.status || 'pending') === s}
+                  onClick={() => setStatus(d.id, s)}
+                >
+                  {s}
+                </Button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

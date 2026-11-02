@@ -5,6 +5,7 @@ import { ActionAIController } from '../api/actionAI';
 import authRoutes from './auth';
 import { adminEmailController } from '../controllers/adminEmail';
 import { requireAuth, requireAdmin } from '../middleware/auth';
+import demoRequestsRouter from './demoRequests';
 
 const router = Router();
 
@@ -59,5 +60,8 @@ router.post('/action-ai/batch', requireAuth, ActionAIController.executeBatch);
 
 // AI Service Status
 router.get('/ai-status', requireAuth, ReceiptScannerAPI.getAIStatus);
+
+// Demo booking (public POST) + admin notifications
+router.use(demoRequestsRouter);
 
 export default router;

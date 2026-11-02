@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { createClient, User, SupabaseClient } from '@supabase/supabase-js';
+import { isOwnerEmail } from '../lib/adminEmails';
 
 // Extend Express Request so TypeScript knows about req.user
 declare global {
@@ -98,6 +99,12 @@ export async function requireAdmin(
       return next();
     }
 
+    // Platform owners (same list as frontend AdminAccessCheck)
+    const email = (req.user.email || '').toLowerCase();
+    if (email && isOwnerEmail(email)) {
+      return next();
+    }
+
     // Primary: user_roles table
     const { data, error } = await admin
       .from('user_roles')
@@ -107,7 +114,6 @@ export async function requireAdmin(
       .maybeSingle();
 
     if (error) {
-      // Table might not exist yet — fail closed unless allow list matched above
       console.error('[requireAdmin] user_roles lookup:', error.message);
       return res.status(403).json({
         error: 'Forbidden',

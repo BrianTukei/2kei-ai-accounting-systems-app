@@ -230,12 +230,16 @@ export function appendJournalEntry(
 ): void {
   const existing = loadJournal(orgId, userId);
   if (existing.some((e) => e.reference === entry.reference && e.source === entry.source)) return;
-  saveJournal([entry, ...existing]);
+  saveJournal([entry, ...existing], orgId, userId);
 }
 
-/** Rebuild the entire journal from the transactions array (idempotent) */
-export function syncJournalFromTransactions(transactions: Transaction[]): void {
-  const existing = loadJournal();
+/** Rebuild journal from transactions (idempotent) */
+export function syncJournalFromTransactions(
+  transactions: Transaction[],
+  orgId?: string | null,
+  userId?: string | null
+): void {
+  const existing = loadJournal(orgId, userId);
   const existingRefs = new Set(
     existing.filter((e) => e.source === 'transaction').map((e) => e.reference)
   );
@@ -246,7 +250,7 @@ export function syncJournalFromTransactions(transactions: Transaction[]): void {
     }
   }
   if (newEntries.length > 0) {
-    saveJournal([...newEntries, ...existing]);
+    saveJournal([...newEntries, ...existing], orgId, userId);
   }
 }
 
@@ -258,71 +262,38 @@ export function syncJournalFromTransactions(transactions: Transaction[]): void {
 interface StoredImportRow {
   id: string;
   confirmed: boolean;
-  date: string;
-  description: string;
-  debit: number;
-  credit: number;
-  aiCategory: string;
-  aiType: 'income' | 'expense';
+  description?: string;
+  amount?: number;
+  type?: string;
+  date?: string;
+  category?: string;
 }
 
-/** Generate a journal entry for a paid invoice (DR Cash / CR Service Revenue) */
-function generateInvoiceJournalEntry(invoice: Invoice): JournalEntry {
-  const cashAcc    = CHART_OF_ACCOUNTS.find((a) => a.code === '1010')!;
-  const revenueAcc = CHART_OF_ACCOUNTS.find((a) => a.code === '4020')!;
-  return {
-    id:          uuidv4(),
-    date:        (invoice.paidAt ?? invoice.updatedAt).split('T')[0],
-    description: `Invoice ${invoice.invoiceNumber} — ${invoice.clientName}`,
-    reference:   invoice.id,
-    source:      'invoice',
-    lines: [
-      { accountCode: '1010',          accountName: cashAcc.name,    debit: invoice.total, credit: 0 },
-      { accountCode: revenueAcc.code, accountName: revenueAcc.name, debit: 0, credit: invoice.total },
-    ],
-    createdAt: new Date().toISOString(),
-  };
-}
-
-/** Generate journal entries from all confirmed bank-import rows */
-function generateBankImportEntries(): JournalEntry[] {
-  let sessions: Array<{ rows: StoredImportRow[] }> = [];
+function generateBankImportEntries(orgId?: string | null, userId?: string | null): JournalEntry[] {
+  let sessions: any[] = [];
   try {
-    sessions = JSON.parse(localStorage.getItem('2kai-bank-imports') ?? '[]');
-  } catch { /* empty store */ }
-
+    if (orgId && userId) {
+      sessions = orgStorage.getJSON(orgId, STORAGE_KEYS.BANK_IMPORTS, [], userId);
+    } else {
+      sessions = JSON.parse(localStorage.getItem('2kai-bank-imports') ?? '[]');
+    }
+  } catch {
+    sessions = [];
+  }
   const entries: JournalEntry[] = [];
   for (const session of sessions) {
-    for (const row of session.rows) {
-      if (!row.confirmed) continue;
-      const amount = row.aiType === 'income' ? (row.credit || row.debit) : (row.debit || row.credit);
-      if (!amount) continue;
-
-      const expCode  = getAccountForCategory(row.aiCategory, row.aiType);
-      const cashAcc  = CHART_OF_ACCOUNTS.find((a) => a.code === '1010')!;
-      const otherAcc = CHART_OF_ACCOUNTS.find((a) => a.code === expCode)
-                    ?? CHART_OF_ACCOUNTS.find((a) => a.code === '5150')!;
-
-      const lines: JournalLine[] =
-        row.aiType === 'income'
-          ? [
-              { accountCode: '1010',         accountName: cashAcc.name,   debit: amount, credit: 0 },
-              { accountCode: otherAcc.code,  accountName: otherAcc.name,  debit: 0, credit: amount },
-            ]
-          : [
-              { accountCode: otherAcc.code,  accountName: otherAcc.name,  debit: amount, credit: 0 },
-              { accountCode: '1010',         accountName: cashAcc.name,   debit: 0, credit: amount },
-            ];
-
-      entries.push({
-        id:          uuidv4(),
-        date:        row.date,
-        description: row.description,
-        reference:   row.id,
-        source:      'bank-import',
-        lines,
-        createdAt:   new Date().toISOString(),
-      });
+    const rows = session.rows || session.transactions || [];
+    for (const row of rows) {
+      if (!row.confirmed && session.confirmed !== true) continue;
+      const fakeTx = {
+        id: row.id || `bank-${session.id}-${row.description}`,
+        amount: Number(row.amount) || 0,
+        type: (row.type as 'income' | 'expense') || 'expense',
+        category: row.category || 'Bank Import',
+        description: row.description || 'Bank import',
+        date: row.date || new Date().toISOString().slice(0, 10),
+      } as Transaction;
+      entries.push(generateJournalEntry(fakeTx, 'bank_import'));
     }
   }
   return entries;
@@ -330,50 +301,39 @@ function generateBankImportEntries(): JournalEntry[] {
 
 export interface ResyncResult {
   transactions: number;
-  invoices:     number;
-  bankImports:  number;
-  /** How many stale auto-generated entries were replaced */
-  removed:      number;
+  invoices: number;
+  bankImports: number;
+  removed: number;
 }
 
 /**
- * Full journal rebuild — clears every auto-generated entry (all sources except
- * 'manual') and regenerates fresh entries from transactions, paid invoices, and
- * confirmed bank-import rows.  Manual entries are always preserved.
+ * Full journal rebuild — clears auto-generated entries and regenerates
+ * from this user's transactions / invoices / bank imports only.
  */
-export function fullResync(transactions: Transaction[], invoices: Invoice[]): ResyncResult {
-  const existing = loadJournal();
-
-  // Preserve only hand-crafted manual entries
-  const manual  = existing.filter((e) => e.source === 'manual');
+export function fullResync(
+  transactions: Transaction[],
+  invoices: Invoice[],
+  orgId?: string | null,
+  userId?: string | null
+): ResyncResult {
+  const existing = loadJournal(orgId, userId);
+  const manual = existing.filter((e) => e.source === 'manual');
   const removed = existing.length - manual.length;
 
-  // Re-generate from every automated source
-  const txEntries   = transactions.map((tx) => generateJournalEntry(tx, 'transaction'));
-  const invEntries  = invoices.filter((inv) => inv.status === 'paid').map(generateInvoiceJournalEntry);
-  const bankEntries = generateBankImportEntries();
+  const txEntries = transactions.map((tx) => generateJournalEntry(tx, 'transaction'));
+  const invEntries = invoices
+    .filter((inv) => inv.status === 'paid')
+    .map(generateInvoiceJournalEntry);
+  const bankEntries = generateBankImportEntries(orgId, userId);
 
-  saveJournal([...txEntries, ...invEntries, ...bankEntries, ...manual]);
+  saveJournal([...txEntries, ...invEntries, ...bankEntries, ...manual], orgId, userId);
 
   return {
     transactions: txEntries.length,
-    invoices:     invEntries.length,
-    bankImports:  bankEntries.length,
+    invoices: invEntries.length,
+    bankImports: bankEntries.length,
     removed,
   };
-}
-
-// ─────────────────────────────────────────
-// 6. Trial balance computation
-// ─────────────────────────────────────────
-
-export interface TrialBalanceLine {
-  code:   string;
-  name:   string;
-  type:   AccountType;
-  debit:  number;
-  credit: number;
-  balance: number; // signed — positive means normal-balance direction
 }
 
 export function computeTrialBalance(entries: JournalEntry[]): TrialBalanceLine[] {

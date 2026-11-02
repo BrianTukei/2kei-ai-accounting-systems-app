@@ -11,6 +11,8 @@ import {
   fullResync, ResyncResult,
 } from '@/services/bookkeeping';
 import { useTransactions } from '@/hooks/useTransactions';
+import { useAuth } from '@/contexts/AuthContext';
+import { useOrganization } from '@/contexts/OrganizationContext';
 import { useInvoices } from '@/hooks/useInvoices';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -261,15 +263,25 @@ export default function Journal() {
   const { transactions } = useTransactions();
   const { invoices }     = useInvoices();
   const { formatCurrency } = useCurrency();
+  const { user } = useAuth();
+  const { org } = useOrganization();
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [syncing, setSyncing] = useState(false);
 
+  const orgId = org?.id ?? null;
+  const userId = user?.id ?? null;
+
   const load = () => {
-    syncJournalFromTransactions(transactions);
-    setEntries(loadJournal());
+    // Only this user's journal — never the global 2kai-journal key
+    if (!orgId || !userId) {
+      setEntries([]);
+      return;
+    }
+    syncJournalFromTransactions(transactions, orgId, userId);
+    setEntries(loadJournal(orgId, userId));
   };
 
-  useEffect(() => { load(); }, [transactions]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { load(); }, [transactions, orgId, userId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const trialBalance = useMemo(() => computeTrialBalance(entries), [entries]);
 
@@ -280,11 +292,15 @@ export default function Journal() {
   }, [trialBalance]);
 
   const handleResync = () => {
+    if (!orgId || !userId) {
+      toast.error('Sign in required');
+      return;
+    }
     setSyncing(true);
     // Defer heavy work one tick so the spinner render cycle fires first
     setTimeout(() => {
-      const result: ResyncResult = fullResync(transactions, invoices);
-      setEntries(loadJournal());
+      const result: ResyncResult = fullResync(transactions, invoices, orgId, userId);
+      setEntries(loadJournal(orgId, userId));
       setSyncing(false);
 
       const parts: string[] = [];

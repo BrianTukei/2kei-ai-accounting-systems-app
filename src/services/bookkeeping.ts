@@ -15,6 +15,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { categoriseTransaction } from './invoiceAI';
 import { Transaction } from '@/components/TransactionCard';
 import { Invoice } from '@/hooks/useInvoices';
+import orgStorage, { STORAGE_KEYS } from '@/lib/orgStorage';
 
 // ─────────────────────────────────────────
 // 1. Chart of Accounts
@@ -197,21 +198,37 @@ export function generateJournalEntry(
 
 const LS_KEY = '2kai-journal';
 
-export function loadJournal(): JournalEntry[] {
+export function loadJournal(orgId?: string | null, userId?: string | null): JournalEntry[] {
   try {
+    if (orgId && userId) {
+      return orgStorage.getJSON<JournalEntry[]>(orgId, STORAGE_KEYS.JOURNAL, [], userId);
+    }
+    // legacy global key — avoid for multi-user
     return JSON.parse(localStorage.getItem(LS_KEY) ?? '[]');
   } catch {
     return [];
   }
 }
 
-export function saveJournal(entries: JournalEntry[]): void {
+export function saveJournal(
+  entries: JournalEntry[],
+  orgId?: string | null,
+  userId?: string | null
+): void {
+  if (orgId && userId) {
+    orgStorage.setJSON(orgId, STORAGE_KEYS.JOURNAL, entries, userId);
+    return;
+  }
   localStorage.setItem(LS_KEY, JSON.stringify(entries));
 }
 
 /** Append a single entry only if a matching reference doesn't already exist */
-export function appendJournalEntry(entry: JournalEntry): void {
-  const existing = loadJournal();
+export function appendJournalEntry(
+  entry: JournalEntry,
+  orgId?: string | null,
+  userId?: string | null
+): void {
+  const existing = loadJournal(orgId, userId);
   if (existing.some((e) => e.reference === entry.reference && e.source === entry.source)) return;
   saveJournal([entry, ...existing]);
 }

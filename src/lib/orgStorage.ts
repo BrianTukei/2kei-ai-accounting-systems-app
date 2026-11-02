@@ -42,14 +42,29 @@ const orgStorage = {
     key: string,
     userId?: string | null
   ): string | null {
-    // Prefer user-scoped; fall back to org-only legacy once
-    const primary = localStorage.getItem(nsKey(orgId, key, userId));
-    if (primary != null) return primary;
+    // Accounting data must NEVER fall back to org-only keys (that leaked admin books).
+    const ACCOUNTING_KEYS = new Set([
+      'finance-app-transactions',
+      '2kai-journal',
+      'recurring-transactions',
+      '2kai-bank-imports',
+      '2kai-invoices',
+      'payroll',
+      'scannedReceipts',
+      'sampleDataLoaded',
+    ]);
+
     if (userId && orgId) {
-      const legacy = localStorage.getItem(nsKey(orgId, key));
-      return legacy;
+      return localStorage.getItem(nsKey(orgId, key, userId));
     }
-    return null;
+
+    // Non-accounting prefs may still use org-only or global keys
+    if (ACCOUNTING_KEYS.has(key)) {
+      return null; // empty books for this user
+    }
+
+    if (orgId) return localStorage.getItem(nsKey(orgId, key));
+    return localStorage.getItem(key);
   },
 
   setItem(

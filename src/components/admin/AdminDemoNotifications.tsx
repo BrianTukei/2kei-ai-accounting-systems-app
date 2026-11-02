@@ -1,6 +1,6 @@
 /**
- * Admin panel: demo requests + notification bell list
- * Mount under admin area for users with admin role.
+ * Admin panel: demo requests + notification list
+ * Loads via API first; falls back to direct Supabase if API returns 401/403.
  */
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,9 +16,10 @@ const API_BASE =
 async function authHeaders() {
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
+  if (!token) return null;
   return {
     'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    Authorization: `Bearer ${token}`,
   };
 }
 
@@ -51,22 +52,59 @@ export default function AdminDemoNotifications() {
   const [notifications, setNotifications] = useState<AdminNotification[]>([]);
   const [demos, setDemos] = useState<DemoRequest[]>([]);
 
+  const loadFromSupabase = async () => {
+    const [nRes, dRes] = await Promise.all([
+      supabase
+        .from('admin_notifications')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(50),
+      supabase
+        .from('demo_requests')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100),
+    ]);
+    if (nRes.error) throw nRes.error;
+    if (dRes.error) throw dRes.error;
+    setNotifications((nRes.data as AdminNotification[]) || []);
+    setDemos((dRes.data as DemoRequest[]) || []);
+  };
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const headers = await authHeaders();
+      if (!headers) {
+        // No session token — try Supabase client session
+        await loadFromSupabase();
+        return;
+      }
+
       const [nRes, dRes] = await Promise.all([
         fetch(`${API_BASE}/api/admin/notifications`, { headers }),
         fetch(`${API_BASE}/api/demo-requests`, { headers }),
       ]);
+
+      if (nRes.status === 401 || nRes.status === 403 || dRes.status === 401 || dRes.status === 403) {
+        // API auth failed — fall back to direct Supabase (RLS)
+        await loadFromSupabase();
+        return;
+      }
+
       const nJson = await nRes.json();
       const dJson = await dRes.json();
-      if (!nRes.ok) throw new Error(nJson.error || 'Failed to load notifications');
-      if (!dRes.ok) throw new Error(dJson.error || 'Failed to load demos');
+      if (!nRes.ok) throw new Error(nJson.error || nJson.message || 'Failed to load notifications');
+      if (!dRes.ok) throw new Error(dJson.error || dJson.message || 'Failed to load demos');
       setNotifications(nJson.data || []);
       setDemos(dJson.data || []);
     } catch (err: any) {
-      toast.error(err.message || 'Load failed');
+      console.error(err);
+      try {
+        await loadFromSupabase();
+      } catch (e2: any) {
+        toast.error(e2.message || err.message || 'Load failed');
+      }
     } finally {
       setLoading(false);
     }
@@ -82,10 +120,16 @@ export default function AdminDemoNotifications() {
 
   const markRead = async (id: string) => {
     const headers = await authHeaders();
-    await fetch(`${API_BASE}/api/admin/notifications/${id}/read`, {
-      method: 'POST',
-      headers,
-    });
+    if (headers) {
+      await fetch(`${API_BASE}/api/admin/notifications/${id}/read`, {
+        method: 'POST',
+        headers,
+      });
+    }
+    await supabase
+      .from('admin_notifications')
+      .update({ read_at: new Date().toISOString() })
+      .eq('id', id);
     setNotifications((prev) =>
       prev.map((n) =>
         n.id === id ? { ...n, read_at: new Date().toISOString() } : n
@@ -95,10 +139,16 @@ export default function AdminDemoNotifications() {
 
   const markAll = async () => {
     const headers = await authHeaders();
-    await fetch(`${API_BASE}/api/admin/notifications/read-all`, {
-      method: 'POST',
-      headers,
-    });
+    if (headers) {
+      await fetch(`${API_BASE}/api/admin/notifications/read-all`, {
+        method: 'POST',
+        headers,
+      });
+    }
+    await supabase
+      .from('admin_notifications')
+      .update({ read_at: new Date().toISOString() })
+      .is('read_at', null);
     setNotifications((prev) =>
       prev.map((n) => ({ ...n, read_at: n.read_at || new Date().toISOString() }))
     );
@@ -107,15 +157,24 @@ export default function AdminDemoNotifications() {
 
   const setStatus = async (id: string, status: string) => {
     const headers = await authHeaders();
-    const res = await fetch(`${API_BASE}/api/demo-requests/${id}`, {
-      method: 'PATCH',
-      headers,
-      body: JSON.stringify({ status }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      toast.error(data.error || 'Update failed');
-      return;
+    let ok = false;
+    if (headers) {
+      const res = await fetch(`${API_BASE}/api/demo-requests/${id}`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ status }),
+      });
+      ok = res.ok;
+    }
+    if (!ok) {
+      const { error } = await supabase
+        .from('demo_requests')
+        .update({ status, updated_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
     }
     setDemos((prev) => prev.map((d) => (d.id === id ? { ...d, status } : d)));
     toast.success(`Marked ${status}`);
@@ -127,9 +186,7 @@ export default function AdminDemoNotifications() {
         <div className="flex items-center gap-2">
           <Bell className="h-5 w-5" />
           <h2 className="text-xl font-semibold">Demo alerts</h2>
-          {unread > 0 && (
-            <Badge variant="destructive">{unread} new</Badge>
-          )}
+          {unread > 0 && <Badge variant="destructive">{unread} new</Badge>}
         </div>
         <Button variant="outline" size="sm" onClick={load} disabled={loading}>
           {loading ? (
@@ -165,7 +222,9 @@ export default function AdminDemoNotifications() {
             </Button>
           )}
           {notifications.length === 0 && (
-            <p className="text-sm text-muted-foreground">No notifications yet.</p>
+            <p className="text-sm text-muted-foreground">
+              No notifications yet. Submit a test from /book-demo.
+            </p>
           )}
           {notifications.map((n) => (
             <div
@@ -200,7 +259,9 @@ export default function AdminDemoNotifications() {
       {tab === 'demos' && (
         <div className="space-y-3">
           {demos.length === 0 && (
-            <p className="text-sm text-muted-foreground">No demo requests yet.</p>
+            <p className="text-sm text-muted-foreground">
+              No demo requests yet. Public form: /book-demo
+            </p>
           )}
           {demos.map((d) => (
             <div key={d.id} className="rounded-lg border p-3 space-y-2">
@@ -217,7 +278,10 @@ export default function AdminDemoNotifications() {
               {(d.preferred_date || d.message) && (
                 <p className="text-sm text-muted-foreground">
                   {d.preferred_date && (
-                    <>Preferred: {d.preferred_date} {d.preferred_time || ''}<br /></>
+                    <>
+                      Preferred: {d.preferred_date} {d.preferred_time || ''}
+                      <br />
+                    </>
                   )}
                   {d.message}
                 </p>

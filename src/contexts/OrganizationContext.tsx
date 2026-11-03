@@ -153,28 +153,54 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     setLoading(true);
     try {
-      // 1. Get membership (first accepted org)
-      const { data: membership } = await supabase
+      // 1. Get membership — any org link for this user (owner may not need invite_accepted)
+      // Prefer accepted invites, but never ignore owner/member rows that already exist.
+      let membership: { organization_id: string; role: string; invite_accepted?: boolean } | null = null;
+
+      const { data: membershipRows, error: membershipErr } = await supabase
         .from('organization_users')
         .select('organization_id, role, invite_accepted')
         .eq('user_id', user.id)
-        .eq('invite_accepted', true)
         .order('created_at', { ascending: true })
-        .limit(1)
-        .single();
+        .limit(5);
+
+      if (membershipErr) {
+        console.warn('[OrganizationContext] membership query:', membershipErr.message);
+      }
+
+      if (membershipRows && membershipRows.length > 0) {
+        membership =
+          membershipRows.find((m) => m.invite_accepted === true) ||
+          membershipRows.find((m) => m.role === 'owner' || m.role === 'admin') ||
+          membershipRows[0];
+      }
 
       if (!membership?.organization_id) {
-        // Check for local/demo organization in localStorage (fallback for when Supabase isn't available)
-        const localOrgJson = localStorage.getItem('2k_onboarding_org');
-        const onboardingComplete = localStorage.getItem('2k_onboarding_complete') === 'true';
+        // Per-user localStorage (avoid leaking another account's completed onboarding)
+        const localOrgKey = `2k_onboarding_org_${user.id}`;
+        const completeKey = `2k_onboarding_complete_${user.id}`;
+        const localOrgJson =
+          localStorage.getItem(localOrgKey) ||
+          localStorage.getItem('2k_onboarding_org'); // legacy
+        const onboardingComplete =
+          localStorage.getItem(completeKey) === 'true' ||
+          localStorage.getItem('2k_onboarding_complete') === 'true';
         
         console.log('[OrganizationContext] No Supabase membership, checking localStorage');
         
         if (localOrgJson) {
           try {
             const localOrg = JSON.parse(localOrgJson);
+            // Only use legacy global key if it belongs to this user
+            const belongsToUser =
+              !localOrg.userId || localOrg.userId === user.id;
             // Allow if: has id+name AND (onboardingComplete flag OR localStorage flag)
-            if (localOrg.id && localOrg.name && (localOrg.onboardingComplete || onboardingComplete)) {
+            if (
+              belongsToUser &&
+              localOrg.id &&
+              localOrg.name &&
+              (localOrg.onboardingComplete || onboardingComplete)
+            ) {
               console.log('[OrganizationContext] Using localStorage org:', localOrg.name);
               const mappedLocal: Organization = {
                 id:       localOrg.id,

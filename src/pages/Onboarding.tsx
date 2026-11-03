@@ -990,7 +990,7 @@ function StepDone({
 
 export default function Onboarding() {
   const { user }   = useAuth();
-  const { refresh } = useOrganization();
+  const { refresh, org, needsOnboarding, loading: orgLoading } = useOrganization();
   const { setCurrency: setAppCurrency } = useCurrency();
   const navigate   = useNavigate();
 
@@ -1010,7 +1010,15 @@ export default function Onboarding() {
 
   // ─── Restore onboarding state from localStorage on mount ────
 
+  // Already has a company → never show wizard again
   React.useEffect(() => {
+    if (orgLoading) return;
+    if (org?.id) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [org?.id, orgLoading, navigate]);
+
+    React.useEffect(() => {
     try {
       const savedState = localStorage.getItem('2k_onboarding_state');
       if (savedState) {
@@ -1226,11 +1234,15 @@ export default function Onboarding() {
 
   const handleGoToDashboard = () => {
     console.log('[Onboarding] handleGoToDashboard called');
+    const uid = user?.id;
     
-    // Mark onboarding as complete in localStorage for all orgs (ensures demo mode works)
-    const stored = JSON.parse(localStorage.getItem('2k_onboarding_org') || '{}');
+    // Mark onboarding complete — per user so other accounts on this device stay clean
+    const stored = JSON.parse(
+      localStorage.getItem(uid ? `2k_onboarding_org_${uid}` : '2k_onboarding_org') ||
+      localStorage.getItem('2k_onboarding_org') ||
+      '{}'
+    );
     
-    // Ensure we have all necessary data
     const completeOrgData = { 
       ...stored,
       id: stored.id || orgId,
@@ -1239,6 +1251,7 @@ export default function Onboarding() {
       currency: stored.currency || currency,
       timezone: stored.timezone || timezone,
       plan: stored.plan || selectedPlan,
+      userId: uid,
       onboardingComplete: true,
       completedAt: new Date().toISOString()
     };
@@ -1246,8 +1259,12 @@ export default function Onboarding() {
     console.log('[Onboarding] Storing complete org data:', completeOrgData);
     localStorage.setItem('2k_onboarding_org', JSON.stringify(completeOrgData));
     localStorage.setItem('2k_onboarding_complete', 'true');
+    if (uid) {
+      localStorage.setItem(`2k_onboarding_org_${uid}`, JSON.stringify(completeOrgData));
+      localStorage.setItem(`2k_onboarding_complete_${uid}`, 'true');
+    }
     
-    // Clear onboarding state (but keep org data)
+    // Clear transient onboarding wizard state
     localStorage.removeItem('2k_onboarding_state');
     localStorage.removeItem('2k_pending_invites');
     

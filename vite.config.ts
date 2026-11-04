@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 
+// Minimal config — no manualChunks (stable production builds)
 export default defineConfig({
   server: {
     host: "::",
@@ -20,22 +21,7 @@ export default defineConfig({
     ],
   },
   build: {
-    chunkSizeWarningLimit: 1200,
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          if (id.includes("node_modules/tesseract.js")) return "ocr";
-          if (
-            id.includes("node_modules/jspdf") ||
-            id.includes("node_modules/html2canvas") ||
-            id.includes("node_modules/pdfjs-dist")
-          ) {
-            return "pdf";
-          }
-          if (id.includes("node_modules/recharts")) return "charts";
-        },
-      },
-    },
+    chunkSizeWarningLimit: 2500,
   },
   plugins: [react()],
   resolve: {

@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
@@ -11,7 +11,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Index from './pages/Index';
 import Dashboard from './pages/Dashboard';
 import Transactions from './pages/Transactions';
-import Reports from './pages/Reports';
+const Reports = lazy(() => import('./pages/Reports'));
 import Settings from './pages/Settings';
 import Profile from './pages/Profile';
 import Auth from './pages/Auth';
@@ -21,40 +21,38 @@ import AdminDashboard from './pages/AdminDashboard';
 import AdminUserManagement from './pages/AdminUserManagement';
 import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
-import IncomeStatement from './pages/statements/IncomeStatement';
-import BalanceSheet from './pages/statements/BalanceSheet';
-import CashFlow from './pages/statements/CashFlow';
-import TrialBalance from './pages/statements/TrialBalance';
-import CashBook from './pages/statements/CashBook';
+const IncomeStatement = lazy(() => import('./pages/statements/IncomeStatement'));
+const BalanceSheet = lazy(() => import('./pages/statements/BalanceSheet'));
+const CashFlow = lazy(() => import('./pages/statements/CashFlow'));
+const TrialBalance = lazy(() => import('./pages/statements/TrialBalance'));
+const CashBook = lazy(() => import('./pages/statements/CashBook'));
 import SignUp from './pages/SignUp';
 import NotFound from './pages/NotFound';
-import Forecast from './pages/Forecast';
-import Payroll from './pages/Payroll';
-import AIAssistant from './pages/AIAssistant';
-import LocalAIAssistant from './pages/LocalAIAssistant';
-import AIAccountantPage from './pages/AIAccountantPage';
-import AIReceiptScannerPage from './pages/AIReceiptScannerPage';
-import ActionAIPage from './pages/ActionAIPage';
-import { EnhancedAIChat } from './components/ai/EnhancedAIChat';
-import { AdminMessagingPanel } from './components/admin/AdminMessagingPanel';
-import { AutonomousBookkeepingPanel } from './components/admin/AutonomousBookkeepingPanel';
-import Invoices from './pages/Invoices';
-import BankImport from './pages/BankImport';
-import Journal from './pages/Journal';
+const Forecast = lazy(() => import('./pages/Forecast'));
+const Payroll = lazy(() => import('./pages/Payroll'));
+const AIAssistant = lazy(() => import('./pages/AIAssistant'));
+const LocalAIAssistant = lazy(() => import('./pages/LocalAIAssistant'));
+const AIAccountantPage = lazy(() => import('./pages/AIAccountantPage'));
+const AIReceiptScannerPage = lazy(() => import('./pages/AIReceiptScannerPage'));
+const ActionAIPage = lazy(() => import('./pages/ActionAIPage'));
+// EnhancedAIChat loaded via EnhancedAIChatPage
+const Invoices = lazy(() => import('./pages/Invoices'));
+const BankImport = lazy(() => import('./pages/BankImport'));
+const Journal = lazy(() => import('./pages/Journal'));
 import Onboarding from './pages/Onboarding';
 import Billing from './pages/Billing';
 import Team from './pages/Team';
 import AcceptInvite from './pages/AcceptInvite';
-import SuperAdmin from './pages/SuperAdmin';
-import DeveloperAdminDashboard from './pages/DeveloperAdminDashboard';
+const SuperAdmin = lazy(() => import('./pages/SuperAdmin'));
+const DeveloperAdminDashboard = lazy(() => import('./pages/DeveloperAdminDashboard'));
 import AdminTest from './pages/AdminTest';
-import AdminBilling from './pages/AdminBilling';
-import AdminExchangeRates from './pages/AdminExchangeRates';
-import AdminEmailSubscribers from './pages/AdminEmailSubscribers';
-import AdminDemoPage from './pages/AdminDemoPage';
-import RecurringTransactions from './pages/RecurringTransactions';
-import EnhancedAIChatPage from './pages/EnhancedAIChatPage';
-import AutonomousBookkeepingPage from './pages/AutonomousBookkeepingPage';
+const AdminBilling = lazy(() => import('./pages/AdminBilling'));
+const AdminExchangeRates = lazy(() => import('./pages/AdminExchangeRates'));
+const AdminEmailSubscribers = lazy(() => import('./pages/AdminEmailSubscribers'));
+const AdminDemoPage = lazy(() => import('./pages/AdminDemoPage'));
+const RecurringTransactions = lazy(() => import('./pages/RecurringTransactions'));
+const EnhancedAIChatPage = lazy(() => import('./pages/EnhancedAIChatPage'));
+const AutonomousBookkeepingPage = lazy(() => import('./pages/AutonomousBookkeepingPage'));
 import BookDemo from './pages/BookDemo';
 import { InstallPrompt } from './components/pwa/InstallPrompt';
 
@@ -99,6 +97,11 @@ function AppInner() {
   }, [recurringTransactions, user, org]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-sm text-muted-foreground">Loading…</div>
+      </div>
+    }>
     <Routes>
       <Route path="/" element={<Index />} />
 
@@ -163,6 +166,7 @@ function AppInner() {
 
       <Route path="*" element={<NotFound />} />
     </Routes>
+    </Suspense>
   );
 }
 

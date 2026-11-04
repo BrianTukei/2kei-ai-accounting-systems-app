@@ -2,7 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 
-export default defineConfig(({ mode }) => ({
+export default defineConfig({
   server: {
     host: "::",
     port: 8080,
@@ -20,28 +20,27 @@ export default defineConfig(({ mode }) => ({
     ],
   },
   build: {
-    chunkSizeWarningLimit: 900,
+    chunkSizeWarningLimit: 1200,
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (!id.includes("node_modules")) return;
-          if (id.includes("tesseract.js")) return "ocr";
-          if (id.includes("jspdf") || id.includes("html2canvas") || id.includes("pdfjs"))
+          if (id.includes("node_modules/tesseract.js")) return "ocr";
+          if (
+            id.includes("node_modules/jspdf") ||
+            id.includes("node_modules/html2canvas") ||
+            id.includes("node_modules/pdfjs-dist")
+          ) {
             return "pdf";
-          if (id.includes("recharts") || id.includes("d3-")) return "charts";
-          if (id.includes("@supabase")) return "supabase";
-          if (id.includes("react-dom") || id.includes("react-router") || id.includes("/react/"))
-            return "react-vendor";
-          if (id.includes("@radix-ui") || id.includes("lucide-react")) return "ui";
-          return "vendor";
+          }
+          if (id.includes("node_modules/recharts")) return "charts";
         },
       },
     },
   },
-  plugins: [react()].filter(Boolean),
+  plugins: [react()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
   },
-}));
+});

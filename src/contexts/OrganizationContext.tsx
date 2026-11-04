@@ -11,7 +11,7 @@
  */
 
 import React, {
-  createContext, useContext, useEffect, useState, useCallback, useMemo,
+  createContext, useContext, useEffect, useState, useCallback, useMemo, useRef,
 } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
@@ -137,6 +137,7 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [role,         setRole]         = useState<OrgRole>('viewer');
   const [aiUsage,      setAiUsage]      = useState<AIUsage>({ chats: 0, invoiceGens: 0, bankImports: 0 });
   const [loading,      setLoading]      = useState(true);
+  const hasLoadedOrgRef = useRef(false);
   const [usageCounts,  setUsageCounts]  = useState({ invoices: 0, aiChats: 0, bankImports: 0 });
 
   // ── Derived plan object ────────────────
@@ -151,7 +152,9 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const loadOrgData = useCallback(async () => {
     if (!user) { setLoading(false); return; }
 
-    setLoading(true);
+    // After first load, quiet refresh must NOT flash "Loading workspace…"
+    const quiet = hasLoadedOrgRef.current;
+    if (!quiet) setLoading(true);
     try {
       // 1. Get membership — any org link for this user (owner may not need invite_accepted)
       // Prefer accepted invites, but never ignore owner/member rows that already exist.
@@ -412,6 +415,7 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         });
       }
     } finally {
+      hasLoadedOrgRef.current = true;
       setLoading(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps

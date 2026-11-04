@@ -157,9 +157,11 @@ export default function Auth() {
             setAuthError(msg);
             toast.error(msg);
           } else if (code === 'over_email_send_rate_limit' || code === 'over_request_rate_limit' || error.message?.includes('rate limit') || error.message?.includes('too many') || error.message?.includes('security purposes')) {
-            // Rate limited — the account was likely already created, guide user to check email
-            toast.info('Your account may have already been created. Please check your email inbox and spam folder for a verification code.');
-            navigate(`/email-confirmation?email=${encodeURIComponent(formData.email)}`);
+            // Rate limited — treat as already registered; do not open verification
+            const msg = 'This email is already registered (or too many attempts). Please log in instead.';
+            setAuthError(msg);
+            toast.error(msg);
+            setIsLoading(false);
             return;
           } else if (error.message?.includes('fetch') || error.message?.includes('network') || error.message?.includes('Failed to fetch')) {
             const msg = 'Network error. Please check your internet connection and try again.';
@@ -176,12 +178,13 @@ export default function Auth() {
 
         console.log('Signup response:', { session: !!data.session, user: !!data.user, identities: data.user?.identities?.length });
 
-        // Detect obfuscated duplicate: Supabase returns fake success with empty identities
-        // when email is already registered but not confirmed (to avoid leaking email existence)
-        if (data.user && data.user.identities && data.user.identities.length === 0) {
-          console.log('[Auth] Obfuscated duplicate detected — email already registered');
-          toast.info('This email may already be registered. Please check your inbox and spam folder for a verification email, or try signing in.');
-          navigate(`/email-confirmation?email=${encodeURIComponent(formData.email)}`);
+        // Duplicate signup: empty identities — do not send user to verification codes
+        if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+          console.log('[Auth] Email already registered (empty identities)');
+          const msg = 'This email is already registered. Please log in instead.';
+          setAuthError(msg);
+          toast.error(msg);
+          setIsLoading(false);
           return;
         }
 

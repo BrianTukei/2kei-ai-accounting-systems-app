@@ -70,9 +70,17 @@ export default function SignUp() {
           console.error('Signup error:', error);
           // Show user-friendly error messages
           const code = (error as any)?.code || '';
-          if (error.message?.includes('User already registered') || code === 'user_already_exists') {
-            setError('An account with this email already exists. Please log in instead.');
-            toast.error('An account with this email already exists.');
+          if (
+            error.message?.includes('User already registered') ||
+            error.message?.includes('already been registered') ||
+            code === 'user_already_exists' ||
+            code === 'email_exists'
+          ) {
+            setError('This email is already registered. Please log in instead.');
+            toast.error('This email is already registered. Please log in instead.');
+            setTimeout(() => navigate('/auth'), 1200);
+            setIsLoading(false);
+            return;
           } else if (error.message?.includes('Password')) {
             setError(error.message);
             toast.error(error.message);
@@ -80,9 +88,11 @@ export default function SignUp() {
             setError('Please enter a valid email address.');
             toast.error('Please enter a valid email address.');
           } else if (code === 'over_email_send_rate_limit' || code === 'over_request_rate_limit' || error.message?.includes('rate limit') || error.message?.includes('too many') || error.message?.includes('security purposes')) {
-            // Rate limited — account was likely already created, guide user to check email
-            toast.info('Your account may have already been created. Please check your email inbox and spam folder for a verification code.');
-            navigate(`/email-confirmation?email=${encodeURIComponent(email)}`);
+            // Rate limited — do NOT send user to verification; they likely already registered
+            setError('This email is already registered (or too many attempts). Please log in instead.');
+            toast.error('Already registered — please log in.');
+            setTimeout(() => navigate('/auth'), 1200);
+            setIsLoading(false);
             return;
           } else if (error.message?.includes('fetch') || error.message?.includes('network') || error.message?.includes('Failed to fetch')) {
             setError('Network error. Please check your internet connection.');
@@ -97,12 +107,13 @@ export default function SignUp() {
 
         console.log('Signup response:', { session: !!data.session, user: !!data.user, identities: data.user?.identities?.length });
 
-        // Detect obfuscated duplicate: Supabase returns fake success with empty identities
-        // when email is already registered but not confirmed (to avoid leaking email existence)
-        if (data.user && data.user.identities && data.user.identities.length === 0) {
-          console.log('[SignUp] Obfuscated duplicate detected — email already registered');
-          toast.info('This email may already be registered. Please check your inbox and spam folder for a verification email, or try signing in.');
-          navigate(`/email-confirmation?email=${encodeURIComponent(email)}`);
+        // Duplicate: empty identities means no new account — do not open verification.
+        if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+          console.log('[SignUp] Email already registered (empty identities)');
+          setError('This email is already registered. Please log in instead.');
+          toast.error('This email is already registered. Please log in instead.');
+          setIsLoading(false);
+          setTimeout(() => navigate('/auth'), 1200);
           return;
         }
 

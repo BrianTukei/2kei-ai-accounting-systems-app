@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import PageLayout from '@/components/layout/PageLayout';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import DashboardTabs from '@/components/dashboard/DashboardTabs';
@@ -24,36 +24,39 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  // Handle payment success redirect
+  // Handle payment success redirect — run at most ONCE per page load
+  const paymentHandledRef = useRef(false);
   useEffect(() => {
     const paymentStatus = searchParams.get('payment');
     const planId = searchParams.get('plan');
-    
-    if (paymentStatus === 'success') {
-      console.log('[Dashboard] Payment success detected:', { planId });
-      
-      // Check if we already showed a notification (from Billing page)
-      const wasActivated = wasSubscriptionJustActivated();
-      
-      // Refresh organization data to get updated subscription
-      refresh().then(() => {
-        console.log('[Dashboard] Organization data refreshed after payment');
-      });
-      
-      // Only show success message if it wasn't already shown in Billing
-      if (!wasActivated) {
-        toast.success(
-          `Subscription Activated Successfully!${planId ? ` You're now on the ${planId.charAt(0).toUpperCase() + planId.slice(1)} plan.` : ''}`,
-          { duration: 5000 }
-        );
-      } else {
-        // Clear the flag so future activations work normally
-        clearActivationFlag();
-      }
-      
-      // Clean up URL params
-      window.history.replaceState({}, '', '/dashboard');
+
+    if (paymentStatus !== 'success') return;
+    if (paymentHandledRef.current) return;
+    paymentHandledRef.current = true;
+
+    console.log('[Dashboard] Payment success detected (once):', { planId });
+
+    // Strip query params immediately so re-renders cannot re-fire this effect
+    window.history.replaceState({}, '', '/dashboard');
+
+    const wasActivated = wasSubscriptionJustActivated();
+    if (!wasActivated) {
+      const planLabel = planId
+        ? planId.charAt(0).toUpperCase() + planId.slice(1)
+        : null;
+      toast.success(
+        planLabel
+          ? `Subscription activated — you're on the ${planLabel} plan.`
+          : 'Subscription activated successfully!',
+        { duration: 4000, id: 'subscription-activated' } // sonner dedupes same id
+      );
     }
+    clearActivationFlag();
+
+    // Quiet refresh — do not leave the app stuck on "Loading workspace"
+    refresh()
+      .then(() => console.log('[Dashboard] Org refreshed after payment'))
+      .catch((err) => console.warn('[Dashboard] Post-payment refresh failed', err));
   }, [searchParams, refresh]);
 
   // Log subscription status for debugging

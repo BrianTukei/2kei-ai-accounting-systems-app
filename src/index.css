@@ -734,3 +734,11 @@ html {
   transform: translateY(-4px);
   box-shadow: var(--shadow-card-hover);
 }
+
+/* Plan colours: set automatically from <html data-plan="..."> */
+:root, :root[data-plan="free"]  { --plan-accent: #64748b; --plan-soft: #f1f5f9; }
+:root[data-plan="pro"]          { --plan-accent: #4f46e5; --plan-soft: #eef2ff; }
+:root[data-plan="enterprise"]   { --plan-accent: #b7791f; --plan-soft: #fef6e0; }
+:root.dark[data-plan="free"]       { --plan-soft: #1e293b; }
+:root.dark[data-plan="pro"]        { --plan-soft: #1e1b4b; }
+:root.dark[data-plan="enterprise"] { --plan-soft: #3a2a08; }

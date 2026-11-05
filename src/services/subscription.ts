@@ -292,7 +292,7 @@ export async function activateSubscription(
     
     // Add timeout to prevent hanging
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Edge function timeout')), 5000); // 5 second timeout
+      setTimeout(() => reject(new Error('Edge function timeout')), 20000); // 20s — cold starts on free tier
     });
 
     const edgeFunctionPromise = supabase.functions.invoke('activate-subscription', {
@@ -312,17 +312,44 @@ export async function activateSubscription(
     // Never fall back to a direct DB write or to localStorage: that produced fake "activated" messages.
     if (error) {
       console.error('[Subscription] Edge function error:', error);
-      return { success: false, error: 'Your payment has not been confirmed yet. Your plan will switch automatically once it is.' };
+      const detail = error.message || String(error);
+      // Common: function not deployed, JWT, or network
+      if (/not found|404|Failed to send/i.test(detail)) {
+        return {
+          success: false,
+          error: 'Activation service is not deployed. Deploy the activate-subscription Edge Function in Supabase.',
+        };
+      }
+      if (/timeout/i.test(detail)) {
+        return {
+          success: false,
+          error: 'Activation timed out. Try again in a moment (server may be waking up).',
+        };
+      }
+      return {
+        success: false,
+        error: detail || 'Your payment has not been confirmed yet. Your plan will switch once activation succeeds.',
+      };
     }
     if (data?.error) {
       console.error('[Subscription] Activation rejected:', data.error);
       return { success: false, error: data.error };
     }
+    if (!data?.success && !data?.subscriptionId) {
+      return {
+        success: false,
+        error: 'Activation returned an empty response. Check the activate-subscription function logs.',
+      };
+    }
     console.log('[Subscription] Subscription activated via Edge Function:', data.subscriptionId);
     return { success: true, subscriptionId: data.subscriptionId };
-  } catch (e) {
+  } catch (e: any) {
     console.error('[Subscription] Activation call failed:', e);
-    return { success: false, error: 'Could not confirm activation. Please try again or contact support.' };
+    const msg = e?.message || String(e);
+    if (/timeout/i.test(msg)) {
+      return { success: false, error: 'Activation timed out. Try again in a moment.' };
+    }
+    return { success: false, error: msg || 'Could not confirm activation. Please try again.' };
   }
 }
 

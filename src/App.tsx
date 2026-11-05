@@ -53,6 +53,7 @@ import EnhancedAIChatPage from './pages/EnhancedAIChatPage';
 import AutonomousBookkeepingPage from './pages/AutonomousBookkeepingPage';
 import BookDemo from './pages/BookDemo';
 import { InstallPrompt } from './components/pwa/InstallPrompt';
+import PlanUpgradeWatcher from './components/PlanUpgradeWatcher';
 import { loadSampleData } from './utils/sampleData';
 import { syncJournalFromTransactions } from './services/bookkeeping';
 import { useRecurringTransactions } from './hooks/useRecurringTransactions';
@@ -169,6 +170,7 @@ function App() {
         <Router>
           <OrganizationProvider>
             <AppInner />
+            <PlanUpgradeWatcher />
             <InstallPrompt />
           </OrganizationProvider>
         </Router>

@@ -5,6 +5,7 @@ import DashboardTabs from '@/components/dashboard/DashboardTabs';
 import { toast } from 'sonner';
 import { wasSubscriptionJustActivated, clearActivationFlag } from '@/services/subscription';
 import WelcomeHero from '@/components/dashboard/WelcomeHero';
+import PlanCard from '@/components/dashboard/PlanCard';
 import AdminAccessCard from '@/components/dashboard/AdminAccessCard';
 import StatsGrid from '@/components/dashboard/StatsGrid';
 import RealTimeStatsCard from '@/components/dashboard/RealTimeStatsCard';

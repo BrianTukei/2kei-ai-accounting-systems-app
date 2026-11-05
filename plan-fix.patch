@@ -1,0 +1,332 @@
+diff --git a/src/App.tsx b/src/App.tsx
+index 8541b2f..bd41228 100644
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -7,6 +7,7 @@ import { OrganizationProvider } from './contexts/OrganizationContext';
+ import { useAuth } from './contexts/AuthContext';
+ import { useOrganization } from './contexts/OrganizationContext';
+ import ProtectedRoute from './components/ProtectedRoute';
++import PlanUpgradeWatcher from './components/PlanUpgradeWatcher';
+ import Index from './pages/Index';
+ import Dashboard from './pages/Dashboard';
+ import Transactions from './pages/Transactions';
+@@ -168,6 +169,7 @@ function App() {
+       <AuthProvider>
+         <Router>
+           <OrganizationProvider>
++            <PlanUpgradeWatcher />
+             <AppInner />
+             <InstallPrompt />
+           </OrganizationProvider>
+diff --git a/src/components/PlanUpgradeWatcher.tsx b/src/components/PlanUpgradeWatcher.tsx
+new file mode 100644
+index 0000000..5e47fa3
+--- /dev/null
++++ b/src/components/PlanUpgradeWatcher.tsx
+@@ -0,0 +1,38 @@
++import { useEffect, useRef } from 'react';
++import { useNavigate } from 'react-router-dom';
++import { toast } from 'sonner';
++import { useOrganization } from '@/contexts/OrganizationContext';
++
++const KEY = 'pendingFeaturePath';
++const RANK: Record<string, number> = { free: 0, pro: 1, enterprise: 2 };
++
++/** Remember which locked feature the user tapped, so it opens the moment their plan upgrades. */
++export const rememberFeature = (path: string) => {
++  try { sessionStorage.setItem(KEY, path); } catch { /* ignore */ }
++};
++const takeFeature = (): string | null => {
++  try { const v = sessionStorage.getItem(KEY); sessionStorage.removeItem(KEY); return v; } catch { return null; }
++};
++
++/**
++ * Watches the SAVED plan. When it goes up (Free→Pro, Pro→Enterprise) it shows the success message and
++ * opens the feature the user wanted. It never reacts to URL params, localStorage or demo flags.
++ */
++export default function PlanUpgradeWatcher() {
++  const { plan, loading, subscription } = useOrganization();
++  const navigate = useNavigate();
++  const prev = useRef<number | null>(null);
++
++  useEffect(() => {
++    if (loading || !subscription) return;
++    const rank = RANK[plan.id] ?? 0;
++    if (prev.current !== null && rank > prev.current) {
++      toast.success(`You're now on the ${plan.name} plan. Your new features are unlocked.`, { id: 'plan-upgraded', duration: 5000 });
++      const target = takeFeature();
++      navigate(target && target !== '/billing' ? target : '/dashboard', { replace: true });
++    }
++    prev.current = rank;
++  }, [plan.id, plan.name, loading, subscription, navigate]);
++
++  return null;
++}
+diff --git a/src/components/SubscriptionGuard.tsx b/src/components/SubscriptionGuard.tsx
+index b517f7a..d08cbc2 100644
+--- a/src/components/SubscriptionGuard.tsx
++++ b/src/components/SubscriptionGuard.tsx
+@@ -17,7 +17,8 @@
+  */
+ 
+ import React from 'react';
+-import { useNavigate } from 'react-router-dom';
++import { useNavigate, useLocation } from 'react-router-dom';
++import { rememberFeature } from '@/components/PlanUpgradeWatcher';
+ import { useOrganization } from '@/contexts/OrganizationContext';
+ import { ROLE_PERMISSIONS, type OrgRole, trialDaysRemaining, isTrialActive } from '@/lib/plans';
+ import { Button } from '@/components/ui/button';
+@@ -69,6 +70,7 @@ function UpgradeCard({
+   className?: string;
+ }) {
+   const navigate = useNavigate();
++  const location = useLocation();
+   return (
+     <Card className={cn('border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/40', className)}>
+       <CardContent className="flex flex-col items-center justify-center py-10 gap-3 text-center">
+@@ -84,7 +86,7 @@ function UpgradeCard({
+         <Button
+           size="sm"
+           className="gap-2 bg-indigo-600 hover:bg-indigo-700"
+-          onClick={() => navigate('/billing')}
++          onClick={() => { rememberFeature(location.pathname); navigate('/billing'); }}
+         >
+           <Zap className="w-3.5 h-3.5" /> View Plans
+         </Button>
+@@ -249,6 +251,7 @@ export const SubscriptionGuard: React.FC<Props> = ({
+ }) => {
+   const { hasFeature, can, isAtLimit, plan, subscription } = useOrganization();
+   const navigate = useNavigate();
++  const location = useLocation();
+ 
+   // Subscription status gate
+   if (requireSubscription) {
+@@ -297,7 +300,7 @@ export const SubscriptionGuard: React.FC<Props> = ({
+         <div className={cn('flex items-center gap-2 text-sm text-slate-500', className)}>
+           <ShieldAlert className="w-4 h-4" />
+           <span>{FEATURE_LABELS[feature]}</span>
+-          <Button size="sm" variant="link" onClick={() => navigate('/billing')}>Upgrade</Button>
++          <Button size="sm" variant="link" onClick={() => { rememberFeature(location.pathname); navigate('/billing'); }}>Upgrade</Button>
+         </div>
+       );
+     }
+diff --git a/src/components/dashboard/PlanCard.tsx b/src/components/dashboard/PlanCard.tsx
+new file mode 100644
+index 0000000..317e9e5
+--- /dev/null
++++ b/src/components/dashboard/PlanCard.tsx
+@@ -0,0 +1,47 @@
++import { useNavigate } from 'react-router-dom';
++import { Crown, Sparkles, User, Check, Lock } from 'lucide-react';
++import { useOrganization } from '@/contexts/OrganizationContext';
++
++/** Shows the current plan on the dashboard. Colours follow the plan (see --plan-accent in index.css). */
++export default function PlanCard() {
++  const { plan, subscription, loading } = useOrganization();
++  const navigate = useNavigate();
++  const Icon = plan.id === 'enterprise' ? Crown : plan.id === 'pro' ? Sparkles : User;
++  const items: [string, boolean][] = [
++    ['AI Assistant', plan.hasAiAssistant],
++    ['Bank import', plan.hasAiAssistant],
++    ['Advanced reports', plan.hasAdvancedReports],
++    ['Payroll', plan.hasPayroll],
++    ['Team access', plan.hasTeamAccess],
++  ];
++  const renews = subscription?.periodEnd ? new Date(subscription.periodEnd).toLocaleDateString() : null;
++
++  return (
++    <div className="container mx-auto px-4 mb-4">
++      <div className="rounded-2xl border p-4" style={{ borderColor: 'var(--plan-accent)', background: 'var(--plan-soft)' }}>
++        <div className="flex items-center justify-between gap-2">
++          <span className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold"
++                style={{ color: 'var(--plan-accent)', border: '1px solid var(--plan-accent)' }}>
++            <Icon className="h-3.5 w-3.5" /> {loading ? '…' : `${plan.name} plan`}
++          </span>
++          <span className="text-xs text-muted-foreground">
++            {plan.id === 'free' ? 'Upgrade to unlock more' : renews ? `Renews ${renews}` : subscription?.status}
++          </span>
++        </div>
++        <ul className="mt-3 grid grid-cols-2 gap-1 text-sm sm:grid-cols-5">
++          {items.map(([name, on]) => (
++            <li key={name} className="flex items-center gap-1.5" style={{ opacity: on ? 1 : 0.5 }}>
++              {on ? <Check className="h-3.5 w-3.5" style={{ color: 'var(--plan-accent)' }} /> : <Lock className="h-3.5 w-3.5" />} {name}
++            </li>
++          ))}
++        </ul>
++        {plan.id !== 'enterprise' && (
++          <button onClick={() => navigate('/billing')} className="mt-3 w-full rounded-lg py-2 text-sm font-medium text-white"
++                  style={{ background: 'var(--plan-accent)' }}>
++            {plan.id === 'free' ? 'Upgrade to Pro' : 'Upgrade to Enterprise'}
++          </button>
++        )}
++      </div>
++    </div>
++  );
++}
+diff --git a/src/contexts/OrganizationContext.tsx b/src/contexts/OrganizationContext.tsx
+index add8467..0c8c02e 100644
+--- a/src/contexts/OrganizationContext.tsx
++++ b/src/contexts/OrganizationContext.tsx
+@@ -320,24 +320,8 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({
+             paymentProvider:      (subData as any).payment_provider ?? undefined,
+           });
+           subscriptionLoaded = true;
+-        } else {
+-          // No Supabase subscription — check localStorage as fallback
+-          // (may have been activated via demo mode or edge function not yet deployed)
+-          const demoSub = getDemoSubscriptionData();
+-          if (demoSub && demoSub.planId !== 'free') {
+-            console.log('[OrganizationContext] No DB subscription, using localStorage cache:', demoSub.planId);
+-            setSubscription({
+-              id:                '',
+-              planId:            demoSub.planId,
+-              status:            demoSub.status,
+-              billingCycle:      demoSub.billingCycle,
+-              trialEndsAt:       undefined,
+-              periodEnd:         demoSub.periodEnd,
+-              cancelAtPeriodEnd: demoSub.cancelAtPeriodEnd,
+-            });
+-            subscriptionLoaded = true;
+-          }
+         }
++        // No DB row: stay on Free. localStorage must never grant a paid plan in production.
+       } else {
+         // DEMO MODE: localStorage is the source of truth
+         const demoSub = getDemoSubscriptionData();
+@@ -425,6 +409,28 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({
+     if (authResolved) loadOrgData();
+   }, [authResolved, loadOrgData]);
+ 
++  // ── Plan colours: CSS reads <html data-plan="free|pro|enterprise"> ──
++  useEffect(() => {
++    document.documentElement.setAttribute('data-plan', plan.id);
++  }, [plan.id]);
++
++  // ── Live plan updates: any change to a subscription row, tab focus, or a 60s safety net ──
++  useEffect(() => {
++    if (!user || !authResolved) return;
++    const channel = supabase
++      .channel(`plan-${user.id}`)
++      .on('postgres_changes', { event: '*', schema: 'public', table: 'subscriptions' }, () => { loadOrgData(); })
++      .subscribe();
++    const onFocus = () => { loadOrgData(); };
++    window.addEventListener('focus', onFocus);
++    const timer = setInterval(() => { loadOrgData(); }, 60000);
++    return () => {
++      supabase.removeChannel(channel);
++      window.removeEventListener('focus', onFocus);
++      clearInterval(timer);
++    };
++  }, [user, authResolved, loadOrgData]);
++
+   // ── Helpers ───────────────────────────
+ 
+   const can = useCallback(
+diff --git a/src/index.css b/src/index.css
+index 266ac13..3a31cf3 100644
+--- a/src/index.css
++++ b/src/index.css
+@@ -734,3 +734,11 @@ html {
+   transform: translateY(-4px);
+   box-shadow: var(--shadow-card-hover);
+ }
++
++/* Plan colours: set automatically from <html data-plan="..."> */
++:root, :root[data-plan="free"]  { --plan-accent: #64748b; --plan-soft: #f1f5f9; }
++:root[data-plan="pro"]          { --plan-accent: #4f46e5; --plan-soft: #eef2ff; }
++:root[data-plan="enterprise"]   { --plan-accent: #b7791f; --plan-soft: #fef6e0; }
++.dark[data-plan="free"], :root.dark[data-plan="free"]             { --plan-soft: #1e293b; }
++:root.dark[data-plan="pro"]                                        { --plan-soft: #1e1b4b; }
++:root.dark[data-plan="enterprise"]                                 { --plan-soft: #3a2a08; }
+diff --git a/src/pages/Dashboard.tsx b/src/pages/Dashboard.tsx
+index e8b1482..c8c2c57 100644
+--- a/src/pages/Dashboard.tsx
++++ b/src/pages/Dashboard.tsx
+@@ -5,6 +5,7 @@ import DashboardTabs from '@/components/dashboard/DashboardTabs';
+ import { toast } from 'sonner';
+ import { wasSubscriptionJustActivated, clearActivationFlag } from '@/services/subscription';
+ import WelcomeHero from '@/components/dashboard/WelcomeHero';
++import PlanCard from '@/components/dashboard/PlanCard';
+ import AdminAccessCard from '@/components/dashboard/AdminAccessCard';
+ import StatsGrid from '@/components/dashboard/StatsGrid';
+ import RealTimeStatsCard from '@/components/dashboard/RealTimeStatsCard';
+@@ -39,18 +40,7 @@ export default function Dashboard() {
+     // Strip query params immediately so re-renders cannot re-fire this effect
+     window.history.replaceState({}, '', '/dashboard');
+ 
+-    const wasActivated = wasSubscriptionJustActivated();
+-    if (!wasActivated) {
+-      const planLabel = planId
+-        ? planId.charAt(0).toUpperCase() + planId.slice(1)
+-        : null;
+-      toast.success(
+-        planLabel
+-          ? `Subscription activated — you're on the ${planLabel} plan.`
+-          : 'Subscription activated successfully!',
+-        { duration: 4000, id: 'subscription-activated' } // sonner dedupes same id
+-      );
+-    }
++    // The success message is shown by <PlanUpgradeWatcher/> only when the saved plan really goes up.
+     clearActivationFlag();
+ 
+     // Quiet refresh — do not leave the app stuck on "Loading workspace"
+@@ -109,7 +99,8 @@ export default function Dashboard() {
+         recentTransactions: recentTransactions.slice(0, 3) // Pass limited data for context
+       }}
+     >
+-        <WelcomeHero />        
++        <WelcomeHero />
++          <PlanCard />
+           {/* Admin Access Card - only visible to admin */}
+           <AdminAccessCard />
+           
+diff --git a/src/services/subscription.ts b/src/services/subscription.ts
+index bcd5ef0..f2ecee3 100644
+--- a/src/services/subscription.ts
++++ b/src/services/subscription.ts
+@@ -308,40 +308,21 @@ export async function activateSubscription(
+ 
+     const { data, error } = await Promise.race([edgeFunctionPromise, timeoutPromise]) as any;
+ 
++    // Production rule: a plan is only active if the SERVER activated it (it verifies a completed payment).
++    // Never fall back to a direct DB write or to localStorage: that produced fake "activated" messages.
+     if (error) {
+       console.error('[Subscription] Edge function error:', error);
+-      // Fallback: try direct upsert (may work if RLS policy allows)
+-      return await activateSubscriptionDirect(
+-        organizationId, planId, billingCycle, paymentId, paymentProvider, periodStart, periodEnd.toISOString(),
+-      );
++      return { success: false, error: 'Your payment has not been confirmed yet. Your plan will switch automatically once it is.' };
+     }
+-
+     if (data?.error) {
+       console.error('[Subscription] Activation rejected:', data.error);
+       return { success: false, error: data.error };
+     }
+-
+     console.log('[Subscription] Subscription activated via Edge Function:', data.subscriptionId);
+-
+-    // Also save to localStorage as cache for faster UI updates
+-    const demoSub: DemoSubscriptionStorage = {
+-      planId,
+-      status: 'active',
+-      billingCycle,
+-      periodStart,
+-      periodEnd: periodEnd.toISOString(),
+-      cancelAtPeriodEnd: false,
+-      activatedAt: new Date().toISOString(),
+-      paymentProvider,
+-    };
+-    setDemoSubscription(demoSub);
+-
+     return { success: true, subscriptionId: data.subscriptionId };
+   } catch (e) {
+-    console.error('[Subscription] Edge function call failed, trying direct upsert:', e);
+-    return await activateSubscriptionDirect(
+-      organizationId, planId, billingCycle, paymentId, paymentProvider, periodStart, periodEnd.toISOString(),
+-    );
++    console.error('[Subscription] Activation call failed:', e);
++    return { success: false, error: 'Could not confirm activation. Please try again or contact support.' };
+   }
+ }
+ 

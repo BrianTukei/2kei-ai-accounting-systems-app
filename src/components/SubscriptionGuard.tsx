@@ -69,6 +69,7 @@ function UpgradeCard({
   className?: string;
 }) {
   const navigate = useNavigate();
+  const location = useLocation();
   return (
     <Card className={cn('border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/40', className)}>
       <CardContent className="flex flex-col items-center justify-center py-10 gap-3 text-center">
@@ -84,7 +85,7 @@ function UpgradeCard({
         <Button
           size="sm"
           className="gap-2 bg-indigo-600 hover:bg-indigo-700"
-          onClick={() => navigate('/billing')}
+          onClick={() => { rememberFeature(location.pathname); navigate('/billing'); }}
         >
           <Zap className="w-3.5 h-3.5" /> View Plans
         </Button>
@@ -249,6 +250,7 @@ export const SubscriptionGuard: React.FC<Props> = ({
 }) => {
   const { hasFeature, can, isAtLimit, plan, subscription } = useOrganization();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Subscription status gate
   if (requireSubscription) {
@@ -297,7 +299,7 @@ export const SubscriptionGuard: React.FC<Props> = ({
         <div className={cn('flex items-center gap-2 text-sm text-slate-500', className)}>
           <ShieldAlert className="w-4 h-4" />
           <span>{FEATURE_LABELS[feature]}</span>
-          <Button size="sm" variant="link" onClick={() => navigate('/billing')}>Upgrade</Button>
+          <Button size="sm" variant="link" onClick={() => { rememberFeature(location.pathname); navigate('/billing'); }}>Upgrade</Button>
         </div>
       );
     }

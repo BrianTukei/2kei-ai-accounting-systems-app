@@ -308,40 +308,21 @@ export async function activateSubscription(
 
     const { data, error } = await Promise.race([edgeFunctionPromise, timeoutPromise]) as any;
 
+    // Production rule: a plan is only active if the SERVER activated it (it verifies a completed payment).
+    // Never fall back to a direct DB write or to localStorage: that produced fake "activated" messages.
     if (error) {
       console.error('[Subscription] Edge function error:', error);
-      // Fallback: try direct upsert (may work if RLS policy allows)
-      return await activateSubscriptionDirect(
-        organizationId, planId, billingCycle, paymentId, paymentProvider, periodStart, periodEnd.toISOString(),
-      );
+      return { success: false, error: 'Your payment has not been confirmed yet. Your plan will switch automatically once it is.' };
     }
-
     if (data?.error) {
       console.error('[Subscription] Activation rejected:', data.error);
       return { success: false, error: data.error };
     }
-
     console.log('[Subscription] Subscription activated via Edge Function:', data.subscriptionId);
-
-    // Also save to localStorage as cache for faster UI updates
-    const demoSub: DemoSubscriptionStorage = {
-      planId,
-      status: 'active',
-      billingCycle,
-      periodStart,
-      periodEnd: periodEnd.toISOString(),
-      cancelAtPeriodEnd: false,
-      activatedAt: new Date().toISOString(),
-      paymentProvider,
-    };
-    setDemoSubscription(demoSub);
-
     return { success: true, subscriptionId: data.subscriptionId };
   } catch (e) {
-    console.error('[Subscription] Edge function call failed, trying direct upsert:', e);
-    return await activateSubscriptionDirect(
-      organizationId, planId, billingCycle, paymentId, paymentProvider, periodStart, periodEnd.toISOString(),
-    );
+    console.error('[Subscription] Activation call failed:', e);
+    return { success: false, error: 'Could not confirm activation. Please try again or contact support.' };
   }
 }
 

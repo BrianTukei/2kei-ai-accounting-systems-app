@@ -3,7 +3,7 @@ import PageLayout from '@/components/layout/PageLayout';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import DashboardTabs from '@/components/dashboard/DashboardTabs';
 import { toast } from 'sonner';
-import { wasSubscriptionJustActivated, clearActivationFlag } from '@/services/subscription';
+import { clearActivationFlag } from '@/services/subscription';
 import WelcomeHero from '@/components/dashboard/WelcomeHero';
 import PlanCard from '@/components/dashboard/PlanCard';
 import AdminAccessCard from '@/components/dashboard/AdminAccessCard';
@@ -40,18 +40,7 @@ export default function Dashboard() {
     // Strip query params immediately so re-renders cannot re-fire this effect
     window.history.replaceState({}, '', '/dashboard');
 
-    const wasActivated = wasSubscriptionJustActivated();
-    if (!wasActivated) {
-      const planLabel = planId
-        ? planId.charAt(0).toUpperCase() + planId.slice(1)
-        : null;
-      toast.success(
-        planLabel
-          ? `Subscription activated — you're on the ${planLabel} plan.`
-          : 'Subscription activated successfully!',
-        { duration: 4000, id: 'subscription-activated' } // sonner dedupes same id
-      );
-    }
+    // The success message is shown by <PlanUpgradeWatcher/> only when the saved plan really goes up.
     clearActivationFlag();
 
     // Quiet refresh — do not leave the app stuck on "Loading workspace"
@@ -110,7 +99,8 @@ export default function Dashboard() {
         recentTransactions: recentTransactions.slice(0, 3) // Pass limited data for context
       }}
     >
-        <WelcomeHero />        
+        <WelcomeHero />
+          <PlanCard />        
           {/* Admin Access Card - only visible to admin */}
           <AdminAccessCard />
           

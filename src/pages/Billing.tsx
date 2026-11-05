@@ -301,42 +301,36 @@ export default function Billing() {
           if (result.verified) {
             console.log('[Billing] Payment verified! Activating subscription...');
 
-            // Activate subscription — if webhook already did it, this will get a 409
-            // which is fine; the subscription is already active.
+            // Activate only via server (edge function). Do not write plan into localStorage.
+            let activated = false;
             try {
               const activationResult = await activateAfterPaymentVerified(
                 org.id, returnPlan, returnCycle, effectiveProvider,
               );
-
-              if (!activationResult.success) {
-                // Check if it's an "already active" error (409 from webhook)
-                const alreadyActive = activationResult.error?.toLowerCase().includes('already') ||
-                                      activationResult.error?.toLowerCase().includes('active');
-                if (!alreadyActive) {
-                  console.warn('[Billing] Activation warning:', activationResult.error);
-                }
-                // Either way, continue — the subscription may be active from webhook
+              activated = !!activationResult.success;
+              if (!activated) {
+                const msg = activationResult.error || 'Payment verified but plan is not active yet.';
+                console.warn('[Billing] Activation failed:', msg);
+                toast.error(msg);
               }
             } catch (actErr: any) {
-              // 409 = already activated by webhook → that's OK
               const errMsg = actErr?.message || String(actErr);
-              if (!errMsg.includes('already') && !errMsg.includes('active')) {
-                console.warn('[Billing] Activation error (non-critical):', errMsg);
+              const alreadyActive = errMsg.toLowerCase().includes('already') || errMsg.toLowerCase().includes('active');
+              if (alreadyActive) {
+                activated = true;
+              } else {
+                console.warn('[Billing] Activation error:', errMsg);
+                toast.error(errMsg || 'Could not activate plan.');
               }
             }
 
-            // Always update localStorage and refresh regardless
-            try {
-              const orgJson = localStorage.getItem('2k_onboarding_org');
-              if (orgJson) {
-                const orgData = JSON.parse(orgJson);
-                orgData.plan = returnPlan;
-                localStorage.setItem('2k_onboarding_org', JSON.stringify(orgData));
-              }
-            } catch { /* non-critical */ }
-
             await refresh();
-            navigate('/dashboard?payment=success&plan=' + returnPlan, { replace: true });
+            if (activated) {
+              // PlanUpgradeWatcher shows success when org plan rank increases
+              navigate('/dashboard', { replace: true });
+            } else {
+              window.history.replaceState({}, '', '/billing');
+            }
           } else {
             toast.error(result.error || 'Payment verification failed. Your card was not charged. Please try again.');
             window.history.replaceState({}, '', '/billing');
@@ -351,10 +345,9 @@ export default function Billing() {
         return;
       }
       
-      // Demo provider — redirect to dashboard
+      // Demo provider — refresh only; PlanUpgradeWatcher handles messaging if plan really changed
       if (provider === 'demo' || !provider) {
-        refresh();
-        navigate('/dashboard?payment=success', { replace: true });
+        void refresh().then(() => navigate('/dashboard', { replace: true }));
         return;
       }
     }

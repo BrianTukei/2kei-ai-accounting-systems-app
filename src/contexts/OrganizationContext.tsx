@@ -300,7 +300,7 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
           .from('subscriptions')
           .select('*')
           .eq('organization_id', membership.organization_id)
-          .single();
+          .maybeSingle();
 
         if (subData) {
           console.log('[OrganizationContext] Found Supabase subscription:', subData.plan_id, subData.status);
@@ -321,22 +321,8 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
           });
           subscriptionLoaded = true;
         } else {
-          // No Supabase subscription — check localStorage as fallback
-          // (may have been activated via demo mode or edge function not yet deployed)
-          const demoSub = getDemoSubscriptionData();
-          if (demoSub && demoSub.planId !== 'free') {
-            console.log('[OrganizationContext] No DB subscription, using localStorage cache:', demoSub.planId);
-            setSubscription({
-              id:                '',
-              planId:            demoSub.planId,
-              status:            demoSub.status,
-              billingCycle:      demoSub.billingCycle,
-              trialEndsAt:       undefined,
-              periodEnd:         demoSub.periodEnd,
-              cancelAtPeriodEnd: demoSub.cancelAtPeriodEnd,
-            });
-            subscriptionLoaded = true;
-          }
+          // Production: never promote a plan from localStorage (that caused fake Pro upgrades).
+          console.log('[OrganizationContext] No DB subscription row — staying on free until server confirms payment');
         }
       } else {
         // DEMO MODE: localStorage is the source of truth

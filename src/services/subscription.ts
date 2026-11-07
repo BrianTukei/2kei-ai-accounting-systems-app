@@ -286,7 +286,30 @@ export async function activateSubscription(
     return { success: true, subscriptionId: 'demo' };
   }
 
-  // ── Production: use Edge Function (bypasses RLS) ──
+  // ── Production: prefer DB RPC (works without Edge Function) ──
+  try {
+    const { data: rpcData, error: rpcError } = await supabase.rpc('activate_my_subscription', {
+      p_organization_id: organizationId,
+      p_plan_id: planId,
+      p_billing_cycle: billingCycle,
+      p_payment_provider: paymentProvider || 'demo',
+    });
+    if (!rpcError && rpcData?.success) {
+      console.log('[Subscription] Activated via RPC:', rpcData.subscriptionId);
+      return { success: true, subscriptionId: rpcData.subscriptionId };
+    }
+    if (rpcData && rpcData.success === false) {
+      console.warn('[Subscription] RPC rejected:', rpcData.error);
+      // fall through to edge function
+    } else if (rpcError) {
+      console.warn('[Subscription] RPC unavailable, trying Edge Function:', rpcError.message);
+    }
+  } catch (rpcErr) {
+    console.warn('[Subscription] RPC call failed, trying Edge Function:', rpcErr);
+  }
+
+  // ── Fallback: Edge Function (bypasses RLS) ──
+
   try {
     console.log('[Subscription] Attempting Edge Function call...');
     

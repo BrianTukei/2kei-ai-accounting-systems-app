@@ -288,19 +288,26 @@ export async function activateSubscription(
 
   // ── Production: prefer DB RPC (works without Edge Function) ──
   try {
-    const { data: rpcData, error: rpcError } = await supabase.rpc('activate_my_subscription', {
+    const { data: rawRpc, error: rpcError } = await supabase.rpc('activate_my_subscription', {
       p_organization_id: organizationId,
       p_plan_id: planId,
       p_billing_cycle: billingCycle,
       p_payment_provider: paymentProvider || 'demo',
     });
-    if (!rpcError && rpcData?.success) {
+    let rpcData: any = rawRpc;
+    if (typeof rawRpc === 'string') {
+      try { rpcData = JSON.parse(rawRpc); } catch { rpcData = null; }
+    }
+    if (!rpcError && rpcData && (rpcData.success === true || rpcData.subscriptionId)) {
       console.log('[Subscription] Activated via RPC:', rpcData.subscriptionId);
       return { success: true, subscriptionId: rpcData.subscriptionId };
     }
     if (rpcData && rpcData.success === false) {
       console.warn('[Subscription] RPC rejected:', rpcData.error);
-      // fall through to edge function
+      // Prefer showing RPC error over a vague edge non-2xx when RPC exists
+      if (rpcData.error) {
+        return { success: false, error: String(rpcData.error) };
+      }
     } else if (rpcError) {
       console.warn('[Subscription] RPC unavailable, trying Edge Function:', rpcError.message);
     }

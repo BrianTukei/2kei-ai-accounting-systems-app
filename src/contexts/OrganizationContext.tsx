@@ -178,6 +178,24 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
           membershipRows[0];
       }
 
+      // Also resolve org as owner (many accounts only have organizations.owner_id)
+      if (!membership?.organization_id) {
+        const { data: ownedOrgs } = await supabase
+          .from('organizations')
+          .select('id')
+          .eq('owner_id', user.id)
+          .order('created_at', { ascending: true })
+          .limit(1);
+        if (ownedOrgs?.[0]?.id) {
+          membership = {
+            organization_id: ownedOrgs[0].id,
+            role: 'owner',
+            invite_accepted: true,
+          };
+          console.log('[OrganizationContext] Resolved org via owner_id:', ownedOrgs[0].id);
+        }
+      }
+
       if (!membership?.organization_id) {
         // Per-user localStorage (avoid leaking another account's completed onboarding)
         const localOrgKey = `2k_onboarding_org_${user.id}`;

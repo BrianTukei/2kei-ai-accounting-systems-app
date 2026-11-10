@@ -120,17 +120,18 @@ const ProtectedRoute = ({
     return <Navigate to="/onboarding" replace />;
   }
 
-  // 6. Subscription check (if required and not exempt)
+  // 6. Paid-feature gate (reports, AI, payroll, bank import, etc.)
   if (requireActiveSubscription && !skipSubscriptionCheck && !isExemptRoute) {
-    const hasActiveSubscription = subscription?.status === 'active' || subscription?.status === 'trialing';
-    const isFreePlan = plan?.id === 'free';
-    
-    // If no active subscription and route requires it, redirect to billing
-    // Note: Free plan users are considered as having "active" subscription on free tier
-    if (!hasActiveSubscription && !isFreePlan) {
-      console.log('[ProtectedRoute] No active subscription, redirecting to billing', {
-        subscriptionStatus: subscription?.status,
-        planId: plan?.id,
+    const planId = plan?.id || 'free';
+    const isPaidPlan = planId === 'pro' || planId === 'enterprise';
+    const status = subscription?.status;
+    const statusOk = !status || status === 'active' || status === 'trialing';
+
+    // Free plan (or inactive paid) cannot open premium routes
+    if (!isPaidPlan || !statusOk) {
+      console.log('[ProtectedRoute] Premium feature blocked', {
+        subscriptionStatus: status,
+        planId,
       });
       return <Navigate to="/billing" replace state={{ from: location }} />;
     }
